@@ -1,6 +1,7 @@
 package gateway
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"log"
@@ -25,14 +26,14 @@ type App struct {
 }
 
 // NewApp constructs an new App instance from the provided config.
-func NewApp(config Config) (*App, error) {
+func NewApp(config Config) (app *App, err error) {
 	database, err := sqlx.Connect(
 		config.Database.Type,
 		config.Database.Url,
 	)
 
 	if err != nil {
-		log.Panic(err)
+		return
 	}
 
 	h := horizon.Horizon{config.Horizon}
@@ -40,17 +41,22 @@ func NewApp(config Config) (*App, error) {
 	log.Print("Creating TransactionSubmitter")
 	ts, err := NewTransactionSubmitter(&h, config.Accounts.ChannelsSeeds)
 	if err != nil {
-		log.Panic(err)
+		return
 	}
 	log.Print("TransactionSubmitter created")
 
-	app := &App{
+	if len(config.ApiKey) > 0 && len(config.ApiKey) < 15 {
+		err = errors.New("api-key have to be at least 15 chars long.")
+		return 
+	}
+
+	app = &App{
 		config:               config,
 		database:             database,
 		horizon:              &h,
 		transactionSubmitter: &ts,
 	}
-	return app, nil
+	return
 }
 
 func (a *App) Serve() {
@@ -65,6 +71,9 @@ func (a *App) Serve() {
 
 	goji.Use(stripTrailingSlashMiddleware())
 	goji.Use(headersMiddleware())
+	if a.config.ApiKey != "" {
+		goji.Use(apiKeyMiddleware(a.config.ApiKey))
+	}
 
 	goji.Get("/authorize", requestHandlers.Authorize)
 	goji.Get("/send", requestHandlers.Send)

@@ -20,6 +20,10 @@ func errorServerError(w http.ResponseWriter) {
 	http.Error(w, errorResponseString("server_error", "Server error"), http.StatusInternalServerError)
 }
 
+func errorForbidden(w http.ResponseWriter, responseString string) {
+	http.Error(w, responseString, http.StatusForbidden)
+}
+
 func errorBadRequest(w http.ResponseWriter, responseString string) {
 	http.Error(w, responseString, http.StatusInternalServerError)
 }

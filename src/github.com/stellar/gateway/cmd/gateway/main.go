@@ -44,6 +44,7 @@ func run(cmd *cobra.Command, args []string) {
 
 	if err != nil {
 		log.Fatal(err.Error())
+		return
 	}
 
 	app.Serve()

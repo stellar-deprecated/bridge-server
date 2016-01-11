@@ -102,7 +102,6 @@ func (ts *TransactionSubmitter) SubmitTransaction(opSourceSeed string, operation
 		// TODO do it only if it's BAD_SEQ error
 		accountResponse, _ := ts.Horizon.LoadAccount(channelAccount.Keypair.Address())
 		channelAccount.SequenceNumber = accountResponse.SequenceNumber
-		return
 	} else {
 		channelAccount.SequenceNumber++
 	}

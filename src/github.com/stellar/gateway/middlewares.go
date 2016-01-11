@@ -32,3 +32,17 @@ func headersMiddleware() func(next http.Handler) http.Handler {
 		return http.HandlerFunc(fn)
 	}
 }
+
+func apiKeyMiddleware(apiKey string) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		fn := func(w http.ResponseWriter, r *http.Request) {
+			k := r.URL.Query().Get("apiKey")
+			if k != apiKey {
+				errorForbidden(w, errorResponseString("forbidden", "Access denied."))
+				return
+			}
+			next.ServeHTTP(w, r)
+		}
+		return http.HandlerFunc(fn)
+	}
+}
