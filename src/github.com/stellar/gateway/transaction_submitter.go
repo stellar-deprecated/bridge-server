@@ -50,18 +50,18 @@ func NewTransactionSubmitter(horizon *horizon.Horizon, channelsSeeds []string) (
 
 	for i := 0; i < len(channelsSeeds); i++ {
 		select {
-        case ch := <- newChannels:
-            ts.AvailableChannels <- ch
-        case err = <- errorChannel:
-            return
-        }
+		case ch := <-newChannels:
+			ts.AvailableChannels <- ch
+		case err = <-errorChannel:
+			return
+		}
 	}
 
 	return
 }
 
 func (ts *TransactionSubmitter) SubmitTransaction(opSourceSeed string, operation interface{}) (response horizon.SubmitTransactionResponse, err error) {
-	channelAccount := <- ts.AvailableChannels
+	channelAccount := <-ts.AvailableChannels
 
 	_, err = keypair.Parse(opSourceSeed)
 	if err != nil {
@@ -71,19 +71,19 @@ func (ts *TransactionSubmitter) SubmitTransaction(opSourceSeed string, operation
 
 	mutator, ok := operation.(build.TransactionMutator)
 	if !ok {
-	    log.Print("Cannot cast to build.TransactionMutator")
-	    err = errors.New("Cannot cast to build.TransactionMutator")
-	    return
+		log.Print("Cannot cast to build.TransactionMutator")
+		err = errors.New("Cannot cast to build.TransactionMutator")
+		return
 	}
 
 	tx := build.Transaction(
 		build.SourceAccount{channelAccount.Seed},
-		build.Sequence{channelAccount.SequenceNumber+1},
+		build.Sequence{channelAccount.SequenceNumber + 1},
 		mutator,
 	)
 
 	signersSeeds := []string{opSourceSeed}
-	if (channelAccount.Seed != opSourceSeed) {
+	if channelAccount.Seed != opSourceSeed {
 		// We're using channels
 		signersSeeds = append(signersSeeds, channelAccount.Seed)
 	}
@@ -108,5 +108,5 @@ func (ts *TransactionSubmitter) SubmitTransaction(opSourceSeed string, operation
 	}
 
 	ts.AvailableChannels <- channelAccount
-	return 
+	return
 }

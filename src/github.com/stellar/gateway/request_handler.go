@@ -11,9 +11,9 @@ import (
 )
 
 type RequestHandler struct {
-	config                *Config
-	database              Database
-	transactionSubmitter  *TransactionSubmitter
+	config               *Config
+	database             Database
+	transactionSubmitter *TransactionSubmitter
 }
 
 func (rh *RequestHandler) Authorize(w http.ResponseWriter, r *http.Request) {
@@ -33,10 +33,10 @@ func (rh *RequestHandler) Authorize(w http.ResponseWriter, r *http.Request) {
 		b.AllowTrustAsset{"USD"},
 	)
 
-    submitResponse, err := rh.transactionSubmitter.SubmitTransaction(
-    	rh.config.Accounts.AuthorizingSeed,
-    	operation,
-    )
+	submitResponse, err := rh.transactionSubmitter.SubmitTransaction(
+		rh.config.Accounts.AuthorizingSeed,
+		operation,
+	)
 	if err != nil {
 		log.Print("Error submitting transaction ", err)
 		errorServerError(w)
@@ -81,7 +81,7 @@ func (rh *RequestHandler) Authorize(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		errorBadRequest(w, errorString)
-		return 
+		return
 	}
 
 	json, err := json.Marshal(submitResponse)
@@ -124,9 +124,9 @@ func (rh *RequestHandler) Send(w http.ResponseWriter, r *http.Request) {
 	)
 
 	submitResponse, err := rh.transactionSubmitter.SubmitTransaction(
-    	rh.config.Accounts.IssuingSeed,
-    	operation,
-    )
+		rh.config.Accounts.IssuingSeed,
+		operation,
+	)
 	if err != nil {
 		log.Print("Error submitting transaction ", err)
 		errorServerError(w)
@@ -196,7 +196,7 @@ func (rh *RequestHandler) Send(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		errorBadRequest(w, errorString)
-		return 
+		return
 	}
 
 	json, err := json.Marshal(submitResponse)

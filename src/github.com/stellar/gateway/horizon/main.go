@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
-    "net/http"
-    "net/url"
+	"net/http"
+	"net/url"
 )
 
 type Horizon struct {
@@ -14,7 +14,7 @@ type Horizon struct {
 }
 
 func (h *Horizon) LoadAccount(accountId string) (response AccountResponse, err error) {
-	resp, err := http.Get(h.ServerUrl+"/accounts/"+accountId)
+	resp, err := http.Get(h.ServerUrl + "/accounts/" + accountId)
 	if err != nil {
 		return
 	}
@@ -25,7 +25,7 @@ func (h *Horizon) LoadAccount(accountId string) (response AccountResponse, err e
 		return
 	}
 
-	if (resp.StatusCode != 200) {
+	if resp.StatusCode != 200 {
 		err = fmt.Errorf("StatusCode indicates error: %s", body)
 		return
 	}
@@ -39,9 +39,9 @@ func (h *Horizon) LoadAccount(accountId string) (response AccountResponse, err e
 }
 
 func (h *Horizon) SubmitTransaction(txeBase64 string) (response SubmitTransactionResponse, err error) {
-    v := url.Values{}
-    v.Set("tx", txeBase64)
-    // TODO add request timeout
+	v := url.Values{}
+	v.Set("tx", txeBase64)
+	// TODO add request timeout
 	resp, err := http.PostForm(h.ServerUrl+"/transactions", v)
 	if err != nil {
 		return

@@ -26,8 +26,8 @@ func init() {
 	rootCmd = &cobra.Command{
 		Use:   "gateway",
 		Short: "stellar gateway server",
-		Long: `stellar gateway server`,
-		Run: run,
+		Long:  `stellar gateway server`,
+		Run:   run,
 	}
 }
 

@@ -4,8 +4,8 @@ type Config struct {
 	Port     int
 	Horizon  string
 	Database struct {
-		Type  string
-		Url   string
+		Type string
+		Url  string
 	}
 	Accounts struct {
 		AuthorizingSeed string   `mapstructure:"authorizing"`

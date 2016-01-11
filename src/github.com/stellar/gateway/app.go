@@ -45,9 +45,9 @@ func NewApp(config Config) (*App, error) {
 	log.Print("TransactionSubmitter created")
 
 	app := &App{
-		config: config,
-		database: database,
-		horizon: &h,
+		config:               config,
+		database:             database,
+		horizon:              &h,
 		transactionSubmitter: &ts,
 	}
 	return app, nil
@@ -55,8 +55,8 @@ func NewApp(config Config) (*App, error) {
 
 func (a *App) Serve() {
 	requestHandlers := &RequestHandler{
-		config: &a.config,
-		database: a.database,
+		config:               &a.config,
+		database:             a.database,
 		transactionSubmitter: a.transactionSubmitter,
 	}
 
