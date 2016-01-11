@@ -27,7 +27,6 @@ func (rh *RequestHandler) Authorize(w http.ResponseWriter, r *http.Request) {
 	}
 
 	operation := b.AllowTrust(
-		//b.Source{rh.config.Accounts.AuthorizingSeed},
 		b.Trustor{accountId},
 		b.Authorize{true},
 		b.AllowTrustAsset{"USD"},
@@ -117,7 +116,6 @@ func (rh *RequestHandler) Send(w http.ResponseWriter, r *http.Request) {
 	// TODO check if asset is allowed
 
 	operation := b.Payment(
-		//b.Source{rh.config.Accounts.IssuingSeed},
 		b.Destination{destination},
 		b.Amount{amount},
 		b.Asset{asset, issuingKeypair.Address()},

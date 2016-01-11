@@ -10,62 +10,52 @@ import (
 )
 
 type TransactionSubmitter struct {
-	Horizon           *horizon.Horizon
-	AvailableChannels chan ChannelAccount
+	Horizon  *horizon.Horizon
+	Accounts map[string]Account // seed => Account
 }
 
-type ChannelAccount struct {
+type Account struct {
 	Keypair        keypair.KP
 	Seed           string
 	SequenceNumber uint64
 }
 
-func NewTransactionSubmitter(horizon *horizon.Horizon, channelsSeeds []string) (ts TransactionSubmitter, err error) {
+func NewTransactionSubmitter(horizon *horizon.Horizon) (ts TransactionSubmitter) {
 	ts.Horizon = horizon
-
-	newChannels := make(chan ChannelAccount, len(channelsSeeds))
-	errorChannel := make(chan error)
-
-	for _, channelSeed := range channelsSeeds {
-		channelSeed := channelSeed // Create new instance for the goroutine.
-		go func() {
-			channelKeypair, err := keypair.Parse(channelSeed)
-			if err != nil {
-				errorChannel <- err
-			}
-			channelAccount, err := horizon.LoadAccount(channelKeypair.Address())
-			if err != nil {
-				errorChannel <- err
-			}
-
-			newChannels <- ChannelAccount{
-				channelKeypair,
-				channelSeed,
-				channelAccount.SequenceNumber,
-			}
-		}()
-	}
-
-	ts.AvailableChannels = make(chan ChannelAccount, len(channelsSeeds))
-
-	for i := 0; i < len(channelsSeeds); i++ {
-		select {
-		case ch := <-newChannels:
-			ts.AvailableChannels <- ch
-		case err = <-errorChannel:
-			return
-		}
-	}
-
+	ts.Accounts = make(map[string]Account)
 	return
 }
 
-func (ts *TransactionSubmitter) SubmitTransaction(opSourceSeed string, operation interface{}) (response horizon.SubmitTransactionResponse, err error) {
-	channelAccount := <-ts.AvailableChannels
-
-	_, err = keypair.Parse(opSourceSeed)
+func (ts *TransactionSubmitter) LoadAccount(seed string) (account Account, err error) {
+	account.Keypair, err = keypair.Parse(seed)
 	if err != nil {
-		log.Print("Invalid opSourceSeed")
+		log.Print("Invalid seed")
+		return
+	}
+
+	accountResponse, err := ts.Horizon.LoadAccount(account.Keypair.Address())
+	if err != nil {
+		return
+	}
+
+	account.Seed = seed
+	account.SequenceNumber = accountResponse.SequenceNumber
+	return
+}
+
+func (ts *TransactionSubmitter) GetAccount(seed string) (account Account, err error) {
+	account, exist := ts.Accounts[seed]
+	if !exist {
+		account, err = ts.LoadAccount(seed)
+		ts.Accounts[seed] = account
+	}
+	return
+}
+
+func (ts *TransactionSubmitter) SubmitTransaction(seed string, operation interface{}) (response horizon.SubmitTransactionResponse, err error) {
+	account, err := ts.GetAccount(seed)
+
+	if err != nil {
 		return
 	}
 
@@ -77,17 +67,12 @@ func (ts *TransactionSubmitter) SubmitTransaction(opSourceSeed string, operation
 	}
 
 	tx := build.Transaction(
-		build.SourceAccount{channelAccount.Seed},
-		build.Sequence{channelAccount.SequenceNumber + 1},
+		build.SourceAccount{account.Seed},
+		build.Sequence{account.SequenceNumber + 1},
 		mutator,
 	)
 
-	signersSeeds := []string{opSourceSeed}
-	if channelAccount.Seed != opSourceSeed {
-		// We're using channels
-		signersSeeds = append(signersSeeds, channelAccount.Seed)
-	}
-	txe := tx.Sign(signersSeeds...)
+	txe := tx.Sign(seed)
 	txeB64, err := txe.Base64()
 
 	if err != nil {
@@ -100,12 +85,11 @@ func (ts *TransactionSubmitter) SubmitTransaction(opSourceSeed string, operation
 		log.Print("Error submitting transaction ", err)
 		// Sync sequence number
 		// TODO do it only if it's BAD_SEQ error
-		accountResponse, _ := ts.Horizon.LoadAccount(channelAccount.Keypair.Address())
-		channelAccount.SequenceNumber = accountResponse.SequenceNumber
+		accountResponse, _ := ts.Horizon.LoadAccount(account.Keypair.Address())
+		account.SequenceNumber = accountResponse.SequenceNumber
 	} else {
-		channelAccount.SequenceNumber++
+		account.SequenceNumber++
 	}
 
-	ts.AvailableChannels <- channelAccount
 	return
 }

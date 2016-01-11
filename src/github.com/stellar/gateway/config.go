@@ -9,9 +9,8 @@ type Config struct {
 		Url  string
 	}
 	Accounts struct {
-		AuthorizingSeed string   `mapstructure:"authorizing"`
-		IssuingSeed     string   `mapstructure:"issuing"`
-		ReceivingSeed   string   `mapstructure:"receiving"`
-		ChannelsSeeds   []string `mapstructure:"channels"`
+		AuthorizingSeed string `mapstructure:"authorizing"`
+		IssuingSeed     string `mapstructure:"issuing"`
+		ReceivingSeed   string `mapstructure:"receiving"`
 	}
 }

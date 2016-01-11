@@ -39,7 +39,7 @@ func NewApp(config Config) (app *App, err error) {
 	h := horizon.Horizon{config.Horizon}
 
 	log.Print("Creating TransactionSubmitter")
-	ts, err := NewTransactionSubmitter(&h, config.Accounts.ChannelsSeeds)
+	ts := NewTransactionSubmitter(&h)
 	if err != nil {
 		return
 	}
@@ -47,7 +47,7 @@ func NewApp(config Config) (app *App, err error) {
 
 	if len(config.ApiKey) > 0 && len(config.ApiKey) < 15 {
 		err = errors.New("api-key have to be at least 15 chars long.")
-		return 
+		return
 	}
 
 	app = &App{
