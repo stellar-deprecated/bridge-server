@@ -35,7 +35,7 @@ func main() {
 		// character prefix.
 		if strings.HasPrefix(kp.Address()[2:], prefix) {
 			fmt.Println("Found!")
-			fmt.Printf("Secret seed: %s\n", kp.(*keypair.Full).Seed())
+			fmt.Printf("Secret seed: %s\n", kp.Seed())
 			fmt.Printf("Public: %s\n", kp.Address())
 			os.Exit(0)
 		}

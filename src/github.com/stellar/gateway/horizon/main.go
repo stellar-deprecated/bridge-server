@@ -1,19 +1,35 @@
 package horizon
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
+	"github.com/Sirupsen/logrus"
 	"net/http"
 	"net/url"
+	"strings"
+
+	"github.com/stellar/go-stellar-base/xdr"
 )
 
 type Horizon struct {
 	ServerUrl string
+	log *logrus.Entry
+}
+
+func New(serverUrl string) (horizon Horizon) {
+	horizon.ServerUrl = serverUrl
+	horizon.log = logrus.WithFields(logrus.Fields{
+		"service": "Horizon",
+	})
+	return
 }
 
 func (h *Horizon) LoadAccount(accountId string) (response AccountResponse, err error) {
+	h.log.WithFields(logrus.Fields{
+		"accountId": accountId,
+	}).Info("Loading account")
 	resp, err := http.Get(h.ServerUrl + "/accounts/" + accountId)
 	if err != nil {
 		return
@@ -53,12 +69,79 @@ func (h *Horizon) SubmitTransaction(txeBase64 string) (response SubmitTransactio
 		return
 	}
 
-	log.Print("Response from horizon ", string(body))
-
 	err = json.Unmarshal(body, &response)
 	if err != nil {
+		h.log.WithFields(logrus.Fields{
+			"body": string(body),
+		}).Info("Cannot unmarshal horizon response", string(body))
 		return
 	}
 
+	if response.Ledger != nil {
+		h.log.WithFields(logrus.Fields{
+			"ledger": response.Ledger,
+		}).Info("Success response from horizon")
+	} else {
+		h.log.WithFields(logrus.Fields{
+			"envelope": response.Extras.EnvelopeXdr,
+			"result":   response.Extras.ResultXdr,
+		}).Info("Error response from horizon")
+	}
+
+	// Decode errors
+	if response.Ledger == nil && response.Extras != nil {
+		var txResult xdr.TransactionResult
+		txResult, err = unmarshalTransactionResult(response.Extras.ResultXdr)
+
+		if err != nil {
+			h.log.Info("Cannot decode transaction result")
+			return
+		}
+
+		transactionResult := txResult.Result.Code
+		operationsResults := *txResult.Result.Results
+		var transactionErrorCode string
+		var operationErrorCode string
+
+		if (transactionResult != xdr.TransactionResultCodeTxSuccess) {
+			switch transactionResult {
+			case xdr.TransactionResultCodeTxFailed:
+				transactionErrorCode = "transaction_failed"
+			case xdr.TransactionResultCodeTxBadSeq:
+				transactionErrorCode = "transaction_bad_seq"
+			default:
+				transactionErrorCode = "unknown"
+			}
+		}
+
+		if (operationsResults != nil) {
+			switch operationsResults[0].Tr.AllowTrustResult.Code {
+			case xdr.AllowTrustResultCodeAllowTrustMalformed:
+				operationErrorCode = "allow_trust_malformed"
+			case xdr.AllowTrustResultCodeAllowTrustNoTrustLine:
+				operationErrorCode = "allow_trust_not_trustline"
+			case xdr.AllowTrustResultCodeAllowTrustTrustNotRequired:
+				operationErrorCode = "allow_trust_trust_not_required"
+			case xdr.AllowTrustResultCodeAllowTrustCantRevoke:
+				operationErrorCode = "allow_trust_trust_cant_revoke"
+			default:
+				operationErrorCode = "unknown"
+			}
+		}
+		
+		errors := &SubmitTransactionResponseError{
+			TransactionErrorCode: transactionErrorCode,
+			OperationErrorCode: operationErrorCode,
+		}
+		response.Errors = errors
+	}
+
+	return
+}
+
+func unmarshalTransactionResult(transactionResult string) (txResult xdr.TransactionResult, err error) {
+	reader := strings.NewReader(transactionResult)
+	b64r := base64.NewDecoder(base64.StdEncoding, reader)
+	_, err = xdr.Unmarshal(b64r, &txResult)
 	return
 }

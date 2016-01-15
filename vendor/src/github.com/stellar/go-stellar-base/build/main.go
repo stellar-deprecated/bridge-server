@@ -45,6 +45,14 @@ type Authorize struct {
 	Value bool
 }
 
+// CreditAmount is a mutator that configures a payment to be using credit
+// asset and have the amount provided.
+type CreditAmount struct {
+	Code string
+	Issuer string
+	Amount string
+}
+
 // Defaults is a mutator that sets defaults
 type Defaults struct{}
 

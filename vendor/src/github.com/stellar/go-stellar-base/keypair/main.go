@@ -3,10 +3,11 @@ package keypair
 import (
 	"crypto/rand"
 	"errors"
+	"io"
+
 	"github.com/stellar/go-stellar-base/network"
 	"github.com/stellar/go-stellar-base/strkey"
 	"github.com/stellar/go-stellar-base/xdr"
-	"io"
 )
 
 var (
@@ -34,7 +35,7 @@ type KP interface {
 }
 
 // Random creates a random full keypair
-func Random() (KP, error) {
+func Random() (*Full, error) {
 	var rawSeed [32]byte
 
 	_, err := io.ReadFull(rand.Reader, rawSeed[:])
@@ -84,7 +85,7 @@ func Parse(addressOrSeed string) (KP, error) {
 }
 
 // FromRawSeed creates a new keypair from the provided raw ED25519 seed:w
-func FromRawSeed(rawSeed [32]byte) (KP, error) {
+func FromRawSeed(rawSeed [32]byte) (*Full, error) {
 	seed, err := strkey.Encode(strkey.VersionByteSeed, rawSeed[:])
 	if err != nil {
 		return nil, err

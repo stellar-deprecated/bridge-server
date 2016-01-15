@@ -4,14 +4,13 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"log"
+	log "github.com/Sirupsen/logrus"
+	"time"
 
-	_ "github.com/go-sql-driver/mysql"
-	"github.com/jmoiron/sqlx"
-	_ "github.com/lib/pq"
-	_ "github.com/mattn/go-sqlite3"
+	"github.com/stellar/gateway/db"
 	"github.com/stellar/gateway/horizon"
 	"github.com/zenazn/goji"
+	"github.com/zenazn/goji/web/middleware"
 )
 
 type Database interface {
@@ -27,22 +26,43 @@ type App struct {
 
 // NewApp constructs an new App instance from the provided config.
 func NewApp(config Config) (app *App, err error) {
-	database, err := sqlx.Connect(
-		config.Database.Type,
-		config.Database.Url,
-	)
+	em, err := db.NewEntityManager(config.Database.Type, config.Database.Url)
 
 	if err != nil {
 		return
 	}
 
-	h := horizon.Horizon{config.Horizon}
+	sentTransaction := &db.SentTransaction{
+		Source: "ABCDE",
+		SubmittedAt: time.Now(),
+	}
+	err = em.Persist(sentTransaction)
+	if err != nil {
+		return
+	}
+	sentTransaction.MarkSucceeded()
+	log.Print(sentTransaction)
+	err = em.Persist(sentTransaction)
+	if err != nil {
+		return
+	}
+	log.Print(sentTransaction)
 
-	log.Print("Creating TransactionSubmitter")
+	h := horizon.New(config.Horizon)
+
+	log.Print("Creating and TransactionSubmitter")
 	ts := NewTransactionSubmitter(&h)
 	if err != nil {
 		return
 	}
+
+	log.Print("Initializing Authorizing account")
+	err = ts.InitAccount(config.Accounts.AuthorizingSeed)
+	if err != nil {
+		return
+	}
+	// TODO other accounts
+
 	log.Print("TransactionSubmitter created")
 
 	if len(config.ApiKey) > 0 && len(config.ApiKey) < 15 {
@@ -52,7 +72,7 @@ func NewApp(config Config) (app *App, err error) {
 
 	app = &App{
 		config:               config,
-		database:             database,
+		//database:             database,
 		horizon:              &h,
 		transactionSubmitter: &ts,
 	}
@@ -69,6 +89,7 @@ func (a *App) Serve() {
 	portString := fmt.Sprintf(":%d", a.config.Port)
 	flag.Set("bind", portString)
 
+	goji.Abandon(middleware.Logger)
 	goji.Use(stripTrailingSlashMiddleware())
 	goji.Use(headersMiddleware())
 	if a.config.ApiKey != "" {
@@ -76,6 +97,6 @@ func (a *App) Serve() {
 	}
 
 	goji.Get("/authorize", requestHandlers.Authorize)
-	goji.Get("/send", requestHandlers.Send)
+	//goji.Get("/send", requestHandlers.Send)
 	goji.Serve()
 }

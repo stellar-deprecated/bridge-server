@@ -8,9 +8,27 @@
 			"branch": "master"
 		},
 		{
+			"importpath": "github.com/Sirupsen/logrus",
+			"repository": "https://github.com/Sirupsen/logrus",
+			"revision": "446d1c146faa8ed3f4218f056fcd165f6bcfda81",
+			"branch": "master"
+		},
+		{
 			"importpath": "github.com/agl/ed25519",
 			"repository": "https://github.com/agl/ed25519",
 			"revision": "278e1ec8e8a6e017cd07577924d6766039146ced",
+			"branch": "master"
+		},
+		{
+			"importpath": "github.com/armon/go-radix",
+			"repository": "https://github.com/armon/go-radix",
+			"revision": "fbd82e84e2b13651f3abc5ffd26b65ba71bc8f93",
+			"branch": "master"
+		},
+		{
+			"importpath": "github.com/bgentry/speakeasy",
+			"repository": "https://github.com/bgentry/speakeasy",
+			"revision": "36e9cfdd690967f4f690c6edcc9ffacd006014a0",
 			"branch": "master"
 		},
 		{
@@ -19,6 +37,12 @@
 			"revision": "2724a9c9051aa62e9cca11304e7dd518e9e41599",
 			"branch": "master",
 			"path": "/md2man"
+		},
+		{
+			"importpath": "github.com/denisenkom/go-mssqldb",
+			"repository": "https://github.com/denisenkom/go-mssqldb",
+			"revision": "4623535a2b1c4a613d7a75899b1422d8186fe9b7",
+			"branch": "master"
 		},
 		{
 			"importpath": "github.com/go-sql-driver/mysql",
@@ -51,6 +75,12 @@
 			"branch": "master"
 		},
 		{
+			"importpath": "github.com/jteeuwen/go-bindata",
+			"repository": "https://github.com/jteeuwen/go-bindata",
+			"revision": "a0ff2567cfb70903282db057e799fd826784d41d",
+			"branch": "master"
+		},
+		{
 			"importpath": "github.com/kr/pretty",
 			"repository": "https://github.com/kr/pretty",
 			"revision": "e6ac2fc51e89a3249e82157fa0bb7a18ef9dd5bb",
@@ -75,9 +105,27 @@
 			"branch": "master"
 		},
 		{
+			"importpath": "github.com/mattn/go-isatty",
+			"repository": "https://github.com/mattn/go-isatty",
+			"revision": "56b76bdf51f7708750eac80fa38b952bb9f32639",
+			"branch": "master"
+		},
+		{
+			"importpath": "github.com/mattn/go-runewidth",
+			"repository": "https://github.com/mattn/go-runewidth",
+			"revision": "e882a96ec18dd43fa283187b66af74497c9101c0",
+			"branch": "master"
+		},
+		{
 			"importpath": "github.com/mattn/go-sqlite3",
 			"repository": "https://github.com/mattn/go-sqlite3",
 			"revision": "5510da399572b4962c020184bb291120c0a412e2",
+			"branch": "master"
+		},
+		{
+			"importpath": "github.com/mitchellh/cli",
+			"repository": "https://github.com/mitchellh/cli",
+			"revision": "cb6853d606ea4a12a15ac83cc43503df99fd28fb",
 			"branch": "master"
 		},
 		{
@@ -92,6 +140,18 @@
 			"revision": "0ed230ab0856542e23b068fa253a67f57f2d01eb",
 			"branch": "master",
 			"path": "/xdr3"
+		},
+		{
+			"importpath": "github.com/olekukonko/tablewriter",
+			"repository": "https://github.com/olekukonko/tablewriter",
+			"revision": "48dc4474bcf3e0134e9a64222207b1e020f171e9",
+			"branch": "master"
+		},
+		{
+			"importpath": "github.com/rubenv/sql-migrate",
+			"repository": "https://github.com/rubenv/sql-migrate",
+			"revision": "53184e1edfb4f9655b0fa8dd2c23e7763f452bda",
+			"branch": "master"
 		},
 		{
 			"importpath": "github.com/russross/blackfriday",
@@ -138,7 +198,7 @@
 		{
 			"importpath": "github.com/stellar/go-stellar-base",
 			"repository": "https://github.com/stellar/go-stellar-base",
-			"revision": "5dc3153f8ceb39986f637adbf5ec9e26519f7e60",
+			"revision": "1512dd0b506bfec825223359489525719190a83c",
 			"branch": "master"
 		},
 		{
@@ -148,6 +208,13 @@
 			"branch": "master"
 		},
 		{
+			"importpath": "golang.org/x/crypto/md4",
+			"repository": "https://go.googlesource.com/crypto",
+			"revision": "3760e016850398b85094c4c99e955b8c3dea5711",
+			"branch": "master",
+			"path": "/md4"
+		},
+		{
 			"importpath": "golang.org/x/crypto/ssh/terminal",
 			"repository": "https://go.googlesource.com/crypto",
 			"revision": "552e9d568fde9701ea1944fb01c8aadaceaa7353",
@@ -155,10 +222,34 @@
 			"path": "/ssh/terminal"
 		},
 		{
+			"importpath": "gopkg.in/airbrake/gobrake.v2",
+			"repository": "https://gopkg.in/airbrake/gobrake.v2",
+			"revision": "c9d51adc624b5cc4c1bf8de730a09af4878ffe2d",
+			"branch": "master"
+		},
+		{
 			"importpath": "gopkg.in/fsnotify.v1",
 			"repository": "https://gopkg.in/fsnotify.v1",
 			"revision": "508915b7500b6e42a87132e4afeb4729cebc7cbb",
 			"branch": "master"
+		},
+		{
+			"importpath": "gopkg.in/gemnasium/logrus-airbrake-hook.v2",
+			"repository": "https://gopkg.in/gemnasium/logrus-airbrake-hook.v2",
+			"revision": "31e6fd4bd5a98d8ee7673d24bc54ec73c31810dd",
+			"branch": "master"
+		},
+		{
+			"importpath": "gopkg.in/gorp.v1",
+			"repository": "https://gopkg.in/gorp.v1",
+			"revision": "c87af80f3cc5036b55b83d77171e156791085e2e",
+			"branch": "master"
+		},
+		{
+			"importpath": "gopkg.in/yaml.v1",
+			"repository": "https://gopkg.in/yaml.v1",
+			"revision": "9f9df34309c04878acc86042b16630b0f696e1de",
+			"branch": "v1"
 		},
 		{
 			"importpath": "gopkg.in/yaml.v2",

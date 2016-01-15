@@ -47,6 +47,41 @@ func (b *PaymentBuilder) Mutate(muts ...interface{}) {
 	}
 }
 
+// MutatePayment for Asset sets the PaymentOp's Asset field
+func (m CreditAmount) MutatePayment(o *xdr.PaymentOp) (err error) {
+	o.Amount, err = amount.Parse(m.Amount)
+	if err != nil {
+		return
+	}
+
+	length := len(m.Code)
+
+	var issuer xdr.AccountId
+	err = setAccountId(m.Issuer, &issuer)
+	if err != nil {
+		return
+	}
+
+	switch {
+	case length >= 1 && length <= 4:
+		var code [4]byte
+		byteArray := []byte(m.Code)
+		copy(code[:], byteArray[0:length])
+		asset := xdr.AssetAlphaNum4{code, issuer}
+		o.Asset, err = xdr.NewAsset(xdr.AssetTypeAssetTypeCreditAlphanum4, asset)
+	case length >= 5 && length <= 12:
+		var code [12]byte
+		byteArray := []byte(m.Code)
+		copy(code[:], byteArray[0:length])
+		asset := xdr.AssetAlphaNum12{code, issuer}
+		o.Asset, err = xdr.NewAsset(xdr.AssetTypeAssetTypeCreditAlphanum12, asset)
+	default:
+		err = errors.New("Asset code length is invalid")
+	}
+
+	return
+}
+
 // MutatePayment for Destination sets the PaymentOp's Destination field
 func (m Destination) MutatePayment(o *xdr.PaymentOp) error {
 	return setAccountId(m.AddressOrSeed, &o.Destination)
