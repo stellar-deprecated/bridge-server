@@ -3,15 +3,15 @@ package db
 import (
 	"fmt"
 
+	"github.com/Sirupsen/logrus"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 	_ "github.com/mattn/go-sqlite3"
-	"github.com/Sirupsen/logrus"
 )
 
 type EntityManager struct {
-	db *sqlx.DB
+	db  *sqlx.DB
 	log *logrus.Entry
 }
 
@@ -26,7 +26,7 @@ func NewEntityManager(dbType string, url string) (em EntityManager, err error) {
 func (em *EntityManager) Persist(object Entity) (err error) {
 	objectType := fmt.Sprintf("%T", object)
 	var query string
-	
+
 	if object.GetId() != nil {
 		// Update
 		query, err = GetUpdateQuery(objectType)

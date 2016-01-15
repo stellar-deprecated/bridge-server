@@ -8,10 +8,12 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/stellar/gateway"
+	"github.com/stellar/gateway/db/migrations"
 )
 
 var app *gateway.App
 var rootCmd *cobra.Command
+var migrateFlag bool
 
 func main() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
@@ -29,6 +31,20 @@ func init() {
 		Long:  `stellar gateway server`,
 		Run:   run,
 	}
+
+	rootCmd.Flags().BoolVarP(&migrateFlag, "migrate-db", "", false, "migrate DB to the newest schema version")
+}
+
+func migrate(config gateway.Config) {
+	migrationManager, err := migrations.NewMigrationManager(
+		config.Database.Type,
+		config.Database.Url,
+	)
+	if err != nil {
+		log.Fatal("Error migrating DB")
+		return
+	}
+	migrationManager.MigrateUp()
 }
 
 func run(cmd *cobra.Command, args []string) {
@@ -40,6 +56,12 @@ func run(cmd *cobra.Command, args []string) {
 
 	var config gateway.Config
 	err = viper.Unmarshal(&config)
+
+	if migrateFlag {
+		migrate(config)
+		return
+	}
+
 	app, err = gateway.NewApp(config)
 
 	if err != nil {

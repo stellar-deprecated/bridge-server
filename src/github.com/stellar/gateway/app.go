@@ -5,7 +5,6 @@ import (
 	"flag"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
-	"time"
 
 	"github.com/stellar/gateway/db"
 	"github.com/stellar/gateway/horizon"
@@ -13,13 +12,9 @@ import (
 	"github.com/zenazn/goji/web/middleware"
 )
 
-type Database interface {
-	Get(dest interface{}, query string, args ...interface{}) error
-}
-
 type App struct {
 	config               Config
-	database             Database
+	entityManager        *db.EntityManager
 	horizon              *horizon.Horizon
 	transactionSubmitter *TransactionSubmitter
 }
@@ -32,26 +27,10 @@ func NewApp(config Config) (app *App, err error) {
 		return
 	}
 
-	sentTransaction := &db.SentTransaction{
-		Source: "ABCDE",
-		SubmittedAt: time.Now(),
-	}
-	err = em.Persist(sentTransaction)
-	if err != nil {
-		return
-	}
-	sentTransaction.MarkSucceeded()
-	log.Print(sentTransaction)
-	err = em.Persist(sentTransaction)
-	if err != nil {
-		return
-	}
-	log.Print(sentTransaction)
-
 	h := horizon.New(config.Horizon)
 
 	log.Print("Creating and TransactionSubmitter")
-	ts := NewTransactionSubmitter(&h)
+	ts := NewTransactionSubmitter(&h ,&em)
 	if err != nil {
 		return
 	}
@@ -72,7 +51,7 @@ func NewApp(config Config) (app *App, err error) {
 
 	app = &App{
 		config:               config,
-		//database:             database,
+		entityManager:        &em,
 		horizon:              &h,
 		transactionSubmitter: &ts,
 	}
@@ -82,7 +61,6 @@ func NewApp(config Config) (app *App, err error) {
 func (a *App) Serve() {
 	requestHandlers := &RequestHandler{
 		config:               &a.config,
-		database:             a.database,
 		transactionSubmitter: a.transactionSubmitter,
 	}
 

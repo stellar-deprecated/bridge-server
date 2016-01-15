@@ -3,6 +3,7 @@ package gateway
 import (
 	"errors"
 	"sync"
+	"time"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/stellar/gateway/db"
@@ -12,10 +13,10 @@ import (
 )
 
 type TransactionSubmitter struct {
-	Horizon  *horizon.Horizon
-	Accounts map[string]*Account // seed => Account
+	Horizon       *horizon.Horizon
+	Accounts      map[string]*Account // seed => Account
 	EntityManager *db.EntityManager
-	log      *logrus.Entry
+	log           *logrus.Entry
 }
 
 type Account struct {
@@ -25,8 +26,9 @@ type Account struct {
 	Mutex          sync.Mutex
 }
 
-func NewTransactionSubmitter(horizon *horizon.Horizon) (ts TransactionSubmitter) {
+func NewTransactionSubmitter(horizon *horizon.Horizon, entityManager *db.EntityManager) (ts TransactionSubmitter) {
 	ts.Horizon = horizon
+	ts.EntityManager = entityManager
 	ts.Accounts = make(map[string]*Account)
 	ts.log = logrus.WithFields(logrus.Fields{
 		"service": "transaction_submitter",
@@ -100,9 +102,30 @@ func (ts *TransactionSubmitter) SubmitTransaction(seed string, operation interfa
 		return
 	}
 
+	sentTransaction := &db.SentTransaction{
+		Status:      "sending",
+		Source:      account.Keypair.Address(),
+		SubmittedAt: time.Now(),
+		EnvelopeXdr: txeB64,
+	}
+	err = ts.EntityManager.Persist(sentTransaction)
+	if err != nil {
+		return
+	}
+
 	response, err = ts.Horizon.SubmitTransaction(txeB64)
 	if err != nil {
 		ts.log.Error("Error submitting transaction ", err)
+		return
+	}
+
+	if response.Ledger != nil {
+		sentTransaction.MarkSucceeded(*response.Ledger)
+	} else {
+		sentTransaction.MarkFailed(response.Extras.ResultXdr)
+	}
+	err = ts.EntityManager.Persist(sentTransaction)
+	if err != nil {
 		return
 	}
 
@@ -114,12 +137,6 @@ func (ts *TransactionSubmitter) SubmitTransaction(seed string, operation interfa
 		account.SequenceNumber = accountResponse.SequenceNumber
 		account.Mutex.Unlock()
 	}
-
-	// sentTransaction := db.SentTransaction{
-	// 	Source: account.Keypair.Address(),
-	// 	Ledger: response.Ledger,
-	// }
-	// err = ts.EntityManager.Persist(sentTransaction)
 
 	return
 }

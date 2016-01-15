@@ -11,7 +11,6 @@ import (
 
 type RequestHandler struct {
 	config               *Config
-	database             Database
 	transactionSubmitter *TransactionSubmitter
 }
 
@@ -41,7 +40,7 @@ func (rh *RequestHandler) Authorize(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if submitResponse.Errors != nil {		
+	if submitResponse.Errors != nil {
 		var errorString string
 		if submitResponse.Errors.OperationErrorCode != "" {
 			switch submitResponse.Errors.OperationErrorCode {

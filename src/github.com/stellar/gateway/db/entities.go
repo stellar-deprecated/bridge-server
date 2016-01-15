@@ -15,15 +15,15 @@ type Cursor struct {
 }
 
 type SentTransaction struct {
-	Id            *int64    `db:"id"`
-	Status        string    `db:"status"` // pending/success/failure
-	Source        string    `db:"source"`
-	SubmittedAt   time.Time `db:"submitted_at"`
-	SucceededAt   time.Time `db:"succeeded_at"`
-	OperationType string    `db:"operation_type"`
-	Ledger        *uint64   `db:"ledger"`
-	EnvelopeXdr   string    `db:"enveloper_xdr"`
-	ResultXdr     *string   `db:"result_xdr"`
+	Id            *int64     `db:"id"`
+	Status        string     `db:"status"` // sending/success/failure
+	Source        string     `db:"source"`
+	SubmittedAt   time.Time  `db:"submitted_at"`
+	SucceededAt   *time.Time `db:"succeeded_at"`
+	OperationType string     `db:"operation_type"`
+	Ledger        *uint64    `db:"ledger"`
+	EnvelopeXdr   string     `db:"enveloper_xdr"`
+	ResultXdr     *string    `db:"result_xdr"`
 }
 
 func (st *SentTransaction) GetId() *int64 {
@@ -34,8 +34,16 @@ func (st *SentTransaction) SetId(id int64) {
 	st.Id = &id
 }
 
-func (st *SentTransaction) MarkSucceeded() {
-	st.SucceededAt = time.Now()
+func (st *SentTransaction) MarkSucceeded(ledger uint64) {
+	st.Status = "success"
+	st.Ledger = &ledger
+	now := time.Now()
+	st.SucceededAt = &now
+}
+
+func (st *SentTransaction) MarkFailed(resultXdr string) {
+	st.Status = "failure"
+	st.ResultXdr = &resultXdr
 }
 
 func GetInsertQuery(objectType string) (query string, err error) {
@@ -43,9 +51,9 @@ func GetInsertQuery(objectType string) (query string, err error) {
 	case "*db.SentTransaction":
 		query = `
 		INSERT INTO SentTransaction
-			(status,source,submitted_at,succeeded_at,operation_type,enveloper_xdr)
+			(status, source, submitted_at, succeeded_at, ledger, enveloper_xdr, result_xdr)
 		VALUES
-			(:status,:source,:submitted_at,:succeeded_at,:operation_type,:enveloper_xdr)`
+			(:status, :source, :submitted_at, :succeeded_at, :ledger, :enveloper_xdr, :result_xdr)`
 	default:
 		err = fmt.Errorf("No INSERT query for: %s (must be a pointer)", objectType)
 	}
@@ -61,8 +69,9 @@ func GetUpdateQuery(objectType string) (query string, err error) {
 			source = :source,
 			submitted_at = :submitted_at,
 			succeeded_at = :succeeded_at,
-			operation_type = :operation_type,
-			enveloper_xdr = :enveloper_xdr
+			ledger = :ledger,
+			enveloper_xdr = :enveloper_xdr,
+			result_xdr = :result_xdr
 		WHERE
 			id = :id
 		`

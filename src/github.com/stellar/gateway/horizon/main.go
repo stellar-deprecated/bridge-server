@@ -4,8 +4,8 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"github.com/Sirupsen/logrus"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
@@ -15,7 +15,7 @@ import (
 
 type Horizon struct {
 	ServerUrl string
-	log *logrus.Entry
+	log       *logrus.Entry
 }
 
 func New(serverUrl string) (horizon Horizon) {
@@ -103,7 +103,7 @@ func (h *Horizon) SubmitTransaction(txeBase64 string) (response SubmitTransactio
 		var transactionErrorCode string
 		var operationErrorCode string
 
-		if (transactionResult != xdr.TransactionResultCodeTxSuccess) {
+		if transactionResult != xdr.TransactionResultCodeTxSuccess {
 			switch transactionResult {
 			case xdr.TransactionResultCodeTxFailed:
 				transactionErrorCode = "transaction_failed"
@@ -114,7 +114,7 @@ func (h *Horizon) SubmitTransaction(txeBase64 string) (response SubmitTransactio
 			}
 		}
 
-		if (operationsResults != nil) {
+		if operationsResults != nil {
 			switch operationsResults[0].Tr.AllowTrustResult.Code {
 			case xdr.AllowTrustResultCodeAllowTrustMalformed:
 				operationErrorCode = "allow_trust_malformed"
@@ -128,10 +128,10 @@ func (h *Horizon) SubmitTransaction(txeBase64 string) (response SubmitTransactio
 				operationErrorCode = "unknown"
 			}
 		}
-		
+
 		errors := &SubmitTransactionResponseError{
 			TransactionErrorCode: transactionErrorCode,
-			OperationErrorCode: operationErrorCode,
+			OperationErrorCode:   operationErrorCode,
 		}
 		response.Errors = errors
 	}

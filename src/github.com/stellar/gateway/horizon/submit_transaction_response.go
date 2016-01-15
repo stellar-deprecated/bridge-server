@@ -11,5 +11,5 @@ type SubmitTransactionResponse struct {
 
 type SubmitTransactionResponseError struct {
 	TransactionErrorCode string
-	OperationErrorCode string
+	OperationErrorCode   string
 }
