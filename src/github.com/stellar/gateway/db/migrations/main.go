@@ -1,9 +1,9 @@
 package migrations
 
 import (
+	"github.com/Sirupsen/logrus"
 	"github.com/jmoiron/sqlx"
 	"github.com/rubenv/sql-migrate"
-	"github.com/Sirupsen/logrus"
 )
 
 // go-bindata -ignore .+\.go$ -pkg migrations -o bindata.go .
@@ -21,7 +21,7 @@ func NewMigrationManager(dbType string, url string) (m MigrationManager, err err
 		params = "?parseTime=true"
 	}
 
-	url = url+params
+	url = url + params
 	m.db, err = sqlx.Connect(dbType, url)
 	m.dbType = dbType
 	m.log = logrus.WithFields(logrus.Fields{
@@ -34,7 +34,7 @@ func (m MigrationManager) MigrateUp() {
 	source := getAssetMigrationSource()
 	n, err := migrate.Exec(m.db.DB, m.dbType, source, migrate.Up)
 	if err != nil {
-		m.log.Print("Error migrating: ", err);
+		m.log.Print("Error migrating: ", err)
 	}
 	m.log.Printf("Applied %d migrations!", n)
 }

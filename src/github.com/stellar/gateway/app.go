@@ -29,8 +29,8 @@ func NewApp(config Config) (app *App, err error) {
 
 	h := horizon.New(config.Horizon)
 
-	log.Print("Creating and TransactionSubmitter")
-	ts := NewTransactionSubmitter(&h ,&em)
+	log.Print("Creating and initializing TransactionSubmitter")
+	ts := NewTransactionSubmitter(&h, &em)
 	if err != nil {
 		return
 	}
@@ -40,7 +40,12 @@ func NewApp(config Config) (app *App, err error) {
 	if err != nil {
 		return
 	}
-	// TODO other accounts
+
+	log.Print("Initializing Issuing account")
+	err = ts.InitAccount(config.Accounts.IssuingSeed)
+	if err != nil {
+		return
+	}
 
 	log.Print("TransactionSubmitter created")
 
@@ -75,6 +80,6 @@ func (a *App) Serve() {
 	}
 
 	goji.Get("/authorize", requestHandlers.Authorize)
-	//goji.Get("/send", requestHandlers.Send)
+	goji.Get("/send", requestHandlers.Send)
 	goji.Serve()
 }

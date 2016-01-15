@@ -51,6 +51,9 @@ func (h *Horizon) LoadAccount(accountId string) (response AccountResponse, err e
 		return
 	}
 
+	h.log.WithFields(logrus.Fields{
+		"accountId": accountId,
+	}).Info("Account loaded")
 	return
 }
 
@@ -115,17 +118,42 @@ func (h *Horizon) SubmitTransaction(txeBase64 string) (response SubmitTransactio
 		}
 
 		if operationsResults != nil {
-			switch operationsResults[0].Tr.AllowTrustResult.Code {
-			case xdr.AllowTrustResultCodeAllowTrustMalformed:
-				operationErrorCode = "allow_trust_malformed"
-			case xdr.AllowTrustResultCodeAllowTrustNoTrustLine:
-				operationErrorCode = "allow_trust_not_trustline"
-			case xdr.AllowTrustResultCodeAllowTrustTrustNotRequired:
-				operationErrorCode = "allow_trust_trust_not_required"
-			case xdr.AllowTrustResultCodeAllowTrustCantRevoke:
-				operationErrorCode = "allow_trust_trust_cant_revoke"
-			default:
-				operationErrorCode = "unknown"
+			if (operationsResults[0].Tr.AllowTrustResult != nil) {
+				switch operationsResults[0].Tr.AllowTrustResult.Code {
+				case xdr.AllowTrustResultCodeAllowTrustMalformed:
+					operationErrorCode = "allow_trust_malformed"
+				case xdr.AllowTrustResultCodeAllowTrustNoTrustLine:
+					operationErrorCode = "allow_trust_not_trustline"
+				case xdr.AllowTrustResultCodeAllowTrustTrustNotRequired:
+					operationErrorCode = "allow_trust_trust_not_required"
+				case xdr.AllowTrustResultCodeAllowTrustCantRevoke:
+					operationErrorCode = "allow_trust_trust_cant_revoke"
+				default:
+					operationErrorCode = "unknown"
+				}
+			} else if (operationsResults[0].Tr.PaymentResult != nil) {
+				switch operationsResults[0].Tr.PaymentResult.Code {
+				case xdr.PaymentResultCodePaymentMalformed:
+					operationErrorCode = "payment_malformed"
+				case xdr.PaymentResultCodePaymentUnderfunded:
+					operationErrorCode = "payment_underfunded"
+				case xdr.PaymentResultCodePaymentSrcNoTrust:
+					operationErrorCode = "payment_src_no_trust"
+				case xdr.PaymentResultCodePaymentSrcNotAuthorized:
+					operationErrorCode = "payment_src_not_authorized"
+				case xdr.PaymentResultCodePaymentNoDestination:
+					operationErrorCode = "payment_no_destination"
+				case xdr.PaymentResultCodePaymentNoTrust:
+					operationErrorCode = "payment_no_trust"
+				case xdr.PaymentResultCodePaymentNotAuthorized:
+					operationErrorCode = "payment_not_authorized"
+				case xdr.PaymentResultCodePaymentLineFull:
+					operationErrorCode = "payment_line_full"
+				case xdr.PaymentResultCodePaymentNoIssuer:
+					operationErrorCode = "payment_no_issuer"
+				default:
+					operationErrorCode = "unknown"
+				}
 			}
 		}
 

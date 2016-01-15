@@ -14,7 +14,7 @@ import (
 
 type TransactionSubmitter struct {
 	Horizon       *horizon.Horizon
-	Accounts      map[string]*Account // seed => Account
+	Accounts      map[string]*Account // seed => *Account
 	EntityManager *db.EntityManager
 	log           *logrus.Entry
 }
@@ -31,7 +31,7 @@ func NewTransactionSubmitter(horizon *horizon.Horizon, entityManager *db.EntityM
 	ts.EntityManager = entityManager
 	ts.Accounts = make(map[string]*Account)
 	ts.log = logrus.WithFields(logrus.Fields{
-		"service": "transaction_submitter",
+		"service": "TransactionSubmitter",
 	})
 	return
 }

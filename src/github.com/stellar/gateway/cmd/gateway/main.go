@@ -1,8 +1,7 @@
 package main
 
 import (
-	"fmt"
-	"log"
+	log "github.com/Sirupsen/logrus"
 	"runtime"
 
 	"github.com/spf13/cobra"
@@ -51,7 +50,7 @@ func run(cmd *cobra.Command, args []string) {
 	log.Print("Reading config.toml file")
 	err := viper.ReadInConfig()
 	if err != nil {
-		panic(fmt.Errorf("Fatal error config file: %s \n", err))
+		log.Fatal("Error reading config file: ", err)
 	}
 
 	var config gateway.Config
