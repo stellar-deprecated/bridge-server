@@ -1,7 +1,7 @@
 package horizon
 
 type PaymentResponse struct {
-	Id			string `json:"id"`
+	Id          string `json:"id"`
 	Type        string `json:"type"`
 	PagingToken string `json:"paging_token"`
 

@@ -56,11 +56,11 @@ func NewApp(config Config) (app *App, err error) {
 	log.Print("Creating and starting PaymentListener")
 	paymentListener, err := NewPaymentListener(&config, &entityManager, &h, &repository)
 	if err != nil {
-		return 
+		return
 	}
 	err = paymentListener.Listen()
 	if err != nil {
-		return 
+		return
 	}
 
 	log.Print("PaymentListener created")

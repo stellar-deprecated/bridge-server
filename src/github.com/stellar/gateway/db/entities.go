@@ -11,11 +11,11 @@ type Entity interface {
 }
 
 type ReceivedPayment struct {
-	Id           *int64    `db:"id"`
-	OperationId  string    `db:"operation_id"`
-	ProcessedAt  time.Time `db:"processed_at"`
-	PagingToken  string    `db:"paging_token"`
-	Status       string    `db:"status"`
+	Id          *int64    `db:"id"`
+	OperationId string    `db:"operation_id"`
+	ProcessedAt time.Time `db:"processed_at"`
+	PagingToken string    `db:"paging_token"`
+	Status      string    `db:"status"`
 }
 
 type SentTransaction struct {

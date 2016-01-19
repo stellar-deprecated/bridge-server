@@ -1,9 +1,9 @@
 package gateway
 
 import (
-	"io/ioutil"
 	"encoding/json"
 	"errors"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"time"
@@ -24,8 +24,8 @@ type PaymentListener struct {
 }
 
 func NewPaymentListener(
-	config *Config, 
-	entityManager *db.EntityManager, 
+	config *Config,
+	entityManager *db.EntityManager,
 	horizon *horizon.Horizon,
 	repository *db.Repository,
 ) (pl PaymentListener, err error) {
@@ -55,7 +55,7 @@ func (pl PaymentListener) Listen() (err error) {
 
 	pl.log.WithFields(logrus.Fields{
 		"accountId": accountId,
-		"cursor": cursor,
+		"cursor":    cursor,
 	}).Info("Started listening for new payments")
 
 	go func() {
@@ -124,10 +124,10 @@ func (pl PaymentListener) onPayment(payment horizon.PaymentResponse) (err error)
 	resp, err := http.PostForm(
 		pl.config.Hooks.Receive,
 		url.Values{
-			"amount": {payment.Amount},
+			"amount":     {payment.Amount},
 			"asset_code": {payment.AssetCode},
-			"memo_type": {payment.Memo.Type},
-			"memo": {payment.Memo.Value},
+			"memo_type":  {payment.Memo.Type},
+			"memo":       {payment.Memo.Value},
 		},
 	)
 	if err != nil {
@@ -145,7 +145,7 @@ func (pl PaymentListener) onPayment(payment horizon.PaymentResponse) (err error)
 
 		pl.log.WithFields(logrus.Fields{
 			"status": resp.StatusCode,
-			"body": body,
+			"body":   body,
 		}).Error("Error response from receive hook")
 		return errors.New("Error response from receive hook")
 	}

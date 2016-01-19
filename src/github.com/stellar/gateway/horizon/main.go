@@ -67,7 +67,7 @@ func (h *Horizon) LoadAccount(accountId string) (response AccountResponse, err e
 
 func (h *Horizon) StreamPayments(accountId string, cursor *string, onPaymentHandler PaymentHandler) (err error) {
 	url := h.ServerUrl + "/accounts/" + accountId + "/payments"
-	if (cursor != nil) {
+	if cursor != nil {
 		url += "?cursor=" + *cursor
 	}
 
