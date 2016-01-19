@@ -17,12 +17,16 @@ type App struct {
 	entityManager        *db.EntityManager
 	horizon              *horizon.Horizon
 	transactionSubmitter *TransactionSubmitter
+	repository           *db.Repository
 }
 
 // NewApp constructs an new App instance from the provided config.
 func NewApp(config Config) (app *App, err error) {
-	em, err := db.NewEntityManager(config.Database.Type, config.Database.Url)
-
+	entityManager, err := db.NewEntityManager(config.Database.Type, config.Database.Url)
+	if err != nil {
+		return
+	}
+	repository, err := db.NewRepository(config.Database.Type, config.Database.Url)
 	if err != nil {
 		return
 	}
@@ -30,7 +34,7 @@ func NewApp(config Config) (app *App, err error) {
 	h := horizon.New(config.Horizon)
 
 	log.Print("Creating and initializing TransactionSubmitter")
-	ts := NewTransactionSubmitter(&h, &em)
+	ts := NewTransactionSubmitter(&h, &entityManager)
 	if err != nil {
 		return
 	}
@@ -49,6 +53,18 @@ func NewApp(config Config) (app *App, err error) {
 
 	log.Print("TransactionSubmitter created")
 
+	log.Print("Creating and starting PaymentListener")
+	paymentListener, err := NewPaymentListener(&config, &entityManager, &h, &repository)
+	if err != nil {
+		return 
+	}
+	err = paymentListener.Listen()
+	if err != nil {
+		return 
+	}
+
+	log.Print("PaymentListener created")
+
 	if len(config.ApiKey) > 0 && len(config.ApiKey) < 15 {
 		err = errors.New("api-key have to be at least 15 chars long.")
 		return
@@ -56,8 +72,9 @@ func NewApp(config Config) (app *App, err error) {
 
 	app = &App{
 		config:               config,
-		entityManager:        &em,
+		entityManager:        &entityManager,
 		horizon:              &h,
+		repository:           &repository,
 		transactionSubmitter: &ts,
 	}
 	return

@@ -10,8 +10,12 @@ type Entity interface {
 	SetId(int64)
 }
 
-type Cursor struct {
-	//
+type ReceivedPayment struct {
+	Id           *int64    `db:"id"`
+	OperationId  string    `db:"operation_id"`
+	ProcessedAt  time.Time `db:"processed_at"`
+	PagingToken  string    `db:"paging_token"`
+	Status       string    `db:"status"`
 }
 
 type SentTransaction struct {
@@ -22,8 +26,16 @@ type SentTransaction struct {
 	SucceededAt   *time.Time `db:"succeeded_at"`
 	OperationType string     `db:"operation_type"`
 	Ledger        *uint64    `db:"ledger"`
-	EnvelopeXdr   string     `db:"enveloper_xdr"`
+	EnvelopeXdr   string     `db:"envelope_xdr"`
 	ResultXdr     *string    `db:"result_xdr"`
+}
+
+func (rp *ReceivedPayment) GetId() *int64 {
+	return rp.Id
+}
+
+func (rp *ReceivedPayment) SetId(id int64) {
+	rp.Id = &id
 }
 
 func (st *SentTransaction) GetId() *int64 {
@@ -48,6 +60,12 @@ func (st *SentTransaction) MarkFailed(resultXdr string) {
 
 func GetInsertQuery(objectType string) (query string, err error) {
 	switch objectType {
+	case "*db.ReceivedPayment":
+		query = `
+		INSERT INTO ReceivedPayment
+			(operation_id, processed_at, paging_token, status)
+		VALUES
+			(:operation_id, :processed_at, :paging_token, :status)`
 	case "*db.SentTransaction":
 		query = `
 		INSERT INTO SentTransaction
@@ -62,6 +80,16 @@ func GetInsertQuery(objectType string) (query string, err error) {
 
 func GetUpdateQuery(objectType string) (query string, err error) {
 	switch objectType {
+	case "*db.ReceivedPayment":
+		query = `
+		UPDATE ReceivedPayment SET
+			operation_id = :operation_id,
+			processed_at = :processed_at,
+			paging_token = :paging_token,
+			status = :status
+		WHERE
+			id = :id
+		`
 	case "*db.SentTransaction":
 		query = `
 		UPDATE SentTransaction SET

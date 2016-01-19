@@ -1,17 +1,22 @@
 package horizon
 
 import (
+	"bufio"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"github.com/Sirupsen/logrus"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/stellar/go-stellar-base/xdr"
 )
+
+type PaymentHandler func(PaymentResponse) error
 
 type Horizon struct {
 	ServerUrl string
@@ -42,6 +47,9 @@ func (h *Horizon) LoadAccount(accountId string) (response AccountResponse, err e
 	}
 
 	if resp.StatusCode != 200 {
+		h.log.WithFields(logrus.Fields{
+			"accountId": accountId,
+		}).Error("Account does not exist")
 		err = fmt.Errorf("StatusCode indicates error: %s", body)
 		return
 	}
@@ -55,6 +63,72 @@ func (h *Horizon) LoadAccount(accountId string) (response AccountResponse, err e
 		"accountId": accountId,
 	}).Info("Account loaded")
 	return
+}
+
+func (h *Horizon) StreamPayments(accountId string, cursor *string, onPaymentHandler PaymentHandler) (err error) {
+	url := h.ServerUrl + "/accounts/" + accountId + "/payments"
+	if (cursor != nil) {
+		url += "?cursor=" + *cursor
+	}
+
+	req, _ := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return
+	}
+	req.Header.Set("Accept", "text/event-stream")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	scanner := bufio.NewScanner(resp.Body)
+	scanner.Split(splitSSE)
+
+	for scanner.Scan() {
+		if len(scanner.Bytes()) == 0 {
+			continue
+		}
+
+		ev, err := parseEvent(scanner.Bytes())
+		if err != nil {
+			return err
+		}
+
+		if ev.Event != "message" {
+			continue
+		}
+
+		var payment PaymentResponse
+		data := ev.Data.(string)
+		err = json.Unmarshal([]byte(data), &payment)
+		if err != nil {
+			return err
+		}
+
+		for {
+			err = onPaymentHandler(payment)
+			if err != nil {
+				h.log.Error("Error from onPaymentHandler: ", err)
+				h.log.Info("Sleeping...")
+				time.Sleep(10 * time.Second)
+			} else {
+				break
+			}
+		}
+	}
+
+	err = scanner.Err()
+	if err == io.ErrUnexpectedEOF {
+		h.log.Info("Streaming connection closed.")
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (h *Horizon) SubmitTransaction(txeBase64 string) (response SubmitTransactionResponse, err error) {
@@ -118,7 +192,7 @@ func (h *Horizon) SubmitTransaction(txeBase64 string) (response SubmitTransactio
 		}
 
 		if operationsResults != nil {
-			if (operationsResults[0].Tr.AllowTrustResult != nil) {
+			if operationsResults[0].Tr.AllowTrustResult != nil {
 				switch operationsResults[0].Tr.AllowTrustResult.Code {
 				case xdr.AllowTrustResultCodeAllowTrustMalformed:
 					operationErrorCode = "allow_trust_malformed"
@@ -131,7 +205,7 @@ func (h *Horizon) SubmitTransaction(txeBase64 string) (response SubmitTransactio
 				default:
 					operationErrorCode = "unknown"
 				}
-			} else if (operationsResults[0].Tr.PaymentResult != nil) {
+			} else if operationsResults[0].Tr.PaymentResult != nil {
 				switch operationsResults[0].Tr.PaymentResult.Code {
 				case xdr.PaymentResultCodePaymentMalformed:
 					operationErrorCode = "payment_malformed"
