@@ -105,7 +105,7 @@ func (rh *RequestHandler) Authorize(w http.ResponseWriter, r *http.Request) {
 func (rh *RequestHandler) Send(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 	destination := q.Get("destination")
-	asset := q.Get("asset")
+	assetCode := q.Get("assetCode")
 	amount := q.Get("amount")
 
 	_, err := keypair.Parse(destination)
@@ -115,7 +115,11 @@ func (rh *RequestHandler) Send(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO check if asset is allowed
+	if !rh.isAssetAllowed(assetCode) {
+		log.Print("Asset code not allowed: ", assetCode)
+		errorBadRequest(w, errorResponseString("invalid_asset_code", "Given assetCode not allowed"))
+		return
+	}
 
 	issuingKeypair, err := keypair.Parse(rh.config.Accounts.IssuingSeed)
 	if err != nil {
@@ -126,7 +130,7 @@ func (rh *RequestHandler) Send(w http.ResponseWriter, r *http.Request) {
 
 	operation := b.Payment(
 		b.Destination{destination},
-		b.CreditAmount{asset, issuingKeypair.Address(), amount},
+		b.CreditAmount{assetCode, issuingKeypair.Address(), amount},
 	)
 	if operation.Err != nil {
 		log.Print("Error creating operation ", operation.Err)
@@ -233,4 +237,3 @@ func (rh *RequestHandler) isAssetAllowed(code string) bool {
 	}
 	return false
 }
-
