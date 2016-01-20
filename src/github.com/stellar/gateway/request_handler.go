@@ -11,11 +11,12 @@ import (
 
 type RequestHandler struct {
 	config               *Config
-	transactionSubmitter *TransactionSubmitter
+	transactionSubmitter TransactionSubmitterInterface
 }
 
 func (rh *RequestHandler) Authorize(w http.ResponseWriter, r *http.Request) {
 	accountId := r.URL.Query().Get("accountId")
+	assetCode := r.URL.Query().Get("assetCode")
 
 	_, err := keypair.Parse(accountId)
 	if err != nil {
@@ -24,10 +25,16 @@ func (rh *RequestHandler) Authorize(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if !rh.isAssetAllowed(assetCode) {
+		log.Print("Asset code not allowed: ", assetCode)
+		errorBadRequest(w, errorResponseString("invalid_asset_code", "Given assetCode not allowed"))
+		return
+	}
+
 	operation := b.AllowTrust(
 		b.Trustor{accountId},
 		b.Authorize{true},
-		b.AllowTrustAsset{"USD"},
+		b.AllowTrustAsset{assetCode},
 	)
 
 	submitResponse, err := rh.transactionSubmitter.SubmitTransaction(
@@ -216,3 +223,14 @@ func (rh *RequestHandler) Send(w http.ResponseWriter, r *http.Request) {
 
 	w.Write(json)
 }
+
+// TODO this is duplicated in PaymentListener
+func (rh *RequestHandler) isAssetAllowed(code string) bool {
+	for _, b := range rh.config.Assets {
+		if b == code {
+			return true
+		}
+	}
+	return false
+}
+

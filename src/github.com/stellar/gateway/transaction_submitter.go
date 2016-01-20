@@ -12,6 +12,10 @@ import (
 	"github.com/stellar/go-stellar-base/keypair"
 )
 
+type TransactionSubmitterInterface interface {
+	SubmitTransaction(seed string, operation interface{}) (response horizon.SubmitTransactionResponse, err error)
+}
+
 type TransactionSubmitter struct {
 	Horizon       *horizon.Horizon
 	Accounts      map[string]*Account // seed => *Account

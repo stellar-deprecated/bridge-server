@@ -14,7 +14,7 @@ func errorForbidden(w http.ResponseWriter, responseString string) {
 }
 
 func errorBadRequest(w http.ResponseWriter, responseString string) {
-	http.Error(w, responseString, http.StatusInternalServerError)
+	http.Error(w, responseString, http.StatusBadRequest)
 }
 
 func errorResponseString(code string, message string) string {

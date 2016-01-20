@@ -112,7 +112,6 @@ func (pl PaymentListener) onPayment(payment horizon.PaymentResponse) (err error)
 	}
 
 	err = pl.horizon.LoadMemo(&payment)
-	pl.log.Error(err)
 	if err != nil {
 		pl.log.Error("Unable to load transaction memo")
 		return err
@@ -127,6 +126,7 @@ func (pl PaymentListener) onPayment(payment horizon.PaymentResponse) (err error)
 	resp, err := http.PostForm(
 		pl.config.Hooks.Receive,
 		url.Values{
+			"from":       {payment.From},
 			"amount":     {payment.Amount},
 			"asset_code": {payment.AssetCode},
 			"memo_type":  {payment.Memo.Type},
