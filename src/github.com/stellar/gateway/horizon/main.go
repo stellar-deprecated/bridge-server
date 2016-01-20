@@ -18,6 +18,13 @@ import (
 
 type PaymentHandler func(PaymentResponse) error
 
+type HorizonInterface interface {
+	LoadAccount(accountId string) (response AccountResponse, err error)
+	LoadMemo(p *PaymentResponse) (err error)
+	StreamPayments(accountId string, cursor *string, onPaymentHandler PaymentHandler) (err error)
+	SubmitTransaction(txeBase64 string) (response SubmitTransactionResponse, err error)
+}
+
 type Horizon struct {
 	ServerUrl string
 	log       *logrus.Entry
@@ -63,6 +70,15 @@ func (h *Horizon) LoadAccount(accountId string) (response AccountResponse, err e
 		"accountId": accountId,
 	}).Info("Account loaded")
 	return
+}
+
+func (h *Horizon) LoadMemo(p *PaymentResponse) (err error) {
+	res, err := http.Get(p.Links.Transaction.Href)
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
+	return json.NewDecoder(res.Body).Decode(&p.Memo)
 }
 
 func (h *Horizon) StreamPayments(accountId string, cursor *string, onPaymentHandler PaymentHandler) (err error) {

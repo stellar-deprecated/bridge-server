@@ -1,7 +1,6 @@
 package gateway
 
 import (
-	"encoding/json"
 	"errors"
 	"io/ioutil"
 	"net/http"
@@ -16,24 +15,27 @@ import (
 
 type PaymentListener struct {
 	config         *Config
-	entityManager  *db.EntityManager
-	horizon        *horizon.Horizon
+	entityManager  db.EntityManagerInterface
+	horizon        horizon.HorizonInterface
 	log            *logrus.Entry
-	repository     *db.Repository
+	repository     db.RepositoryInterface
 	issuingAccount keypair.KP
+	now            func() time.Time
 }
 
 func NewPaymentListener(
 	config *Config,
-	entityManager *db.EntityManager,
-	horizon *horizon.Horizon,
-	repository *db.Repository,
+	entityManager db.EntityManagerInterface,
+	horizon horizon.HorizonInterface,
+	repository db.RepositoryInterface,
+	now func() time.Time,
 ) (pl PaymentListener, err error) {
 	pl.config = config
 	pl.entityManager = entityManager
 	pl.horizon = horizon
 	pl.repository = repository
 	pl.issuingAccount, err = keypair.Parse(config.Accounts.IssuingSeed)
+	pl.now = now
 	pl.log = logrus.WithFields(logrus.Fields{
 		"service": "PaymentListener",
 	})
@@ -82,7 +84,7 @@ func (pl PaymentListener) onPayment(payment horizon.PaymentResponse) (err error)
 
 	dbPayment := db.ReceivedPayment{
 		OperationId: payment.Id,
-		ProcessedAt: time.Now(),
+		ProcessedAt: pl.now(),
 		PagingToken: payment.PagingToken,
 	}
 
@@ -103,19 +105,20 @@ func (pl PaymentListener) onPayment(payment horizon.PaymentResponse) (err error)
 		return nil
 	}
 
-	if pl.isAssetAllowed(payment.AssetCode, payment.AssetIssuer) {
+	if !pl.isAssetAllowed(payment.AssetCode, payment.AssetIssuer) {
 		dbPayment.Status = "Asset not allowed"
 		savePayment(&dbPayment)
 		return nil
 	}
 
-	err = loadMemo(&payment)
+	err = pl.horizon.LoadMemo(&payment)
+	pl.log.Error(err)
 	if err != nil {
-		pl.log.Error("Cannot load transaction memo")
+		pl.log.Error("Unable to load transaction memo")
 		return err
 	}
 
-	if payment.Memo.Type != "" && payment.Memo.Value != "" {
+	if payment.Memo.Type == "" || payment.Memo.Value == "" {
 		dbPayment.Status = "Transaction does not have memo"
 		savePayment(&dbPayment)
 		return nil
@@ -145,7 +148,7 @@ func (pl PaymentListener) onPayment(payment horizon.PaymentResponse) (err error)
 
 		pl.log.WithFields(logrus.Fields{
 			"status": resp.StatusCode,
-			"body":   body,
+			"body":   string(body),
 		}).Error("Error response from receive hook")
 		return errors.New("Error response from receive hook")
 	}
@@ -171,13 +174,4 @@ func (pl PaymentListener) isAssetAllowed(code string, issuer string) bool {
 		}
 	}
 	return false
-}
-
-func loadMemo(p *horizon.PaymentResponse) error {
-	res, err := http.Get(p.Links.Transaction.Href)
-	if err != nil {
-		return err
-	}
-	defer res.Body.Close()
-	return json.NewDecoder(res.Body).Decode(&p.Memo)
 }

@@ -10,6 +10,10 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
+type EntityManagerInterface interface {
+	Persist(object Entity) (err error)
+}
+
 type EntityManager struct {
 	db  *sqlx.DB
 	log *logrus.Entry

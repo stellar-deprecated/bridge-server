@@ -9,13 +9,17 @@ type Config struct {
 		Type string
 		Url  string
 	}
-	Accounts struct {
-		AuthorizingSeed    string `mapstructure:"authorizing_seed"`
-		IssuingSeed        string `mapstructure:"issuing_seed"`
-		ReceivingAccountId string `mapstructure:"receiving_account_id"`
-	}
-	Hooks struct {
-		Receive string
-		Error   string
-	}
+	Accounts
+	Hooks
+}
+
+type Accounts struct {
+	AuthorizingSeed    string `mapstructure:"authorizing_seed"`
+	IssuingSeed        string `mapstructure:"issuing_seed"`
+	ReceivingAccountId string `mapstructure:"receiving_account_id"`
+}
+
+type Hooks struct {
+	Receive string
+	Error   string
 }

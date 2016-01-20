@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
+	"time"
 
 	"github.com/stellar/gateway/db"
 	"github.com/stellar/gateway/horizon"
@@ -14,10 +15,10 @@ import (
 
 type App struct {
 	config               Config
-	entityManager        *db.EntityManager
-	horizon              *horizon.Horizon
+	entityManager        db.EntityManagerInterface
+	horizon              horizon.HorizonInterface
 	transactionSubmitter *TransactionSubmitter
-	repository           *db.Repository
+	repository           db.RepositoryInterface
 }
 
 // NewApp constructs an new App instance from the provided config.
@@ -54,7 +55,7 @@ func NewApp(config Config) (app *App, err error) {
 	log.Print("TransactionSubmitter created")
 
 	log.Print("Creating and starting PaymentListener")
-	paymentListener, err := NewPaymentListener(&config, &entityManager, &h, &repository)
+	paymentListener, err := NewPaymentListener(&config, &entityManager, &h, &repository, time.Now)
 	if err != nil {
 		return
 	}

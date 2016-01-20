@@ -8,6 +8,10 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
+type RepositoryInterface interface {
+	GetLastCursorValue() (cursor *string, err error)
+}
+
 type Repository struct {
 	db  *sqlx.DB
 	log *logrus.Entry
