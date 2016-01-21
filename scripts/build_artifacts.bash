@@ -5,7 +5,6 @@ DIST="dist"
 VERSION=$(git describe --always --dirty --tags)
 GOARCH=amd64
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-CURRENT_GOOS="$(go run $DIR/current_os.go)"
 
 build() {
   GOOS=$1
