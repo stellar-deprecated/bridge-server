@@ -41,7 +41,6 @@ func (rh *RequestHandler) Payment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-
 	amount := r.URL.Query().Get("amount")
 	assetCode := r.URL.Query().Get("asset_code")
 	assetIssuer := r.URL.Query().Get("asset_issuer")
@@ -79,7 +78,7 @@ func (rh *RequestHandler) Payment(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if destinationObject.MemoType != nil {
-		if (memoType != "") {
+		if memoType != "" {
 			log.Print("Memo given in request but federation returned memo fields.")
 			errorBadRequest(w, errorResponseString("cannot_use_memo", "Memo given in request but federation returned memo fields"))
 			return
@@ -94,7 +93,7 @@ func (rh *RequestHandler) Payment(w http.ResponseWriter, r *http.Request) {
 	case memoType == "":
 		break
 	case memoType == "id":
-		id, err := strconv.ParseUint(memo, 10, 64);
+		id, err := strconv.ParseUint(memo, 10, 64)
 		if err != nil {
 			log.WithFields(log.Fields{"memo": memo}).Print("Cannot convert memo_id value to uint64")
 			errorBadRequest(w, errorResponseString("cannot_convert_memo_id", "Cannot convert memo_id value"))
@@ -118,7 +117,7 @@ func (rh *RequestHandler) Payment(w http.ResponseWriter, r *http.Request) {
 
 	transactionMutators := []b.TransactionMutator{
 		b.SourceAccount{source},
-		b.Sequence{accountResponse.SequenceNumber+1},
+		b.Sequence{accountResponse.SequenceNumber + 1},
 		paymentOperation,
 	}
 

@@ -15,9 +15,9 @@ type StellarToml struct {
 }
 
 type StellarDestination struct {
-	AccountId      string  `json:"account_id"`
-	MemoType       *string `json:"memo_type"`
-	Memo           *string `json:"memo"`
+	AccountId string  `json:"account_id"`
+	MemoType  *string `json:"memo_type"`
+	Memo      *string `json:"memo"`
 }
 
 func ResolveAddress(address string) (federation StellarDestination, err error) {
@@ -53,7 +53,7 @@ func ResolveAddress(address string) (federation StellarDestination, err error) {
 					return
 				}
 
-				if ((federation.MemoType != nil) && (federation.Memo == nil)) {
+				if (federation.MemoType != nil) && (federation.Memo == nil) {
 					err = errors.New("Invalid federation response (memo).")
 				}
 

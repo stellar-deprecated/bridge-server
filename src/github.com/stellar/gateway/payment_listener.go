@@ -56,7 +56,7 @@ func (pl PaymentListener) Listen() (err error) {
 		return
 	}
 
-	var cursorValue string;
+	var cursorValue string
 	if cursor != nil {
 		cursorValue = *cursor
 	}
