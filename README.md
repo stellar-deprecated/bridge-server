@@ -49,7 +49,7 @@ name |  | description
 
 #### Response
 
-Check [`SubmitTransactionResponse`](./blob/master/src/github.com/stellar/gateway/horizon/submit_transaction_response.go) struct.
+Check [`SubmitTransactionResponse`](./src/github.com/stellar/gateway/horizon/submit_transaction_response.go) struct.
 
 #### Example
 
