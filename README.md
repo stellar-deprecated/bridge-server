@@ -16,6 +16,7 @@ Alternatively, you can [build](#building) the binary yourself.
 The `config.toml` file must be present in a working directory. Config file should contain following values:
 
 * `port` - server listening port
+* `api_key` - when set, all requests to gateway server must contain `api_key` parameter with a correct value, otherwise the server will respond with `503 Forbidden`
 * `horizon` - URL to [horizon](https://github.com/stellar/horizon) server instance
 * `assets` - array of approved assets codes that this server can authorize and send 
 * `database`
