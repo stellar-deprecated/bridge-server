@@ -29,6 +29,20 @@ The `config.toml` file must be present in a working directory. Config file shoul
   * `receive` - URL of the webhook where requests will be sent when a new payment appears in receiving account. **WARNING** Gateway server can send multiple requests to this webhook for a single payment! You need to be prepared for it. See: [Security](#security).
   * `error` - URL of the webhook where requests will be sent when there is an error with incoming payment
 
+Check [`config-example.toml`](./config-example.toml).
+
+## Getting started
+
+After creating `config.toml` file, you need to run DB migrations:
+```
+./gateway --migrate-db
+```
+
+Then you can start the server:
+```
+./gateway
+```
+
 ## API
 
 ### GET /payment
@@ -71,12 +85,6 @@ memo=125"
 ## Security
 
 //
-
-## Usage
-
-```
-./gateway
-```
 
 ## Building
 
