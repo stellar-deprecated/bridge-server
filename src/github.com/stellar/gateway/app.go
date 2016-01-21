@@ -84,6 +84,7 @@ func NewApp(config Config) (app *App, err error) {
 func (a *App) Serve() {
 	requestHandlers := &RequestHandler{
 		config:               &a.config,
+		horizon:              a.horizon,
 		transactionSubmitter: a.transactionSubmitter,
 	}
 
@@ -99,5 +100,6 @@ func (a *App) Serve() {
 
 	goji.Get("/authorize", requestHandlers.Authorize)
 	goji.Get("/send", requestHandlers.Send)
+	goji.Get("/payment", requestHandlers.Payment)
 	goji.Serve()
 }

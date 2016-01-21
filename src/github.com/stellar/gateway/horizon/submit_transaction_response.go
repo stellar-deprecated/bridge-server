@@ -2,7 +2,7 @@ package horizon
 
 type SubmitTransactionResponse struct {
 	Ledger *uint64 `json:"ledger"`
-	Errors *SubmitTransactionResponseError
+	Errors *SubmitTransactionResponseError `json:"errors"`
 	Extras *struct {
 		EnvelopeXdr string `json:"envelope_xdr"`
 		ResultXdr   string `json:"result_xdr"`

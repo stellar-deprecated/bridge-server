@@ -52,12 +52,18 @@ func (pl PaymentListener) Listen() (err error) {
 
 	cursor, err := pl.repository.GetLastCursorValue()
 	if err != nil {
+		pl.log.Error("Could not load last cursor from the DB")
 		return
+	}
+
+	var cursorValue string;
+	if cursor != nil {
+		cursorValue = *cursor
 	}
 
 	pl.log.WithFields(logrus.Fields{
 		"accountId": accountId,
-		"cursor":    cursor,
+		"cursor":    cursorValue,
 	}).Info("Started listening for new payments")
 
 	go func() {

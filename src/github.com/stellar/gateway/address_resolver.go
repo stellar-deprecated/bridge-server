@@ -5,39 +5,31 @@ import (
 	"errors"
 	"io/ioutil"
 	"net/http"
-	"strconv"
 	"strings"
 
 	"github.com/BurntSushi/toml"
-	"github.com/stellar/go-stellar-base/xdr"
 )
-
-type StellarDestination struct {
-	AccountId string
-	Memo      interface{}
-}
 
 type StellarToml struct {
 	FederationServer string `toml:"FEDERATION_SERVER"`
 }
 
-type FederationResponse struct {
-	StellarAddress string `json:"stellar_address"`
-	AccountId      string `json:"account_id"`
-	MemoType       string `json:"memo_type"`
-	Memo           string `json:"memo"`
+type StellarDestination struct {
+	AccountId      string  `json:"account_id"`
+	MemoType       *string `json:"memo_type"`
+	Memo           *string `json:"memo"`
 }
 
-func resolveAddress(address string) (dest StellarDestination, err error) {
+func ResolveAddress(address string) (federation StellarDestination, err error) {
 	// look for the '*'
 	tokens := strings.Split(address, "*")
 	if len(tokens) == 1 {
-		dest.AccountId = address
+		federation.AccountId = address
 	} else if len(tokens) == 2 {
 		// find stellar.toml
 		// ask the federation server
 		var resp *http.Response
-		resp, err = http.Get("https://" + tokens[2] + "/.well-known/stellar.toml")
+		resp, err = http.Get("https://www." + tokens[2] + "/.well-known/stellar.toml")
 		if err != nil {
 			return
 		}
@@ -54,38 +46,17 @@ func resolveAddress(address string) (dest StellarDestination, err error) {
 				return
 			}
 			if resp.StatusCode == 200 {
-				var m FederationResponse
 				var bs []byte
 				bs, err = ioutil.ReadAll(resp.Body)
-				err = json.Unmarshal(bs, &m)
+				err = json.Unmarshal(bs, &federation)
 				if err != nil {
 					return
 				}
-				dest.AccountId = m.AccountId
 
-				var memoType xdr.MemoType
-				var memoValue interface{}
-				switch m.MemoType {
-				case "text":
-					memoType = xdr.MemoTypeMemoText
-					memoValue = m.Memo
-				case "id":
-					var v uint64
-					v, err = strconv.ParseUint(m.Memo, 10, 64)
-					if err != nil {
-						return
-					}
-					memoType = xdr.MemoTypeMemoId
-					memoValue = v
-				case "hash":
-					memoType = xdr.MemoTypeMemoHash
-					memoValue = m.Memo
+				if ((federation.MemoType != nil) && (federation.Memo == nil)) {
+					err = errors.New("Invalid federation response (memo).")
 				}
 
-				dest.Memo, err = xdr.NewMemo(memoType, memoValue)
-				if err != nil {
-					return
-				}
 			} else { // fetching the name from the federation server failed
 				err = errors.New(resp.Status)
 			}
