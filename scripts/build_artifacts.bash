@@ -19,6 +19,7 @@ build() {
   mkdir -p $PKG_DIR
   cp bin/$(srcBin $GOOS) $PKG_DIR/$(destBin $GOOS)
   cp LICENSE.txt $PKG_DIR/
+  cp config-example.toml $PKG_DIR/
   cp README.md $PKG_DIR/
 
   # TODO: add platform specific install intstructions
