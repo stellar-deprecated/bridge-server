@@ -1,4 +1,4 @@
-package gateway
+package handlers
 
 type ErrorResponse struct {
 	Code    string `json:"code"`

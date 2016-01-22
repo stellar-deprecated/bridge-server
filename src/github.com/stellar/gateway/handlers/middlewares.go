@@ -1,11 +1,11 @@
-package gateway
+package handlers
 
 import (
 	"net/http"
 )
 
 // Credit goes to https://github.com/stellar/horizon
-func stripTrailingSlashMiddleware() func(next http.Handler) http.Handler {
+func StripTrailingSlashMiddleware() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
 			path := r.URL.Path
@@ -23,7 +23,7 @@ func stripTrailingSlashMiddleware() func(next http.Handler) http.Handler {
 	}
 }
 
-func headersMiddleware() func(next http.Handler) http.Handler {
+func HeadersMiddleware() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
@@ -33,10 +33,10 @@ func headersMiddleware() func(next http.Handler) http.Handler {
 	}
 }
 
-func apiKeyMiddleware(apiKey string) func(next http.Handler) http.Handler {
+func ApiKeyMiddleware(apiKey string) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
-			k := r.URL.Query().Get("apiKey")
+			k := r.PostFormValue("apiKey")
 			if k != apiKey {
 				errorForbidden(w, errorResponseString("forbidden", "Access denied."))
 				return

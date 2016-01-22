@@ -1,4 +1,4 @@
-package gateway
+package listener
 
 import (
 	"errors"
@@ -8,13 +8,14 @@ import (
 	"time"
 
 	"github.com/Sirupsen/logrus"
+	"github.com/stellar/gateway/config"
 	"github.com/stellar/gateway/db"
 	"github.com/stellar/gateway/horizon"
 	"github.com/stellar/go-stellar-base/keypair"
 )
 
 type PaymentListener struct {
-	config         *Config
+	config         *config.Config
 	entityManager  db.EntityManagerInterface
 	horizon        horizon.HorizonInterface
 	log            *logrus.Entry
@@ -24,7 +25,7 @@ type PaymentListener struct {
 }
 
 func NewPaymentListener(
-	config *Config,
+	config *config.Config,
 	entityManager db.EntityManagerInterface,
 	horizon horizon.HorizonInterface,
 	repository db.RepositoryInterface,

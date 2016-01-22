@@ -1,4 +1,4 @@
-package gateway
+package handlers
 
 import (
 	"encoding/json"

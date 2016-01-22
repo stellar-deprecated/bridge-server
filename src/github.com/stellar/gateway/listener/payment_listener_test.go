@@ -1,4 +1,4 @@
-package gateway
+package listener
 
 import (
 	"errors"
@@ -9,6 +9,7 @@ import (
 	"time"
 
 	. "github.com/smartystreets/goconvey/convey"
+	"github.com/stellar/gateway/config"
 	"github.com/stellar/gateway/db"
 	"github.com/stellar/gateway/horizon"
 	"github.com/stellar/gateway/mocks"
@@ -34,14 +35,14 @@ func TestPaymentListener(t *testing.T) {
 	}))
 	defer receiveHookServer.Close()
 
-	config := &Config{
+	config := &config.Config{
 		Assets: []string{"USD", "EUR"},
-		Accounts: Accounts{
+		Accounts: config.Accounts{
 			// GD4I7AFSLZGTDL34TQLWJOM2NHLIIOEKD5RHHZUW54HERBLSIRKUOXRR
 			IssuingSeed:        "SC34WILLHVADXMP6ACPMIRA6TRAWJMVCLPFNW7S6MUMXJVLAZUC4EWHP",
 			ReceivingAccountId: "GATKP6ZQM5CSLECPMTAC5226PE367QALCPM6AFHTSULPPZMT62OOPMQB",
 		},
-		Hooks: Hooks{
+		Hooks: config.Hooks{
 			Receive: receiveHookServer.URL,
 		},
 	}

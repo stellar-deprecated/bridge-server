@@ -1,4 +1,4 @@
-package gateway
+package submitter
 
 import (
 	"errors"

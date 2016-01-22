@@ -1,4 +1,4 @@
-package gateway
+package handlers
 
 import (
 	"encoding/json"
@@ -6,10 +6,12 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
+	"github.com/stellar/gateway/config"
 	"github.com/stellar/gateway/horizon"
 	"github.com/stellar/gateway/mocks"
 	b "github.com/stellar/go-stellar-base/build"
@@ -20,9 +22,9 @@ import (
 func TestRequestHandlerAuthorize(t *testing.T) {
 	mockTransactionSubmitter := new(mocks.MockTransactionSubmitter)
 
-	config := Config{
+	config := config.Config{
 		Assets: []string{"USD", "EUR"},
-		Accounts: Accounts{
+		Accounts: config.Accounts{
 			// GD4I7AFSLZGTDL34TQLWJOM2NHLIIOEKD5RHHZUW54HERBLSIRKUOXRR
 			IssuingSeed: "SC34WILLHVADXMP6ACPMIRA6TRAWJMVCLPFNW7S6MUMXJVLAZUC4EWHP",
 			// GBQXA3ABGQGTCLEVZIUTDRWWJOQD5LSAEDZAG7GMOGD2HBLWONGUVO4I
@@ -30,7 +32,7 @@ func TestRequestHandlerAuthorize(t *testing.T) {
 		},
 	}
 
-	requestHandler := RequestHandler{config: &config, transactionSubmitter: mockTransactionSubmitter}
+	requestHandler := RequestHandler{Config: &config, TransactionSubmitter: mockTransactionSubmitter}
 	testServer := httptest.NewServer(http.HandlerFunc(requestHandler.Authorize))
 	defer testServer.Close()
 
@@ -40,7 +42,7 @@ func TestRequestHandlerAuthorize(t *testing.T) {
 			assetCode := "USD"
 
 			Convey("it should return error", func() {
-				statusCode, response := GetResponse(testServer, "?accountId="+accountId+"&assetCode="+assetCode)
+				statusCode, response := GetResponse(testServer, url.Values{"account_id": {accountId}, "asset_code": {assetCode}})
 				responseString := strings.TrimSpace(string(response))
 				assert.Equal(t, 400, statusCode)
 				assert.Equal(t, errorResponseString("invalid_account_id", "accountId parameter is invalid"), responseString)
@@ -52,7 +54,7 @@ func TestRequestHandlerAuthorize(t *testing.T) {
 			assetCode := "GBP"
 
 			Convey("it should return error", func() {
-				statusCode, response := GetResponse(testServer, "?accountId="+accountId+"&assetCode="+assetCode)
+				statusCode, response := GetResponse(testServer, url.Values{"account_id": {accountId}, "asset_code": {assetCode}})
 				responseString := strings.TrimSpace(string(response))
 				assert.Equal(t, 400, statusCode)
 				assert.Equal(t, errorResponseString("invalid_asset_code", "Given assetCode not allowed"), responseString)
@@ -80,7 +82,7 @@ func TestRequestHandlerAuthorize(t *testing.T) {
 				).Once()
 
 				Convey("it should return server error", func() {
-					statusCode, response := GetResponse(testServer, "?accountId="+accountId+"&assetCode="+assetCode)
+					statusCode, response := GetResponse(testServer, url.Values{"account_id": {accountId}, "asset_code": {assetCode}})
 					responseString := strings.TrimSpace(string(response))
 					assert.Equal(t, 500, statusCode)
 					assert.Equal(t, "{\"code\":\"server_error\",\"message\":\"Server error\"}", responseString)
@@ -102,7 +104,7 @@ func TestRequestHandlerAuthorize(t *testing.T) {
 				).Return(expectedSubmitResponse, nil).Once()
 
 				Convey("it should succeed", func() {
-					statusCode, response := GetResponse(testServer, "?accountId="+accountId+"&assetCode="+assetCode)
+					statusCode, response := GetResponse(testServer, url.Values{"account_id": {accountId}, "asset_code": {assetCode}})
 					var actualSubmitTransactionResponse horizon.SubmitTransactionResponse
 					json.Unmarshal(response, &actualSubmitTransactionResponse)
 					assert.Equal(t, 200, statusCode)
@@ -117,9 +119,9 @@ func TestRequestHandlerAuthorize(t *testing.T) {
 func TestRequestHandlerSend(t *testing.T) {
 	mockTransactionSubmitter := new(mocks.MockTransactionSubmitter)
 
-	config := Config{
+	config := config.Config{
 		Assets: []string{"USD", "EUR"},
-		Accounts: Accounts{
+		Accounts: config.Accounts{
 			// GD4I7AFSLZGTDL34TQLWJOM2NHLIIOEKD5RHHZUW54HERBLSIRKUOXRR
 			IssuingSeed: "SC34WILLHVADXMP6ACPMIRA6TRAWJMVCLPFNW7S6MUMXJVLAZUC4EWHP",
 			// GBQXA3ABGQGTCLEVZIUTDRWWJOQD5LSAEDZAG7GMOGD2HBLWONGUVO4I
@@ -127,7 +129,7 @@ func TestRequestHandlerSend(t *testing.T) {
 		},
 	}
 
-	requestHandler := RequestHandler{config: &config, transactionSubmitter: mockTransactionSubmitter}
+	requestHandler := RequestHandler{Config: &config, TransactionSubmitter: mockTransactionSubmitter}
 	testServer := httptest.NewServer(http.HandlerFunc(requestHandler.Send))
 	defer testServer.Close()
 
@@ -137,7 +139,7 @@ func TestRequestHandlerSend(t *testing.T) {
 			assetCode := "USD"
 
 			Convey("it should return error", func() {
-				statusCode, response := GetResponse(testServer, "?destination="+destination+"&assetCode="+assetCode)
+				statusCode, response := GetResponse(testServer, url.Values{"destination": {destination}, "asset_code": {assetCode}})
 				responseString := strings.TrimSpace(string(response))
 				assert.Equal(t, 400, statusCode)
 				assert.Equal(t, errorResponseString("invalid_destination", "destination parameter is invalid"), responseString)
@@ -149,7 +151,7 @@ func TestRequestHandlerSend(t *testing.T) {
 			assetCode := "GBP"
 
 			Convey("it should return error", func() {
-				statusCode, response := GetResponse(testServer, "?destination="+destination+"&assetCode="+assetCode)
+				statusCode, response := GetResponse(testServer, url.Values{"destination": {destination}, "asset_code": {assetCode}})
 				responseString := strings.TrimSpace(string(response))
 				assert.Equal(t, 400, statusCode)
 				assert.Equal(t, errorResponseString("invalid_asset_code", "Given assetCode not allowed"), responseString)
@@ -182,7 +184,7 @@ func TestRequestHandlerSend(t *testing.T) {
 				).Once()
 
 				Convey("it should return server error", func() {
-					statusCode, response := GetResponse(testServer, "?destination="+destination+"&assetCode="+assetCode+"&amount="+amount)
+					statusCode, response := GetResponse(testServer, url.Values{"destination": {destination}, "asset_code": {assetCode}, "amount": {amount}})
 					responseString := strings.TrimSpace(string(response))
 					assert.Equal(t, 500, statusCode)
 					assert.Equal(t, "{\"code\":\"server_error\",\"message\":\"Server error\"}", responseString)
@@ -204,7 +206,7 @@ func TestRequestHandlerSend(t *testing.T) {
 				).Return(expectedSubmitResponse, nil).Once()
 
 				Convey("it should succeed", func() {
-					statusCode, response := GetResponse(testServer, "?destination="+destination+"&assetCode="+assetCode+"&amount="+amount)
+					statusCode, response := GetResponse(testServer, url.Values{"destination": {destination}, "asset_code": {assetCode}, "amount": {amount}})
 					var actualSubmitTransactionResponse horizon.SubmitTransactionResponse
 					json.Unmarshal(response, &actualSubmitTransactionResponse)
 					assert.Equal(t, 200, statusCode)
@@ -216,8 +218,8 @@ func TestRequestHandlerSend(t *testing.T) {
 	})
 }
 
-func GetResponse(testServer *httptest.Server, query string) (int, []byte) {
-	res, err := http.Get(testServer.URL + query)
+func GetResponse(testServer *httptest.Server, values url.Values) (int, []byte) {
+	res, err := http.PostForm(testServer.URL, values)
 	if err != nil {
 		panic(err)
 	}

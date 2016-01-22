@@ -1,4 +1,4 @@
-package gateway
+package handlers
 
 import (
 	"encoding/json"
@@ -6,19 +6,21 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/stellar/gateway/config"
 	"github.com/stellar/gateway/horizon"
+	"github.com/stellar/gateway/submitter"
 	b "github.com/stellar/go-stellar-base/build"
 	"github.com/stellar/go-stellar-base/keypair"
 )
 
 type RequestHandler struct {
-	config               *Config
-	horizon              horizon.HorizonInterface
-	transactionSubmitter TransactionSubmitterInterface
+	Config               *config.Config
+	Horizon              horizon.HorizonInterface
+	TransactionSubmitter submitter.TransactionSubmitterInterface
 }
 
 func (rh *RequestHandler) Payment(w http.ResponseWriter, r *http.Request) {
-	source := r.URL.Query().Get("source")
+	source := r.PostFormValue("source")
 	sourceKeypair, err := keypair.Parse(source)
 	if err != nil {
 		log.WithFields(log.Fields{"source": source}).Print("Invalid source parameter")
@@ -26,7 +28,7 @@ func (rh *RequestHandler) Payment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	destination := r.URL.Query().Get("destination")
+	destination := r.PostFormValue("destination")
 	destinationObject, err := ResolveAddress(destination)
 	if err != nil {
 		log.WithFields(log.Fields{"destination": destination}).Print("Cannot resolve address")
@@ -41,9 +43,9 @@ func (rh *RequestHandler) Payment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	amount := r.URL.Query().Get("amount")
-	assetCode := r.URL.Query().Get("asset_code")
-	assetIssuer := r.URL.Query().Get("asset_issuer")
+	amount := r.PostFormValue("amount")
+	assetCode := r.PostFormValue("asset_code")
+	assetIssuer := r.PostFormValue("asset_issuer")
 
 	var amountMutator interface{}
 
@@ -68,8 +70,8 @@ func (rh *RequestHandler) Payment(w http.ResponseWriter, r *http.Request) {
 		amountMutator.(b.PaymentMutator),
 	)
 
-	memoType := r.URL.Query().Get("memo_type")
-	memo := r.URL.Query().Get("memo")
+	memoType := r.PostFormValue("memo_type")
+	memo := r.PostFormValue("memo")
 
 	if !(((memoType == "") && (memo == "")) || ((memoType != "") && (memo != ""))) {
 		log.Print("Missing one of memo params.")
@@ -108,7 +110,7 @@ func (rh *RequestHandler) Payment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	accountResponse, err := rh.horizon.LoadAccount(sourceKeypair.Address())
+	accountResponse, err := rh.Horizon.LoadAccount(sourceKeypair.Address())
 	if err != nil {
 		log.Error("Cannot load source account ", err)
 		errorServerError(w)
@@ -136,7 +138,7 @@ func (rh *RequestHandler) Payment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	submitResponse, err := rh.horizon.SubmitTransaction(txeB64)
+	submitResponse, err := rh.Horizon.SubmitTransaction(txeB64)
 	if err != nil {
 		log.WithFields(log.Fields{"error": err}).Error("Error submitting transaction")
 		errorServerError(w)
@@ -153,8 +155,8 @@ func (rh *RequestHandler) Payment(w http.ResponseWriter, r *http.Request) {
 }
 
 func (rh *RequestHandler) Authorize(w http.ResponseWriter, r *http.Request) {
-	accountId := r.URL.Query().Get("accountId")
-	assetCode := r.URL.Query().Get("assetCode")
+	accountId := r.PostFormValue("account_id")
+	assetCode := r.PostFormValue("asset_code")
 
 	_, err := keypair.Parse(accountId)
 	if err != nil {
@@ -175,8 +177,8 @@ func (rh *RequestHandler) Authorize(w http.ResponseWriter, r *http.Request) {
 		b.AllowTrustAsset{assetCode},
 	)
 
-	submitResponse, err := rh.transactionSubmitter.SubmitTransaction(
-		rh.config.Accounts.AuthorizingSeed,
+	submitResponse, err := rh.TransactionSubmitter.SubmitTransaction(
+		rh.Config.Accounts.AuthorizingSeed,
 		operation,
 	)
 	if err != nil {
@@ -241,10 +243,9 @@ func (rh *RequestHandler) Authorize(w http.ResponseWriter, r *http.Request) {
 }
 
 func (rh *RequestHandler) Send(w http.ResponseWriter, r *http.Request) {
-	q := r.URL.Query()
-	destination := q.Get("destination")
-	assetCode := q.Get("assetCode")
-	amount := q.Get("amount")
+	destination := r.PostFormValue("destination")
+	assetCode := r.PostFormValue("asset_code")
+	amount := r.PostFormValue("amount")
 
 	_, err := keypair.Parse(destination)
 	if err != nil {
@@ -259,7 +260,7 @@ func (rh *RequestHandler) Send(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	issuingKeypair, err := keypair.Parse(rh.config.Accounts.IssuingSeed)
+	issuingKeypair, err := keypair.Parse(rh.Config.Accounts.IssuingSeed)
 	if err != nil {
 		log.Print("Invalid issuingSeed")
 		errorServerError(w)
@@ -276,8 +277,8 @@ func (rh *RequestHandler) Send(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	submitResponse, err := rh.transactionSubmitter.SubmitTransaction(
-		rh.config.Accounts.IssuingSeed,
+	submitResponse, err := rh.TransactionSubmitter.SubmitTransaction(
+		rh.Config.Accounts.IssuingSeed,
 		operation,
 	)
 	if err != nil {
@@ -368,7 +369,7 @@ func (rh *RequestHandler) Send(w http.ResponseWriter, r *http.Request) {
 
 // TODO this is duplicated in PaymentListener
 func (rh *RequestHandler) isAssetAllowed(code string) bool {
-	for _, b := range rh.config.Assets {
+	for _, b := range rh.Config.Assets {
 		if b == code {
 			return true
 		}

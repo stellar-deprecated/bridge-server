@@ -46,7 +46,9 @@ Then you can start the server:
 
 ## API
 
-### GET /payment
+`Content-Type` of requests data should be `application/x-www-form-urlencoded`.
+
+### POST /payment
 
 Builds and submits a transaction with a single payment operation built from following parameters.
 
@@ -69,14 +71,15 @@ Check [`SubmitTransactionResponse`](./src/github.com/stellar/gateway/horizon/sub
 #### Example
 
 ```sh
-curl "http://localhost:8001/payment?\
-source=SBNDIK4N7ZM3ZJKDJJDWDSPSRPHNI2RFL36WNNNEGQEW3G3AH6VJ2QB7&\
+curl -X POST -d \
+"source=SBNDIK4N7ZM3ZJKDJJDWDSPSRPHNI2RFL36WNNNEGQEW3G3AH6VJ2QB7&\
 amount=1&\
 destination=GBIUXI4S27PSL6TTJCJMPYDCF3K6AW2MYORFRTC7QBFE6NNEGVOQK46H&\
 asset_code=USD&\
 asset_issuer=GASZUHRFAFIZX5LR4WNHBWUXJBZNBEWCHFTR4XZHPF5TMVM5XUZBP5DT&\
 memo_type=id&\
-memo=125"
+memo=125" \
+http://localhost:8001/payment
 ```
 
 ## Hooks

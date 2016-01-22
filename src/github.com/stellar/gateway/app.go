@@ -7,22 +7,26 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"time"
 
+	"github.com/stellar/gateway/config"
 	"github.com/stellar/gateway/db"
+	"github.com/stellar/gateway/handlers"
 	"github.com/stellar/gateway/horizon"
+	"github.com/stellar/gateway/listener"
+	"github.com/stellar/gateway/submitter"
 	"github.com/zenazn/goji"
 	"github.com/zenazn/goji/web/middleware"
 )
 
 type App struct {
-	config               Config
+	config               config.Config
 	entityManager        db.EntityManagerInterface
 	horizon              horizon.HorizonInterface
-	transactionSubmitter *TransactionSubmitter
+	transactionSubmitter *submitter.TransactionSubmitter
 	repository           db.RepositoryInterface
 }
 
 // NewApp constructs an new App instance from the provided config.
-func NewApp(config Config) (app *App, err error) {
+func NewApp(config config.Config) (app *App, err error) {
 	entityManager, err := db.NewEntityManager(config.Database.Type, config.Database.Url)
 	if err != nil {
 		return
@@ -35,7 +39,7 @@ func NewApp(config Config) (app *App, err error) {
 	h := horizon.New(config.Horizon)
 
 	log.Print("Creating and initializing TransactionSubmitter")
-	ts := NewTransactionSubmitter(&h, &entityManager)
+	ts := submitter.NewTransactionSubmitter(&h, &entityManager)
 	if err != nil {
 		return
 	}
@@ -55,7 +59,7 @@ func NewApp(config Config) (app *App, err error) {
 	log.Print("TransactionSubmitter created")
 
 	log.Print("Creating and starting PaymentListener")
-	paymentListener, err := NewPaymentListener(&config, &entityManager, &h, &repository, time.Now)
+	paymentListener, err := listener.NewPaymentListener(&config, &entityManager, &h, &repository, time.Now)
 	if err != nil {
 		return
 	}
@@ -82,24 +86,24 @@ func NewApp(config Config) (app *App, err error) {
 }
 
 func (a *App) Serve() {
-	requestHandlers := &RequestHandler{
-		config:               &a.config,
-		horizon:              a.horizon,
-		transactionSubmitter: a.transactionSubmitter,
+	requestHandlers := &handlers.RequestHandler{
+		Config:               &a.config,
+		Horizon:              a.horizon,
+		TransactionSubmitter: a.transactionSubmitter,
 	}
 
 	portString := fmt.Sprintf(":%d", a.config.Port)
 	flag.Set("bind", portString)
 
 	goji.Abandon(middleware.Logger)
-	goji.Use(stripTrailingSlashMiddleware())
-	goji.Use(headersMiddleware())
+	goji.Use(handlers.StripTrailingSlashMiddleware())
+	goji.Use(handlers.HeadersMiddleware())
 	if a.config.ApiKey != "" {
-		goji.Use(apiKeyMiddleware(a.config.ApiKey))
+		goji.Use(handlers.ApiKeyMiddleware(a.config.ApiKey))
 	}
 
-	goji.Get("/authorize", requestHandlers.Authorize)
-	goji.Get("/send", requestHandlers.Send)
-	goji.Get("/payment", requestHandlers.Payment)
+	goji.Post("/authorize", requestHandlers.Authorize)
+	goji.Post("/send", requestHandlers.Send)
+	goji.Post("/payment", requestHandlers.Payment)
 	goji.Serve()
 }
