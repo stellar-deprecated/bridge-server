@@ -5,6 +5,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"net/http"
 	"strconv"
+	"strings"
 
 	b "github.com/stellar/go-stellar-base/build"
 	"github.com/stellar/go-stellar-base/keypair"
@@ -61,6 +62,19 @@ func (rh *RequestHandler) Payment(w http.ResponseWriter, r *http.Request) {
 		amountMutator.(b.PaymentMutator),
 	)
 
+	if paymentOperation.Err != nil {
+		log.WithFields(log.Fields{"err": paymentOperation.Err}).Print("Payment builder error")
+		switch {
+		case paymentOperation.Err.Error() == "Asset code length is invalid":
+			errorBadRequest(w, errorResponseString("asset_code_invalid", "asset_code param is invalid"))
+		case strings.Contains(paymentOperation.Err.Error(), "cannot parse amount"):
+			errorBadRequest(w, errorResponseString("invalid_amount", "amount is invalid"))
+		default:
+			errorServerError(w)
+		}
+		return
+	}
+
 	memoType := r.PostFormValue("memo_type")
 	memo := r.PostFormValue("memo")
 
@@ -103,8 +117,8 @@ func (rh *RequestHandler) Payment(w http.ResponseWriter, r *http.Request) {
 
 	accountResponse, err := rh.Horizon.LoadAccount(sourceKeypair.Address())
 	if err != nil {
-		log.Error("Cannot load source account ", err)
-		errorServerError(w)
+		log.WithFields(log.Fields{"error": err}).Error("Cannot load source account")
+		errorBadRequest(w, errorResponseString("source_not_exist", "source account does not exist"))
 		return
 	}
 
@@ -119,6 +133,8 @@ func (rh *RequestHandler) Payment(w http.ResponseWriter, r *http.Request) {
 	}
 
 	tx := b.Transaction(transactionMutators...)
+
+	// TODO check for errors
 
 	txe := tx.Sign(source)
 	txeB64, err := txe.Base64()
@@ -142,5 +158,11 @@ func (rh *RequestHandler) Payment(w http.ResponseWriter, r *http.Request) {
 		errorServerError(w)
 		return
 	}
-	w.Write(response)
+
+	if submitResponse.Ledger != nil {
+		w.Write(response)
+	} else {
+		errorBadRequest(w, string(response))
+	}
+
 }
