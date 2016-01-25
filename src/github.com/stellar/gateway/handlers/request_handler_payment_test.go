@@ -21,10 +21,12 @@ func TestRequestHandlerPayment(t *testing.T) {
 	mockHorizon := new(mocks.MockHorizon)
 
 	requestHandler := RequestHandler{
-		Config: &config.Config{},
+		Config:  &config.Config{
+			NetworkPassphrase: "Test SDF Network ; September 2015",
+		},
 		Horizon: mockHorizon,
 	}
-	
+
 	testServer := httptest.NewServer(http.HandlerFunc(requestHandler.Payment))
 	defer testServer.Close()
 
@@ -74,9 +76,9 @@ func TestRequestHandlerPayment(t *testing.T) {
 				statusCode, response := getResponse(
 					testServer,
 					url.Values{
-						"source": {source},
-						"destination": {destination},
-						"asset_code": {assetCode},
+						"source":       {source},
+						"destination":  {destination},
+						"asset_code":   {assetCode},
 						"asset_issuer": {assetIssuer},
 					},
 				)
@@ -97,10 +99,10 @@ func TestRequestHandlerPayment(t *testing.T) {
 				statusCode, response := getResponse(
 					testServer,
 					url.Values{
-						"source": {source},
-						"destination": {destination},
-						"amount": {amount},
-						"asset_code": {assetCode},
+						"source":       {source},
+						"destination":  {destination},
+						"amount":       {amount},
+						"asset_code":   {assetCode},
 						"asset_issuer": {assetIssuer},
 					},
 				)
@@ -121,10 +123,10 @@ func TestRequestHandlerPayment(t *testing.T) {
 				statusCode, response := getResponse(
 					testServer,
 					url.Values{
-						"source": {source},
-						"destination": {destination},
-						"amount": {amount},
-						"asset_code": {assetCode},
+						"source":       {source},
+						"destination":  {destination},
+						"amount":       {amount},
+						"asset_code":   {assetCode},
 						"asset_issuer": {assetIssuer},
 					},
 				)
@@ -137,10 +139,10 @@ func TestRequestHandlerPayment(t *testing.T) {
 		Convey("When params are valid", func() {
 			validParams := url.Values{
 				// GCF3WVYTHF75PEG6622G5G6KU26GOSDQPDHSCJ3DQD7VONH4EYVDOGKJ
-				"source": {"SDWLS4G3XCNIYPKXJWWGGJT6UDY63WV6PEFTWP7JZMQB4RE7EUJQN5XM"},
-				"destination": {"GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632"},
-				"amount": {"20"},
-				"asset_code": {"USD"},
+				"source":       {"SDWLS4G3XCNIYPKXJWWGGJT6UDY63WV6PEFTWP7JZMQB4RE7EUJQN5XM"},
+				"destination":  {"GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632"},
+				"amount":       {"20"},
+				"asset_code":   {"USD"},
 				"asset_issuer": {"GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632"},
 			}
 
@@ -237,7 +239,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 					},
 					&horizon.SubmitTransactionResponseExtras{
 						EnvelopeXdr: "envelope",
-						ResultXdr: "result",
+						ResultXdr:   "result",
 					},
 				}
 
@@ -263,9 +265,9 @@ func TestRequestHandlerPayment(t *testing.T) {
 			Convey("transaction success (native)", func() {
 				validParams := url.Values{
 					// GCF3WVYTHF75PEG6622G5G6KU26GOSDQPDHSCJ3DQD7VONH4EYVDOGKJ
-					"source": {"SDWLS4G3XCNIYPKXJWWGGJT6UDY63WV6PEFTWP7JZMQB4RE7EUJQN5XM"},
+					"source":      {"SDWLS4G3XCNIYPKXJWWGGJT6UDY63WV6PEFTWP7JZMQB4RE7EUJQN5XM"},
 					"destination": {"GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632"},
-					"amount": {"20"},
+					"amount":      {"20"},
 				}
 
 				mockHorizon.On(

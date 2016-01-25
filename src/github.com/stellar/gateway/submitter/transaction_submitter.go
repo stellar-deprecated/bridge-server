@@ -20,6 +20,7 @@ type TransactionSubmitter struct {
 	Horizon       *horizon.Horizon
 	Accounts      map[string]*Account // seed => *Account
 	EntityManager *db.EntityManager
+	Network       build.Network
 	log           *logrus.Entry
 }
 
@@ -30,10 +31,11 @@ type Account struct {
 	Mutex          sync.Mutex
 }
 
-func NewTransactionSubmitter(horizon *horizon.Horizon, entityManager *db.EntityManager) (ts TransactionSubmitter) {
+func NewTransactionSubmitter(horizon *horizon.Horizon, entityManager *db.EntityManager, networkPassphrase string) (ts TransactionSubmitter) {
 	ts.Horizon = horizon
 	ts.EntityManager = entityManager
 	ts.Accounts = make(map[string]*Account)
+	ts.Network = build.Network{networkPassphrase}
 	ts.log = logrus.WithFields(logrus.Fields{
 		"service": "TransactionSubmitter",
 	})
@@ -95,6 +97,7 @@ func (ts *TransactionSubmitter) SubmitTransaction(seed string, operation interfa
 	tx := build.Transaction(
 		build.SourceAccount{account.Seed},
 		build.Sequence{sequenceNumber},
+		ts.Network,
 		mutator,
 	)
 

@@ -38,8 +38,12 @@ func NewApp(config config.Config) (app *App, err error) {
 
 	h := horizon.New(config.Horizon)
 
+	if config.NetworkPassphrase == "" {
+		config.NetworkPassphrase = "Test SDF Network ; September 2015"
+	}
+
 	log.Print("Creating and initializing TransactionSubmitter")
-	ts := submitter.NewTransactionSubmitter(&h, &entityManager)
+	ts := submitter.NewTransactionSubmitter(&h, &entityManager, config.NetworkPassphrase)
 	if err != nil {
 		return
 	}

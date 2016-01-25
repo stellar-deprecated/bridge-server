@@ -17,6 +17,7 @@ The `config.toml` file must be present in a working directory. Config file shoul
 
 * `port` - server listening port
 * `api_key` - when set, all requests to gateway server must contain `api_key` parameter with a correct value, otherwise the server will respond with `503 Forbidden`
+* `network_passphrase` - passphrase of the network that will be used with this gateway server, default: `Test SDF Network ; September 2015`
 * `horizon` - URL to [horizon](https://github.com/stellar/horizon) server instance
 * `assets` - array of approved assets codes that this server can authorize and send 
 * `database`

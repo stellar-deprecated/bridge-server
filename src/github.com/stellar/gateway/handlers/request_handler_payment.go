@@ -122,9 +122,12 @@ func (rh *RequestHandler) Payment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	networkMutator := b.Network{rh.Config.NetworkPassphrase}
+
 	transactionMutators := []b.TransactionMutator{
 		b.SourceAccount{source},
 		b.Sequence{accountResponse.SequenceNumber + 1},
+		networkMutator,
 		paymentOperation,
 	}
 
