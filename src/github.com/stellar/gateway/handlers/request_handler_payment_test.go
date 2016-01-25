@@ -19,7 +19,7 @@ import (
 
 func TestRequestHandlerPayment(t *testing.T) {
 	mockHorizon := new(mocks.MockHorizon)
-	
+
 	mockAddressResolverHelper := new(MockAddressResolverHelper)
 	addressResolver := AddressResolver{mockAddressResolverHelper}
 
@@ -27,7 +27,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 		Config: &config.Config{
 			NetworkPassphrase: "Test SDF Network ; September 2015",
 		},
-		Horizon: mockHorizon,
+		Horizon:         mockHorizon,
 		AddressResolver: addressResolver,
 	}
 
@@ -60,8 +60,8 @@ func TestRequestHandlerPayment(t *testing.T) {
 
 		Convey("When destination is a Stellar address", func() {
 			params := url.Values{
-				"source":       {"SDRAS7XIQNX25UDCCX725R4EYGBFYGJE4HJ2A3DFCWJIHMRSMS7CXX42"},
-				"destination":  {"bob*stellar.org"},
+				"source":      {"SDRAS7XIQNX25UDCCX725R4EYGBFYGJE4HJ2A3DFCWJIHMRSMS7CXX42"},
+				"destination": {"bob*stellar.org"},
 			}
 
 			Convey("When stellar.toml does not exist", func() {
@@ -208,8 +208,8 @@ func TestRequestHandlerPayment(t *testing.T) {
 				).Return(
 					StellarDestination{
 						AccountId: "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632",
-						MemoType: &memoType,
-						Memo: &memo,
+						MemoType:  &memoType,
+						Memo:      &memo,
 					},
 					nil,
 				).Once()

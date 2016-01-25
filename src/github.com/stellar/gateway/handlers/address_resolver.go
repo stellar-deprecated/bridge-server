@@ -39,7 +39,7 @@ func (ar AddressResolver) Resolve(address string) (destination StellarDestinatio
 		if err != nil {
 			return
 		}
-		
+
 		if stellarToml.FederationServer == nil {
 			err = errors.New("stellar.toml does not contain FEDERATION_SERVER value")
 			return
@@ -54,7 +54,7 @@ func (ar AddressResolver) Resolve(address string) (destination StellarDestinatio
 	return
 }
 
-type AddressResolverHelper struct {}
+type AddressResolverHelper struct{}
 
 func (ar AddressResolverHelper) GetStellarToml(domain string) (stellarToml StellarToml, err error) {
 	var resp *http.Response
