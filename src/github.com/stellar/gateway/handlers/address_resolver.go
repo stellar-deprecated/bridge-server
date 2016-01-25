@@ -11,7 +11,7 @@ import (
 )
 
 type StellarToml struct {
-	FederationServer string `toml:"FEDERATION_SERVER"`
+	FederationServer *string `toml:"FEDERATION_SERVER"`
 }
 
 type StellarDestination struct {
@@ -20,52 +20,81 @@ type StellarDestination struct {
 	Memo      *string `json:"memo"`
 }
 
-func ResolveAddress(address string) (federation StellarDestination, err error) {
-	// look for the '*'
+type AddressResolverHelperInterface interface {
+	GetStellarToml(domain string) (stellarToml StellarToml, err error)
+	GetDestination(federationUrl, address string) (destination StellarDestination, err error)
+}
+
+type AddressResolver struct {
+	helper AddressResolverHelperInterface
+}
+
+func (ar AddressResolver) Resolve(address string) (destination StellarDestination, err error) {
 	tokens := strings.Split(address, "*")
 	if len(tokens) == 1 {
-		federation.AccountId = address
+		destination.AccountId = address
 	} else if len(tokens) == 2 {
-		// find stellar.toml
-		// ask the federation server
-		var resp *http.Response
-		resp, err = http.Get("https://www." + tokens[2] + "/.well-known/stellar.toml")
+		var stellarToml StellarToml
+		stellarToml, err = ar.helper.GetStellarToml(tokens[1])
 		if err != nil {
 			return
 		}
-		if resp.StatusCode == 200 {
-			var stellarToml StellarToml
-			_, err = toml.DecodeReader(resp.Body, &stellarToml)
-			if err != nil {
-				return
-			}
-
-			// TODO check if stellarToml.FEDERATION_SERVER is https server
-			resp, err = http.Get(stellarToml.FederationServer + "?type=name&q=" + address)
-			if err != nil {
-				return
-			}
-			if resp.StatusCode == 200 {
-				var bs []byte
-				bs, err = ioutil.ReadAll(resp.Body)
-				err = json.Unmarshal(bs, &federation)
-				if err != nil {
-					return
-				}
-
-				if (federation.MemoType != nil) && (federation.Memo == nil) {
-					err = errors.New("Invalid federation response (memo).")
-				}
-
-			} else { // fetching the name from the federation server failed
-				err = errors.New(resp.Status)
-			}
-		} else { // fetching the stellar.toml failed
-			err = errors.New(resp.Status)
+		
+		if stellarToml.FederationServer == nil {
+			err = errors.New("stellar.toml does not contain FEDERATION_SERVER value")
+			return
 		}
+
+		destination, err = ar.helper.GetDestination(*stellarToml.FederationServer, address)
+		return
 	} else {
-		err = errors.New("malformed address")
+		err = errors.New("Malformed Stellar address")
 	}
 
+	return
+}
+
+type AddressResolverHelper struct {}
+
+func (ar AddressResolverHelper) GetStellarToml(domain string) (stellarToml StellarToml, err error) {
+	var resp *http.Response
+	resp, err = http.Get("https://www." + domain + "/.well-known/stellar.toml")
+	if err != nil {
+		return
+	}
+	if resp.StatusCode != 200 {
+		err = errors.New("stellar.toml response status code indicates error")
+		return
+	}
+
+	_, err = toml.DecodeReader(resp.Body, &stellarToml)
+	return
+}
+
+func (ar AddressResolverHelper) GetDestination(federationUrl, address string) (destination StellarDestination, err error) {
+	if !strings.HasPrefix(federationUrl, "https://") {
+		err = errors.New("Only HTTPS federation servers allowed")
+		return
+	}
+
+	resp, err := http.Get(federationUrl + "?type=name&q=" + address)
+	if err != nil {
+		return
+	}
+	if resp.StatusCode == 200 {
+		err = errors.New("Federation response status code indicates error")
+		return
+	}
+
+	var bs []byte
+	bs, err = ioutil.ReadAll(resp.Body)
+	err = json.Unmarshal(bs, &destination)
+	if err != nil {
+		return
+	}
+
+	if (destination.MemoType != nil) && (destination.Memo == nil) {
+		err = errors.New("Invalid federation response (memo).")
+	}
 	return
 }

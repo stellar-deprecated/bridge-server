@@ -15,6 +15,7 @@ type RequestHandler struct {
 	Config               *config.Config
 	Horizon              horizon.HorizonInterface
 	TransactionSubmitter submitter.TransactionSubmitterInterface
+	AddressResolver
 }
 
 // TODO this is duplicated in PaymentListener

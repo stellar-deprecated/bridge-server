@@ -21,7 +21,7 @@ func (rh *RequestHandler) Payment(w http.ResponseWriter, r *http.Request) {
 	}
 
 	destination := r.PostFormValue("destination")
-	destinationObject, err := ResolveAddress(destination)
+	destinationObject, err := rh.AddressResolver.Resolve(destination)
 	if err != nil {
 		log.WithFields(log.Fields{"destination": destination}).Print("Cannot resolve address")
 		errorBadRequest(w, errorResponseString("invalid_destination", "Cannot resolve destination"))
@@ -138,6 +138,9 @@ func (rh *RequestHandler) Payment(w http.ResponseWriter, r *http.Request) {
 	tx := b.Transaction(transactionMutators...)
 
 	// TODO check for errors
+	// if tx.Err != nil {
+	// 	//
+	// }
 
 	txe := tx.Sign(source)
 	txeB64, err := txe.Base64()

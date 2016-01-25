@@ -19,12 +19,16 @@ import (
 
 func TestRequestHandlerPayment(t *testing.T) {
 	mockHorizon := new(mocks.MockHorizon)
+	
+	mockAddressResolverHelper := new(MockAddressResolverHelper)
+	addressResolver := AddressResolver{mockAddressResolverHelper}
 
 	requestHandler := RequestHandler{
-		Config:  &config.Config{
+		Config: &config.Config{
 			NetworkPassphrase: "Test SDF Network ; September 2015",
 		},
 		Horizon: mockHorizon,
+		AddressResolver: addressResolver,
 	}
 
 	testServer := httptest.NewServer(http.HandlerFunc(requestHandler.Payment))
@@ -54,17 +58,195 @@ func TestRequestHandlerPayment(t *testing.T) {
 			})
 		})
 
-		// Convey("When destination can't be resolved", func() {
-		// 	source := "SDRAS7XIQNX25UDCCX725R4EYGBFYGJE4HJ2A3DFCWJIHMRSMS7CXX42"
-		// 	destination := "bob*stellar.org"
+		Convey("When destination is a Stellar address", func() {
+			params := url.Values{
+				"source":       {"SDRAS7XIQNX25UDCCX725R4EYGBFYGJE4HJ2A3DFCWJIHMRSMS7CXX42"},
+				"destination":  {"bob*stellar.org"},
+			}
 
-		// 	Convey("it should return error", func() {
-		// 		statusCode, response := getResponse(testServer, url.Values{"destination": {destination}, "source": {source}})
-		// 		responseString := strings.TrimSpace(string(response))
-		// 		assert.Equal(t, 400, statusCode)
-		// 		assert.Equal(t, errorResponseString("invalid_destination", "Cannot resolve destination"), responseString)
-		// 	})
-		// })
+			Convey("When stellar.toml does not exist", func() {
+				mockAddressResolverHelper.On(
+					"GetStellarToml",
+					"stellar.org",
+				).Return(
+					StellarToml{},
+					errors.New("stellar.toml response status code indicates error"),
+				).Once()
+
+				Convey("it should return error", func() {
+					statusCode, response := getResponse(testServer, params)
+					responseString := strings.TrimSpace(string(response))
+					assert.Equal(t, 400, statusCode)
+					assert.Equal(t, errorResponseString("invalid_destination", "Cannot resolve destination"), responseString)
+				})
+			})
+
+			Convey("When stellar.toml does not contain FEDERATION_SERVER", func() {
+				mockAddressResolverHelper.On(
+					"GetStellarToml",
+					"stellar.org",
+				).Return(
+					StellarToml{},
+					nil,
+				).Once()
+
+				Convey("it should return error", func() {
+					statusCode, response := getResponse(testServer, params)
+					responseString := strings.TrimSpace(string(response))
+					assert.Equal(t, 400, statusCode)
+					assert.Equal(t, errorResponseString("invalid_destination", "Cannot resolve destination"), responseString)
+				})
+			})
+
+			Convey("When GetDestination() errors", func() {
+				federationServer := "http://api.example.com"
+				mockAddressResolverHelper.On(
+					"GetStellarToml",
+					"stellar.org",
+				).Return(
+					StellarToml{&federationServer},
+					nil,
+				).Once()
+
+				mockAddressResolverHelper.On(
+					"GetDestination",
+					"http://api.example.com",
+					"bob*stellar.org",
+				).Return(
+					StellarDestination{},
+					errors.New("Only HTTPS federation servers allowed"),
+				).Once()
+
+				Convey("it should return error", func() {
+					statusCode, response := getResponse(testServer, params)
+					responseString := strings.TrimSpace(string(response))
+					assert.Equal(t, 400, statusCode)
+					assert.Equal(t, errorResponseString("invalid_destination", "Cannot resolve destination"), responseString)
+				})
+			})
+
+			Convey("When federation response is correct (no memo)", func() {
+				validParams := url.Values{
+					// GCF3WVYTHF75PEG6622G5G6KU26GOSDQPDHSCJ3DQD7VONH4EYVDOGKJ
+					"source":      {"SDWLS4G3XCNIYPKXJWWGGJT6UDY63WV6PEFTWP7JZMQB4RE7EUJQN5XM"},
+					"destination": {"bob*stellar.org"},
+					"amount":      {"20"},
+				}
+
+				federationServer := "http://api.example.com"
+				mockAddressResolverHelper.On(
+					"GetStellarToml",
+					"stellar.org",
+				).Return(
+					StellarToml{&federationServer},
+					nil,
+				).Once()
+
+				mockAddressResolverHelper.On(
+					"GetDestination",
+					"http://api.example.com",
+					"bob*stellar.org",
+				).Return(StellarDestination{AccountId: "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632"}, nil).Once()
+
+				mockHorizon.On(
+					"LoadAccount",
+					"GCF3WVYTHF75PEG6622G5G6KU26GOSDQPDHSCJ3DQD7VONH4EYVDOGKJ",
+				).Return(
+					horizon.AccountResponse{
+						SequenceNumber: 100,
+					},
+					nil,
+				).Once()
+
+				var ledger uint64
+				ledger = 1988728
+				horizonResponse := horizon.SubmitTransactionResponse{&ledger, nil, nil}
+
+				mockHorizon.On(
+					"SubmitTransaction",
+					"AAAAAIu7VxM5f9eQ3va0bpvKprxnSHB4zyEnY4D/VzT8Jio3AAAAZAAAAAAAAABlAAAAAAAAAAAAAAABAAAAAAAAAAEAAAAA5IVbm6A8mbgc/apAizxmBf4zZmqbedR3Ke+MTa7pjVYAAAAAAAAAAAvrwgAAAAAAAAAAAfwmKjcAAABAh3M6y9LXiWD0GB1KCkgNS5H1Lnyr1wS1BsfzoM1/v0muzobwNkJinV+RcWyC8VfeKqOjKBOANJnEusl+sHkcAg==",
+				).Return(horizonResponse, nil).Once()
+
+				Convey("it should return success", func() {
+					statusCode, response := getResponse(testServer, validParams)
+					responseString := strings.TrimSpace(string(response))
+
+					expectedResponse, err := json.MarshalIndent(horizonResponse, "", "  ")
+					if err != nil {
+						panic(err)
+					}
+
+					assert.Equal(t, 200, statusCode)
+					assert.Equal(t, string(expectedResponse), responseString)
+				})
+			})
+
+			Convey("When federation response is correct (with memo)", func() {
+				validParams := url.Values{
+					// GCF3WVYTHF75PEG6622G5G6KU26GOSDQPDHSCJ3DQD7VONH4EYVDOGKJ
+					"source":      {"SDWLS4G3XCNIYPKXJWWGGJT6UDY63WV6PEFTWP7JZMQB4RE7EUJQN5XM"},
+					"destination": {"bob*stellar.org"},
+					"amount":      {"20"},
+				}
+
+				federationServer := "http://api.example.com"
+				mockAddressResolverHelper.On(
+					"GetStellarToml",
+					"stellar.org",
+				).Return(
+					StellarToml{&federationServer},
+					nil,
+				).Once()
+
+				memoType := "text"
+				memo := "125"
+
+				mockAddressResolverHelper.On(
+					"GetDestination",
+					"http://api.example.com",
+					"bob*stellar.org",
+				).Return(
+					StellarDestination{
+						AccountId: "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632",
+						MemoType: &memoType,
+						Memo: &memo,
+					},
+					nil,
+				).Once()
+
+				mockHorizon.On(
+					"LoadAccount",
+					"GCF3WVYTHF75PEG6622G5G6KU26GOSDQPDHSCJ3DQD7VONH4EYVDOGKJ",
+				).Return(
+					horizon.AccountResponse{
+						SequenceNumber: 100,
+					},
+					nil,
+				).Once()
+
+				var ledger uint64
+				ledger = 1988728
+				horizonResponse := horizon.SubmitTransactionResponse{&ledger, nil, nil}
+
+				mockHorizon.On(
+					"SubmitTransaction",
+					"AAAAAIu7VxM5f9eQ3va0bpvKprxnSHB4zyEnY4D/VzT8Jio3AAAAZAAAAAAAAABlAAAAAAAAAAEAAAADMTI1AAAAAAEAAAAAAAAAAQAAAADkhVuboDyZuBz9qkCLPGYF/jNmapt51Hcp74xNrumNVgAAAAAAAAAAC+vCAAAAAAAAAAAB/CYqNwAAAEAjnc8Wf31VxgBXXhEmZfLo6c4YJtROVy5MTLsWFSx7TCkoQzCskBVcC30DrjQq7Vzm0zwg+mBmSGI5wFbctKgB",
+				).Return(horizonResponse, nil).Once()
+
+				Convey("it should return success", func() {
+					statusCode, response := getResponse(testServer, validParams)
+					responseString := strings.TrimSpace(string(response))
+
+					expectedResponse, err := json.MarshalIndent(horizonResponse, "", "  ")
+					if err != nil {
+						panic(err)
+					}
+
+					assert.Equal(t, 200, statusCode)
+					assert.Equal(t, string(expectedResponse), responseString)
+				})
+			})
+		})
 
 		Convey("When assetIssuer is invalid", func() {
 			source := "SDRAS7XIQNX25UDCCX725R4EYGBFYGJE4HJ2A3DFCWJIHMRSMS7CXX42"
