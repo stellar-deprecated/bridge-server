@@ -1,6 +1,6 @@
 package config
 
-import(
+import (
 	"errors"
 	"net/url"
 )

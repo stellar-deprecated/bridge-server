@@ -122,12 +122,17 @@ func (rh *RequestHandler) Payment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	networkMutator := b.Network{rh.Config.NetworkPassphrase}
+	sequenceNumber, err := strconv.ParseUint(accountResponse.SequenceNumber, 10, 64)
+	if err != nil {
+		log.WithFields(log.Fields{"error": err}).Error("Cannot convert SequenceNumber")
+		errorServerError(w)
+		return
+	}
 
 	transactionMutators := []b.TransactionMutator{
 		b.SourceAccount{source},
-		b.Sequence{accountResponse.SequenceNumber + 1},
-		networkMutator,
+		b.Sequence{sequenceNumber + 1},
+		b.Network{rh.Config.NetworkPassphrase},
 		paymentOperation,
 	}
 

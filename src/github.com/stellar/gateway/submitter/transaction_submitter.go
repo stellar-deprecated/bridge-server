@@ -2,6 +2,7 @@ package submitter
 
 import (
 	"errors"
+	"strconv"
 	"sync"
 	"time"
 
@@ -56,7 +57,7 @@ func (ts *TransactionSubmitter) LoadAccount(seed string) (account *Account, err 
 	}
 
 	account.Seed = seed
-	account.SequenceNumber = accountResponse.SequenceNumber
+	account.SequenceNumber, err = strconv.ParseUint(accountResponse.SequenceNumber, 10, 64)
 	return
 }
 
@@ -141,7 +142,7 @@ func (ts *TransactionSubmitter) SubmitTransaction(seed string, operation interfa
 		account.Mutex.Lock()
 		ts.log.Print("Syncing sequence number for ", account.Keypair.Address())
 		accountResponse, _ := ts.Horizon.LoadAccount(account.Keypair.Address())
-		account.SequenceNumber = accountResponse.SequenceNumber
+		account.SequenceNumber, err = strconv.ParseUint(accountResponse.SequenceNumber, 10, 64)
 		account.Mutex.Unlock()
 	}
 
