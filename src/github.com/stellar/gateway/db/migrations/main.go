@@ -6,7 +6,7 @@ import (
 	"github.com/rubenv/sql-migrate"
 )
 
-// go-bindata -ignore .+\.go$ -pkg migrations -o bindata.go .
+// go-bindata -ignore .+\.go$ -pkg migrations -o bindata.go ./mysql ./postgres
 
 type MigrationManager struct {
 	db     *sqlx.DB
@@ -14,15 +14,8 @@ type MigrationManager struct {
 	log    *logrus.Entry
 }
 
-func NewMigrationManager(dbType string, url string) (m MigrationManager, err error) {
-	var params string
-	switch dbType {
-	case "mysql":
-		params = "?parseTime=true"
-	}
-
-	url = url + params
-	m.db, err = sqlx.Connect(dbType, url)
+func NewMigrationManager(dbType string, dbUrl string) (m MigrationManager, err error) {
+	m.db, err = sqlx.Connect(dbType, dbUrl)
 	m.dbType = dbType
 	m.log = logrus.WithFields(logrus.Fields{
 		"service": "MigrationManager",
@@ -31,7 +24,7 @@ func NewMigrationManager(dbType string, url string) (m MigrationManager, err err
 }
 
 func (m MigrationManager) MigrateUp() {
-	source := getAssetMigrationSource()
+	source := m.getAssetMigrationSource()
 	n, err := migrate.Exec(m.db.DB, m.dbType, source, migrate.Up)
 	if err != nil {
 		m.log.Print("Error migrating: ", err)
@@ -39,11 +32,11 @@ func (m MigrationManager) MigrateUp() {
 	m.log.Printf("Applied %d migrations!", n)
 }
 
-func getAssetMigrationSource() (source *migrate.AssetMigrationSource) {
+func (m MigrationManager) getAssetMigrationSource() (source *migrate.AssetMigrationSource) {
 	source = &migrate.AssetMigrationSource{
 		Asset:    Asset,
 		AssetDir: AssetDir,
-		Dir:      "",
+		Dir:      m.dbType,
 	}
 	return
 }

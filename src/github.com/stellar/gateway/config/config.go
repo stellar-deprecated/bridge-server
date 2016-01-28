@@ -1,5 +1,10 @@
 package config
 
+import(
+	"errors"
+	"net/url"
+)
+
 type Config struct {
 	Port              int
 	Horizon           string
@@ -23,4 +28,22 @@ type Accounts struct {
 type Hooks struct {
 	Receive string
 	Error   string
+}
+
+func (c *Config) Validate() (err error) {
+	// Add `parseTime=true` param to mysql url
+	if c.Database.Type == "mysql" {
+		var mysqlUrl *url.URL
+		mysqlUrl, err = url.Parse(c.Database.Url)
+		if err != nil {
+			err = errors.New("Cannot parse database.url parameter")
+			return
+		}
+		query := mysqlUrl.Query()
+		query.Set("parseTime", "true")
+		mysqlUrl.RawQuery = query.Encode()
+		c.Database.Url = mysqlUrl.String()
+	}
+
+	return
 }

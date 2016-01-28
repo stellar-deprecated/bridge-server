@@ -57,6 +57,12 @@ func run(cmd *cobra.Command, args []string) {
 	var config config.Config
 	err = viper.Unmarshal(&config)
 
+	err = config.Validate()
+	if err != nil {
+		log.Fatal(err.Error())
+		return
+	}
+
 	if migrateFlag {
 		migrate(config)
 		return
