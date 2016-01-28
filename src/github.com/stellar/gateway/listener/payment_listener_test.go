@@ -25,6 +25,7 @@ func TestPaymentListener(t *testing.T) {
 
 	receiveHookServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, "POST", r.Method)
+		assert.Equal(t, "1", r.FormValue("id"))
 		assert.Equal(t, "GBIHSMPXC2KJ3NJVHEYTG3KCHYEUQRT45X6AWYWXMAXZOAX4F5LFZYYQ", r.FormValue("from"))
 		assert.Equal(t, "200", r.FormValue("amount"))
 		assert.Equal(t, "USD", r.FormValue("asset_code"))

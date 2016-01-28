@@ -133,6 +133,7 @@ func (pl PaymentListener) onPayment(payment horizon.PaymentResponse) (err error)
 	resp, err := http.PostForm(
 		pl.config.Hooks.Receive,
 		url.Values{
+			"id":         {payment.Id},
 			"from":       {payment.From},
 			"amount":     {payment.Amount},
 			"asset_code": {payment.AssetCode},
