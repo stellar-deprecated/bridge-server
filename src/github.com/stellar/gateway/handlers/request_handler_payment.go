@@ -142,10 +142,11 @@ func (rh *RequestHandler) Payment(w http.ResponseWriter, r *http.Request) {
 
 	tx := b.Transaction(transactionMutators...)
 
-	// TODO check for errors
-	// if tx.Err != nil {
-	// 	//
-	// }
+	if tx.Err != nil {
+		log.WithFields(log.Fields{"err": tx.Err}).Print("Transaction builder error")
+		errorServerError(w)
+		return
+	}
 
 	txe := tx.Sign(source)
 	txeB64, err := txe.Base64()
