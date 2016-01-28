@@ -27,7 +27,7 @@ func NewRepository(dbType string, url string) (r Repository, err error) {
 
 func (r Repository) GetLastCursorValue() (cursor *string, err error) {
 	var receivedPayment ReceivedPayment
-	err = r.db.Get(&receivedPayment, "SELECT * FROM `ReceivedPayment` ORDER BY id DESC LIMIT 1")
+	err = r.db.Get(&receivedPayment, "SELECT * FROM ReceivedPayment ORDER BY id DESC LIMIT 1")
 	if err != nil {
 		if err.Error() == "sql: no rows in result set" {
 			return nil, nil
