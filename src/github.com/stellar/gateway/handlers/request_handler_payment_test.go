@@ -153,7 +153,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 					"GCF3WVYTHF75PEG6622G5G6KU26GOSDQPDHSCJ3DQD7VONH4EYVDOGKJ",
 				).Return(
 					horizon.AccountResponse{
-						SequenceNumber: 100,
+						SequenceNumber: "100",
 					},
 					nil,
 				).Once()
@@ -219,7 +219,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 					"GCF3WVYTHF75PEG6622G5G6KU26GOSDQPDHSCJ3DQD7VONH4EYVDOGKJ",
 				).Return(
 					horizon.AccountResponse{
-						SequenceNumber: 100,
+						SequenceNumber: "100",
 					},
 					nil,
 				).Once()
@@ -360,7 +360,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 						"GCF3WVYTHF75PEG6622G5G6KU26GOSDQPDHSCJ3DQD7VONH4EYVDOGKJ",
 					).Return(
 						horizon.AccountResponse{
-							SequenceNumber: 100,
+							SequenceNumber: "100",
 						},
 						nil,
 					).Once()
@@ -409,7 +409,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 					"GCF3WVYTHF75PEG6622G5G6KU26GOSDQPDHSCJ3DQD7VONH4EYVDOGKJ",
 				).Return(
 					horizon.AccountResponse{
-						SequenceNumber: 100,
+						SequenceNumber: "100",
 					},
 					nil,
 				).Once()
@@ -457,7 +457,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 					"GCF3WVYTHF75PEG6622G5G6KU26GOSDQPDHSCJ3DQD7VONH4EYVDOGKJ",
 				).Return(
 					horizon.AccountResponse{
-						SequenceNumber: 100,
+						SequenceNumber: "100",
 					},
 					nil,
 				).Once()
@@ -491,7 +491,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 					"GCF3WVYTHF75PEG6622G5G6KU26GOSDQPDHSCJ3DQD7VONH4EYVDOGKJ",
 				).Return(
 					horizon.AccountResponse{
-						SequenceNumber: 100,
+						SequenceNumber: "100",
 					},
 					nil,
 				).Once()
