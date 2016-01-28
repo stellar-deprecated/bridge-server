@@ -35,7 +35,7 @@ func NewPaymentListener(
 	pl.entityManager = entityManager
 	pl.horizon = horizon
 	pl.repository = repository
-	pl.issuingAccount, err = keypair.Parse(config.Accounts.IssuingSeed)
+	pl.issuingAccount, err = keypair.Parse(*config.Accounts.IssuingSeed)
 	pl.now = now
 	pl.log = logrus.WithFields(logrus.Fields{
 		"service": "PaymentListener",
@@ -44,7 +44,7 @@ func NewPaymentListener(
 }
 
 func (pl PaymentListener) Listen() (err error) {
-	accountId := pl.config.Accounts.ReceivingAccountId
+	accountId := *pl.config.Accounts.ReceivingAccountId
 
 	_, err = pl.horizon.LoadAccount(accountId)
 	if err != nil {
@@ -106,7 +106,7 @@ func (pl PaymentListener) onPayment(payment horizon.PaymentResponse) (err error)
 		return
 	}
 
-	if payment.To != pl.config.Accounts.ReceivingAccountId {
+	if payment.To != *pl.config.Accounts.ReceivingAccountId {
 		dbPayment.Status = "Operation sent not received"
 		savePayment(&dbPayment)
 		return nil
@@ -131,7 +131,7 @@ func (pl PaymentListener) onPayment(payment horizon.PaymentResponse) (err error)
 	}
 
 	resp, err := http.PostForm(
-		pl.config.Hooks.Receive,
+		*pl.config.Hooks.Receive,
 		url.Values{
 			"id":         {payment.Id},
 			"from":       {payment.From},

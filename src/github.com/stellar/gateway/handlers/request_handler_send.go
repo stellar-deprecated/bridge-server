@@ -27,7 +27,7 @@ func (rh *RequestHandler) Send(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	issuingKeypair, err := keypair.Parse(rh.Config.Accounts.IssuingSeed)
+	issuingKeypair, err := keypair.Parse(*rh.Config.Accounts.IssuingSeed)
 	if err != nil {
 		log.Print("Invalid issuingSeed")
 		errorServerError(w)
@@ -45,7 +45,7 @@ func (rh *RequestHandler) Send(w http.ResponseWriter, r *http.Request) {
 	}
 
 	submitResponse, err := rh.TransactionSubmitter.SubmitTransaction(
-		rh.Config.Accounts.IssuingSeed,
+		*rh.Config.Accounts.IssuingSeed,
 		operation,
 	)
 	if err != nil {
