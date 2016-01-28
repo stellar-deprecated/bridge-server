@@ -17,8 +17,8 @@ type Config struct {
 		Type string
 		Url  string
 	}
-	Accounts          *Accounts
-	Hooks             *Hooks
+	Accounts *Accounts
+	Hooks    *Hooks
 }
 
 type Accounts struct {

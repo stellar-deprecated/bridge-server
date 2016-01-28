@@ -36,15 +36,18 @@ func TestPaymentListener(t *testing.T) {
 	}))
 	defer receiveHookServer.Close()
 
+	IssuingSeed := "SC34WILLHVADXMP6ACPMIRA6TRAWJMVCLPFNW7S6MUMXJVLAZUC4EWHP"
+	ReceivingAccountId := "GATKP6ZQM5CSLECPMTAC5226PE367QALCPM6AFHTSULPPZMT62OOPMQB"
+
 	config := &config.Config{
 		Assets: []string{"USD", "EUR"},
-		Accounts: config.Accounts{
+		Accounts: &config.Accounts{
 			// GD4I7AFSLZGTDL34TQLWJOM2NHLIIOEKD5RHHZUW54HERBLSIRKUOXRR
-			IssuingSeed:        "SC34WILLHVADXMP6ACPMIRA6TRAWJMVCLPFNW7S6MUMXJVLAZUC4EWHP",
-			ReceivingAccountId: "GATKP6ZQM5CSLECPMTAC5226PE367QALCPM6AFHTSULPPZMT62OOPMQB",
+			IssuingSeed:        &IssuingSeed,
+			ReceivingAccountId: &ReceivingAccountId,
 		},
-		Hooks: config.Hooks{
-			Receive: receiveHookServer.URL,
+		Hooks: &config.Hooks{
+			Receive: &receiveHookServer.URL,
 		},
 	}
 
