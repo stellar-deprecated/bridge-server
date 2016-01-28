@@ -51,14 +51,14 @@ Then you can start the server:
 
 ### POST /payment
 
-Builds and submits a transaction with a single payment operation built from following parameters.
+Builds and submits a transaction with a single [`payment`](https://www.stellar.org/developers/learn/concepts/list-of-operations.html#payment) operation built from following parameters.
 
 #### Request Parameters
 
 name |  | description
 --- | --- | ---
 `source` | required | Secret seed of transaction source account
-`destination` | required | Account ID of payment destination account
+`destination` | required | Account ID or Stellar address (ex. `bob*stellar.org`) of payment destination account
 `amount` | required | Amount to send
 `asset_code` | optional | Asset code (XLM when empty)
 `asset_issuer` | optional | Account ID of asset issuer (XLM when empty)
@@ -83,13 +83,67 @@ memo=125" \
 http://localhost:8001/payment
 ```
 
+### POST /authorize
+
+Builds and submits a transaction with a [`allow_trust`](https://www.stellar.org/developers/learn/concepts/list-of-operations.html#allow-trust) operation. The source of this transaction will be the account specified by `accounts.authorizing_seed` config parameter.
+
+#### Request Parameters
+
+name |  | description
+--- | --- | ---
+`account_id` | required | Account ID of the account to authorize
+`asset_code` | required | Asset code of the asset to authorize. Must be present in `assets` config array.
+
+#### Response
+
+Check [`SubmitTransactionResponse`](./src/github.com/stellar/gateway/horizon/submit_transaction_response.go) struct.
+
+### POST /send
+
+Builds and submits a transaction with a [`payment`](https://www.stellar.org/developers/learn/concepts/list-of-operations.html#payment) operation. The source of this transaction will be the account specified by `accounts.issuing_seed` config parameter.
+
+#### Request Parameters
+
+name |  | description
+--- | --- | ---
+`destination` | required | Account ID or Stellar address (ex. `bob*stellar.org`) of the destination account
+`asset_code` | required | Asset code of the asset to send. Must be present in `assets` config array.
+`amount` | required | Amount to send.
+
+#### Response
+
+Check [`SubmitTransactionResponse`](./src/github.com/stellar/gateway/horizon/submit_transaction_response.go) struct.
+
 ## Hooks
 
-//
+Gateway server listens for payment operations to the account specified by `accounts.receiving_account_id`. Every time a payment arrives it will send a HTTP POST request to `hooks.receive`.
+
+### `hooks.receive`
+
+The POST request with following parameters will be sent to this hook when a payment arrives.
+
+> **Warning!** This hook can be called multiple times. Please check `id` parameter and respond with `200 OK` in case of duplicate payment.
+
+#### Request
+
+name | description
+--- | ---
+`id` | Operation ID
+`from` | Account ID of the sender
+`amount` | Amount that was sent
+`asset_code` | Code of the asset sent (ex. `USD`)
+`memo_type` | Type of the memo attached to the transaction. This field will be empty when no memo was attached.
+`memo` | Value of the memo attached. This field will be empty when no memo was attached.
+
+#### Response
+
+Response with `200 OK` when processing succeeded. Any other status code will be considered an error.
 
 ## Security
 
-//
+* This server must be set up in an isolated environment (ex. AWS VPC). Please make sure your firewall is properly configured and accepts connections from a trusted IPs only. You can also set `api_key` config parameter but it's not recommended. If you will not set this properly, an unauthorized person will be able to submit transactions from your accounts!
+* Make sure `hooks` accepts connections from the gateway server IP only.
+* Remember that `hooks.receive` may be called multiple times with the same payment. Check `id` parameter and ignore requests with the same value (just send `200 OK` response).
 
 ## Building
 
