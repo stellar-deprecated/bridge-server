@@ -39,7 +39,7 @@ func (rh *RequestHandler) Payment(w http.ResponseWriter, r *http.Request) {
 	assetCode := r.PostFormValue("asset_code")
 	assetIssuer := r.PostFormValue("asset_issuer")
 
-	var amountMutator interface{}
+	var operationBuilder interface{}
 
 	if assetCode != "" && assetIssuer != "" {
 		issuerKeypair, err := keypair.Parse(assetIssuer)
@@ -48,30 +48,28 @@ func (rh *RequestHandler) Payment(w http.ResponseWriter, r *http.Request) {
 			errorBadRequest(w, errorResponseString("invalid_issuer", "asset_issuer parameter is invalid"))
 			return
 		}
-		amountMutator = b.CreditAmount{assetCode, issuerKeypair.Address(), amount}
+
+		operationBuilder = b.Payment(
+			b.Destination{destinationObject.AccountId},
+			b.CreditAmount{assetCode, issuerKeypair.Address(), amount},
+		)
 	} else if assetCode == "" && assetIssuer == "" {
-		amountMutator = b.NativeAmount{amount}
+		mutators := []interface{}{
+			b.Destination{destinationObject.AccountId},
+			b.NativeAmount{amount},
+		}
+
+		// Check if destination account exist
+		_, err = rh.Horizon.LoadAccount(destinationObject.AccountId)
+		if err != nil {
+			log.WithFields(log.Fields{"error": err}).Error("Error loading account")
+			operationBuilder = b.CreateAccount(mutators...)
+		} else {
+			operationBuilder = b.Payment(mutators...)
+		}
 	} else {
 		log.Print("Missing asset param.")
 		errorBadRequest(w, errorResponseString("asset_missing_param", "When passing asser both params: `asset_code`, `asset_issuer` are required"))
-		return
-	}
-
-	paymentOperation := b.Payment(
-		b.Destination{destinationObject.AccountId},
-		amountMutator.(b.PaymentMutator),
-	)
-
-	if paymentOperation.Err != nil {
-		log.WithFields(log.Fields{"err": paymentOperation.Err}).Print("Payment builder error")
-		switch {
-		case paymentOperation.Err.Error() == "Asset code length is invalid":
-			errorBadRequest(w, errorResponseString("asset_code_invalid", "asset_code param is invalid"))
-		case strings.Contains(paymentOperation.Err.Error(), "cannot parse amount"):
-			errorBadRequest(w, errorResponseString("invalid_amount", "amount is invalid"))
-		default:
-			errorServerError(w)
-		}
 		return
 	}
 
@@ -133,7 +131,7 @@ func (rh *RequestHandler) Payment(w http.ResponseWriter, r *http.Request) {
 		b.SourceAccount{source},
 		b.Sequence{sequenceNumber + 1},
 		b.Network{rh.Config.NetworkPassphrase},
-		paymentOperation,
+		operationBuilder.(b.TransactionMutator),
 	}
 
 	if memoMutator != nil {
@@ -144,7 +142,17 @@ func (rh *RequestHandler) Payment(w http.ResponseWriter, r *http.Request) {
 
 	if tx.Err != nil {
 		log.WithFields(log.Fields{"err": tx.Err}).Print("Transaction builder error")
-		errorServerError(w)
+		// TODO when build.OperationBuilder interface is ready check for
+		// create_account and payment errors separately
+		switch {
+		case tx.Err.Error() == "Asset code length is invalid":
+			errorBadRequest(w, errorResponseString("asset_code_invalid", "asset_code param is invalid"))
+		case strings.Contains(tx.Err.Error(), "cannot parse amount"):
+			errorBadRequest(w, errorResponseString("invalid_amount", "amount is invalid"))
+		default:
+			log.WithFields(log.Fields{"err": tx.Err}).Print("Transaction builder error")
+			errorServerError(w)
+		}
 		return
 	}
 

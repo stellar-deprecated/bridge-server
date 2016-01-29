@@ -148,6 +148,13 @@ func TestRequestHandlerPayment(t *testing.T) {
 					"bob*stellar.org",
 				).Return(StellarDestination{AccountId: "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632"}, nil).Once()
 
+				// Checking if destination account exists
+				mockHorizon.On(
+					"LoadAccount",
+					"GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632",
+				).Return(horizon.AccountResponse{}, nil).Once()
+
+				// Loading sequence number
 				mockHorizon.On(
 					"LoadAccount",
 					"GCF3WVYTHF75PEG6622G5G6KU26GOSDQPDHSCJ3DQD7VONH4EYVDOGKJ",
@@ -214,6 +221,13 @@ func TestRequestHandlerPayment(t *testing.T) {
 					nil,
 				).Once()
 
+				// Checking if destination account exists
+				mockHorizon.On(
+					"LoadAccount",
+					"GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632",
+				).Return(horizon.AccountResponse{}, nil).Once()
+
+				// Loading sequence number
 				mockHorizon.On(
 					"LoadAccount",
 					"GCF3WVYTHF75PEG6622G5G6KU26GOSDQPDHSCJ3DQD7VONH4EYVDOGKJ",
@@ -271,6 +285,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 		})
 
 		Convey("When assetCode is invalid", func() {
+			// GBKGH7QZVCZ2ZA5OUGZSTHFNXTBHL3MPCKSCBJUAQODGPMWP7OMMRKDW
 			source := "SDRAS7XIQNX25UDCCX725R4EYGBFYGJE4HJ2A3DFCWJIHMRSMS7CXX42"
 			destination := "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632"
 			amount := "20"
@@ -278,6 +293,16 @@ func TestRequestHandlerPayment(t *testing.T) {
 			assetIssuer := "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632"
 
 			Convey("it should return error", func() {
+				mockHorizon.On(
+					"LoadAccount",
+					"GBKGH7QZVCZ2ZA5OUGZSTHFNXTBHL3MPCKSCBJUAQODGPMWP7OMMRKDW",
+				).Return(
+					horizon.AccountResponse{
+						SequenceNumber: "100",
+					},
+					nil,
+				).Once()
+
 				statusCode, response := getResponse(
 					testServer,
 					url.Values{
@@ -295,11 +320,22 @@ func TestRequestHandlerPayment(t *testing.T) {
 		})
 
 		Convey("When amount is invalid", func() {
+			// GBKGH7QZVCZ2ZA5OUGZSTHFNXTBHL3MPCKSCBJUAQODGPMWP7OMMRKDW
 			source := "SDRAS7XIQNX25UDCCX725R4EYGBFYGJE4HJ2A3DFCWJIHMRSMS7CXX42"
 			destination := "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632"
 			amount := "test"
 			assetCode := "USD"
 			assetIssuer := "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632"
+
+			mockHorizon.On(
+				"LoadAccount",
+				"GBKGH7QZVCZ2ZA5OUGZSTHFNXTBHL3MPCKSCBJUAQODGPMWP7OMMRKDW",
+			).Return(
+				horizon.AccountResponse{
+					SequenceNumber: "100",
+				},
+				nil,
+			).Once()
 
 			Convey("it should return error", func() {
 				statusCode, response := getResponse(
@@ -452,6 +488,13 @@ func TestRequestHandlerPayment(t *testing.T) {
 					"amount":      {"20"},
 				}
 
+				// Checking if destination exists
+				mockHorizon.On(
+					"LoadAccount",
+					"GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632",
+				).Return(horizon.AccountResponse{}, nil).Once()
+
+				// Loading sequence number
 				mockHorizon.On(
 					"LoadAccount",
 					"GCF3WVYTHF75PEG6622G5G6KU26GOSDQPDHSCJ3DQD7VONH4EYVDOGKJ",
