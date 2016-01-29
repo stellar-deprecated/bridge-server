@@ -54,8 +54,8 @@ type MockTransactionSubmitter struct {
 	mock.Mock
 }
 
-func (ts *MockTransactionSubmitter) SubmitTransaction(seed string, operation interface{}) (response horizon.SubmitTransactionResponse, err error) {
-	a := ts.Called(seed, operation)
+func (ts *MockTransactionSubmitter) SubmitTransaction(seed string, operation, memo interface{}) (response horizon.SubmitTransactionResponse, err error) {
+	a := ts.Called(seed, operation, memo)
 	return a.Get(0).(horizon.SubmitTransactionResponse), a.Error(1)
 }
 

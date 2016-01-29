@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	log "github.com/Sirupsen/logrus"
 	"net/http"
+	"strconv"
 
 	b "github.com/stellar/go-stellar-base/build"
 	"github.com/stellar/go-stellar-base/keypair"
@@ -14,9 +15,16 @@ func (rh *RequestHandler) Send(w http.ResponseWriter, r *http.Request) {
 	assetCode := r.PostFormValue("asset_code")
 	amount := r.PostFormValue("amount")
 
-	_, err := keypair.Parse(destination)
+	destinationObject, err := rh.AddressResolver.Resolve(destination)
 	if err != nil {
-		log.Print("Invalid destination parameter: ", destination)
+		log.WithFields(log.Fields{"destination": destination}).Print("Cannot resolve address")
+		errorBadRequest(w, errorResponseString("invalid_destination", "Cannot resolve destination"))
+		return
+	}
+
+	_, err = keypair.Parse(destinationObject.AccountId)
+	if err != nil {
+		log.WithFields(log.Fields{"AccountId": destinationObject.AccountId}).Print("Invalid AccountId in destination")
 		errorBadRequest(w, errorResponseString("invalid_destination", "destination parameter is invalid"))
 		return
 	}
@@ -34,19 +42,60 @@ func (rh *RequestHandler) Send(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	operation := b.Payment(
-		b.Destination{destination},
+	operationMutator := b.Payment(
+		b.Destination{destinationObject.AccountId},
 		b.CreditAmount{assetCode, issuingKeypair.Address(), amount},
 	)
-	if operation.Err != nil {
-		log.Print("Error creating operation ", operation.Err)
+	if operationMutator.Err != nil {
+		log.Print("Error creating operationMutator ", operationMutator.Err)
 		errorServerError(w)
+		return
+	}
+
+	memoType := r.PostFormValue("memo_type")
+	memo := r.PostFormValue("memo")
+
+	if !(((memoType == "") && (memo == "")) || ((memoType != "") && (memo != ""))) {
+		log.Print("Missing one of memo params.")
+		errorBadRequest(w, errorResponseString("memo_missing_param", "When passing memo both params: `memo_type`, `memo` are required"))
+		return
+	}
+
+	if destinationObject.MemoType != nil {
+		if memoType != "" {
+			log.Print("Memo given in request but federation returned memo fields.")
+			errorBadRequest(w, errorResponseString("cannot_use_memo", "Memo given in request but federation returned memo fields"))
+			return
+		}
+
+		memoType = *destinationObject.MemoType
+		memo = *destinationObject.Memo
+	}
+
+	var memoMutator interface{}
+	switch {
+	case memoType == "":
+		break
+	case memoType == "id":
+		id, err := strconv.ParseUint(memo, 10, 64)
+		if err != nil {
+			log.WithFields(log.Fields{"memo": memo}).Print("Cannot convert memo_id value to uint64")
+			errorBadRequest(w, errorResponseString("cannot_convert_memo_id", "Cannot convert memo_id value"))
+			return
+		}
+		memoMutator = b.MemoID{id}
+	case memoType == "text":
+		memoMutator = b.MemoText{memo}
+	default:
+		log.Print("Not supported memo type: ", memoType)
+		errorBadRequest(w, errorResponseString("memo_not_supported", "Not supported memo type"))
 		return
 	}
 
 	submitResponse, err := rh.TransactionSubmitter.SubmitTransaction(
 		*rh.Config.Accounts.IssuingSeed,
-		operation,
+		operationMutator,
+		memoMutator,
 	)
 	if err != nil {
 		log.Print("Error submitting transaction ", err)
@@ -124,7 +173,7 @@ func (rh *RequestHandler) Send(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	json, err := json.Marshal(submitResponse)
+	json, err := json.MarshalIndent(submitResponse, "", "  ")
 
 	if err != nil {
 		errorServerError(w)

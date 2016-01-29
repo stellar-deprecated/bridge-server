@@ -26,7 +26,7 @@ func (rh *RequestHandler) Authorize(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	operation := b.AllowTrust(
+	operationMutator := b.AllowTrust(
 		b.Trustor{accountId},
 		b.Authorize{true},
 		b.AllowTrustAsset{assetCode},
@@ -34,7 +34,8 @@ func (rh *RequestHandler) Authorize(w http.ResponseWriter, r *http.Request) {
 
 	submitResponse, err := rh.TransactionSubmitter.SubmitTransaction(
 		*rh.Config.Accounts.AuthorizingSeed,
-		operation,
+		operationMutator,
+		nil,
 	)
 	if err != nil {
 		log.Print("Error submitting transaction ", err)
@@ -87,7 +88,7 @@ func (rh *RequestHandler) Authorize(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	json, err := json.Marshal(submitResponse)
+	json, err := json.MarshalIndent(submitResponse, "", "  ")
 
 	if err != nil {
 		errorServerError(w)

@@ -109,6 +109,8 @@ name |  | description
 `destination` | required | Account ID or Stellar address (ex. `bob*stellar.org`) of the destination account
 `asset_code` | required | Asset code of the asset to send. Must be present in `assets` config array.
 `amount` | required | Amount to send.
+`memo_type` | optional | Memo type, one of: `id`, `text`
+`memo` | optional | Memo value, when `memo_type` is `id` it must be uint64
 
 #### Response
 

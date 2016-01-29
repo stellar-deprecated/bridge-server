@@ -77,6 +77,7 @@ func TestRequestHandlerAuthorize(t *testing.T) {
 					"SubmitTransaction",
 					*config.Accounts.AuthorizingSeed,
 					operation,
+					nil,
 				).Return(
 					horizon.SubmitTransactionResponse{},
 					errors.New("Error sending transaction"),
@@ -86,7 +87,7 @@ func TestRequestHandlerAuthorize(t *testing.T) {
 					statusCode, response := getResponse(testServer, url.Values{"account_id": {accountId}, "asset_code": {assetCode}})
 					responseString := strings.TrimSpace(string(response))
 					assert.Equal(t, 500, statusCode)
-					assert.Equal(t, "{\"code\":\"server_error\",\"message\":\"Server error\"}", responseString)
+					assert.Equal(t, getServerErrorResponseString(), responseString)
 					mockTransactionSubmitter.AssertExpectations(t)
 				})
 			})
@@ -102,6 +103,7 @@ func TestRequestHandlerAuthorize(t *testing.T) {
 					"SubmitTransaction",
 					*config.Accounts.AuthorizingSeed,
 					operation,
+					nil,
 				).Return(expectedSubmitResponse, nil).Once()
 
 				Convey("it should succeed", func() {

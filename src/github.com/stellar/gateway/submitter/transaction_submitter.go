@@ -14,7 +14,7 @@ import (
 )
 
 type TransactionSubmitterInterface interface {
-	SubmitTransaction(seed string, operation interface{}) (response horizon.SubmitTransactionResponse, err error)
+	SubmitTransaction(seed string, operation, memo interface{}) (response horizon.SubmitTransactionResponse, err error)
 }
 
 type TransactionSubmitter struct {
@@ -75,7 +75,7 @@ func (ts *TransactionSubmitter) GetAccount(seed string) (account *Account, err e
 	return
 }
 
-func (ts *TransactionSubmitter) SubmitTransaction(seed string, operation interface{}) (response horizon.SubmitTransactionResponse, err error) {
+func (ts *TransactionSubmitter) SubmitTransaction(seed string, operation, memo interface{}) (response horizon.SubmitTransactionResponse, err error) {
 	account, err := ts.GetAccount(seed)
 	if err != nil {
 		return
@@ -88,19 +88,31 @@ func (ts *TransactionSubmitter) SubmitTransaction(seed string, operation interfa
 	sequenceNumber = account.SequenceNumber
 	account.Mutex.Unlock()
 
-	mutator, ok := operation.(build.TransactionMutator)
+	operationMutator, ok := operation.(build.TransactionMutator)
 	if !ok {
-		ts.log.Error("Cannot cast to build.TransactionMutator")
-		err = errors.New("Cannot cast to build.TransactionMutator")
+		ts.log.Error("Cannot cast operationMutator to build.TransactionMutator")
+		err = errors.New("Cannot cast operationMutator to build.TransactionMutator")
 		return
 	}
 
-	tx := build.Transaction(
+	mutators := []build.TransactionMutator{
 		build.SourceAccount{account.Seed},
 		build.Sequence{sequenceNumber},
 		ts.Network,
-		mutator,
-	)
+		operationMutator,
+	}
+
+	if memo != nil {
+		memoMutator, ok := memo.(build.TransactionMutator)
+		if !ok {
+			ts.log.Error("Cannot cast memo to build.TransactionMutator")
+			err = errors.New("Cannot cast memo to build.TransactionMutator")
+			return
+		}
+		mutators = append(mutators, memoMutator)
+	}
+
+	tx := build.Transaction(mutators...)
 
 	txe := tx.Sign(seed)
 	txeB64, err := txe.Base64()
