@@ -30,6 +30,8 @@ type Horizon struct {
 	log       *logrus.Entry
 }
 
+const SUBMIT_TIMEOUT = 30 * time.Second
+
 func New(serverUrl string) (horizon Horizon) {
 	horizon.ServerUrl = serverUrl
 	horizon.log = logrus.WithFields(logrus.Fields{
@@ -150,8 +152,11 @@ func (h *Horizon) StreamPayments(accountId string, cursor *string, onPaymentHand
 func (h *Horizon) SubmitTransaction(txeBase64 string) (response SubmitTransactionResponse, err error) {
 	v := url.Values{}
 	v.Set("tx", txeBase64)
-	// TODO add request timeout
-	resp, err := http.PostForm(h.ServerUrl+"/transactions", v)
+
+	client := http.Client{
+		Timeout: SUBMIT_TIMEOUT,
+	}
+	resp, err := client.PostForm(h.ServerUrl+"/transactions", v)
 	if err != nil {
 		return
 	}
