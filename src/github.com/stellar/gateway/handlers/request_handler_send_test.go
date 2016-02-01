@@ -43,8 +43,8 @@ func TestRequestHandlerSend(t *testing.T) {
 	}
 
 	requestHandler := RequestHandler{
-		AddressResolver: addressResolver,
-		Config: &config,
+		AddressResolver:      addressResolver,
+		Config:               &config,
 		TransactionSubmitter: mockTransactionSubmitter,
 	}
 	testServer := httptest.NewServer(http.HandlerFunc(requestHandler.Send))
@@ -59,7 +59,7 @@ func TestRequestHandlerSend(t *testing.T) {
 				statusCode, response := getResponse(testServer, url.Values{"destination": {destination}, "asset_code": {assetCode}})
 				responseString := strings.TrimSpace(string(response))
 				assert.Equal(t, 400, statusCode)
-				assert.Equal(t, errorResponseString("invalid_destination", "destination parameter is invalid"), responseString)
+				assert.Equal(t, getResponseString(horizon.PaymentInvalidDestination), responseString)
 			})
 		})
 
@@ -71,14 +71,14 @@ func TestRequestHandlerSend(t *testing.T) {
 				statusCode, response := getResponse(testServer, url.Values{"destination": {destination}, "asset_code": {assetCode}})
 				responseString := strings.TrimSpace(string(response))
 				assert.Equal(t, 400, statusCode)
-				assert.Equal(t, errorResponseString("invalid_asset_code", "Given assetCode not allowed"), responseString)
+				assert.Equal(t, getResponseString(horizon.PaymentAssetCodeNotAllowed), responseString)
 			})
 		})
 
 		Convey("When destination is a Stellar address", func() {
 			params := url.Values{
-				"asset_code": {"USD"},
-				"amount": {"20"},
+				"asset_code":  {"USD"},
+				"amount":      {"20"},
 				"destination": {"bob*stellar.org"},
 			}
 
@@ -95,7 +95,7 @@ func TestRequestHandlerSend(t *testing.T) {
 					statusCode, response := getResponse(testServer, params)
 					responseString := strings.TrimSpace(string(response))
 					assert.Equal(t, 400, statusCode)
-					assert.Equal(t, errorResponseString("invalid_destination", "Cannot resolve destination"), responseString)
+					assert.Equal(t, getResponseString(horizon.PaymentCannotResolveDestination), responseString)
 				})
 			})
 
@@ -112,7 +112,7 @@ func TestRequestHandlerSend(t *testing.T) {
 					statusCode, response := getResponse(testServer, params)
 					responseString := strings.TrimSpace(string(response))
 					assert.Equal(t, 400, statusCode)
-					assert.Equal(t, errorResponseString("invalid_destination", "Cannot resolve destination"), responseString)
+					assert.Equal(t, getResponseString(horizon.PaymentCannotResolveDestination), responseString)
 				})
 			})
 
@@ -139,7 +139,7 @@ func TestRequestHandlerSend(t *testing.T) {
 					statusCode, response := getResponse(testServer, params)
 					responseString := strings.TrimSpace(string(response))
 					assert.Equal(t, 400, statusCode)
-					assert.Equal(t, errorResponseString("invalid_destination", "Cannot resolve destination"), responseString)
+					assert.Equal(t, getResponseString(horizon.PaymentCannotResolveDestination), responseString)
 				})
 			})
 
@@ -196,8 +196,8 @@ func TestRequestHandlerSend(t *testing.T) {
 
 		Convey("When destination is an accountId", func() {
 			params := url.Values{
-				"asset_code": {"USD"},
-				"amount": {"20"},
+				"asset_code":  {"USD"},
+				"amount":      {"20"},
 				"destination": {"GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632"},
 			}
 
@@ -226,7 +226,7 @@ func TestRequestHandlerSend(t *testing.T) {
 						statusCode, response := getResponse(testServer, params)
 						responseString := strings.TrimSpace(string(response))
 						assert.Equal(t, 500, statusCode)
-						assert.Equal(t, getServerErrorResponseString(), responseString)
+						assert.Equal(t, getResponseString(horizon.ServerError), responseString)
 						mockTransactionSubmitter.AssertExpectations(t)
 					})
 				})

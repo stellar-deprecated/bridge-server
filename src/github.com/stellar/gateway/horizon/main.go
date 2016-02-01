@@ -192,71 +192,76 @@ func (h *Horizon) SubmitTransaction(txeBase64 string) (response SubmitTransactio
 		txResult, err = unmarshalTransactionResult(response.Extras.ResultXdr)
 
 		if err != nil {
-			h.log.Info("Cannot decode transaction result")
+			h.log.Error("Cannot decode transaction result")
 			return
 		}
 
 		transactionResult := txResult.Result.Code
 		operationsResults := *txResult.Result.Results
-		var transactionErrorCode string
-		var operationErrorCode string
 
-		if transactionResult != xdr.TransactionResultCodeTxSuccess {
+		var error *SubmitTransactionResponseError
+
+		if transactionResult != xdr.TransactionResultCodeTxSuccess &&
+			transactionResult != xdr.TransactionResultCodeTxFailed {
 			switch transactionResult {
-			case xdr.TransactionResultCodeTxFailed:
-				transactionErrorCode = "transaction_failed"
 			case xdr.TransactionResultCodeTxBadSeq:
-				transactionErrorCode = "transaction_bad_seq"
+				error = TransactionBadSequence
+			case xdr.TransactionResultCodeTxBadAuth:
+				error = TransactionBadAuth
+			case xdr.TransactionResultCodeTxInsufficientBalance:
+				error = TransactionInsufficientBalance
+			case xdr.TransactionResultCodeTxNoAccount:
+				error = TransactionNoAccount
+			case xdr.TransactionResultCodeTxInsufficientFee:
+				error = TransactionInsufficientFee
+			case xdr.TransactionResultCodeTxBadAuthExtra:
+				error = TransactionBadAuthExtra
 			default:
-				transactionErrorCode = "unknown"
+				error = ServerError
 			}
-		}
-
-		if operationsResults != nil {
+		} else if operationsResults != nil {
 			if operationsResults[0].Tr.AllowTrustResult != nil {
 				switch operationsResults[0].Tr.AllowTrustResult.Code {
 				case xdr.AllowTrustResultCodeAllowTrustMalformed:
-					operationErrorCode = "allow_trust_malformed"
+					error = AllowTrustMalformed
 				case xdr.AllowTrustResultCodeAllowTrustNoTrustLine:
-					operationErrorCode = "allow_trust_not_trustline"
+					error = AllowTrustNoTrustline
 				case xdr.AllowTrustResultCodeAllowTrustTrustNotRequired:
-					operationErrorCode = "allow_trust_trust_not_required"
+					error = AllowTrustTrustNotRequired
 				case xdr.AllowTrustResultCodeAllowTrustCantRevoke:
-					operationErrorCode = "allow_trust_trust_cant_revoke"
+					error = AllowTrustCantRevoke
 				default:
-					operationErrorCode = "unknown"
+					error = ServerError
 				}
 			} else if operationsResults[0].Tr.PaymentResult != nil {
 				switch operationsResults[0].Tr.PaymentResult.Code {
 				case xdr.PaymentResultCodePaymentMalformed:
-					operationErrorCode = "payment_malformed"
+					error = PaymentMalformed
 				case xdr.PaymentResultCodePaymentUnderfunded:
-					operationErrorCode = "payment_underfunded"
+					error = PaymentUnderfunded
 				case xdr.PaymentResultCodePaymentSrcNoTrust:
-					operationErrorCode = "payment_src_no_trust"
+					error = PaymentSrcNoTrust
 				case xdr.PaymentResultCodePaymentSrcNotAuthorized:
-					operationErrorCode = "payment_src_not_authorized"
+					error = PaymentSrcNotAuthorized
 				case xdr.PaymentResultCodePaymentNoDestination:
-					operationErrorCode = "payment_no_destination"
+					error = PaymentNoDestination
 				case xdr.PaymentResultCodePaymentNoTrust:
-					operationErrorCode = "payment_no_trust"
+					error = PaymentNoTrust
 				case xdr.PaymentResultCodePaymentNotAuthorized:
-					operationErrorCode = "payment_not_authorized"
+					error = PaymentNotAuthorized
 				case xdr.PaymentResultCodePaymentLineFull:
-					operationErrorCode = "payment_line_full"
+					error = PaymentLineFull
 				case xdr.PaymentResultCodePaymentNoIssuer:
-					operationErrorCode = "payment_no_issuer"
+					error = PaymentNoIssuer
 				default:
-					operationErrorCode = "unknown"
+					error = ServerError
 				}
 			}
+		} else {
+			error = ServerError
 		}
 
-		errors := &SubmitTransactionResponseError{
-			TransactionErrorCode: transactionErrorCode,
-			OperationErrorCode:   operationErrorCode,
-		}
-		response.Errors = errors
+		response.Error = error
 	}
 
 	return

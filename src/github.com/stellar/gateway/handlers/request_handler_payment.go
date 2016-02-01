@@ -1,12 +1,12 @@
 package handlers
 
 import (
-	"encoding/json"
 	log "github.com/Sirupsen/logrus"
 	"net/http"
 	"strconv"
 	"strings"
 
+	"github.com/stellar/gateway/horizon"
 	b "github.com/stellar/go-stellar-base/build"
 	"github.com/stellar/go-stellar-base/keypair"
 )
@@ -16,7 +16,7 @@ func (rh *RequestHandler) Payment(w http.ResponseWriter, r *http.Request) {
 	sourceKeypair, err := keypair.Parse(source)
 	if err != nil {
 		log.WithFields(log.Fields{"source": source}).Print("Invalid source parameter")
-		errorBadRequest(w, errorResponseString("invalid_source", "source parameter is invalid"))
+		writeError(w, horizon.PaymentInvalidSource)
 		return
 	}
 
@@ -24,14 +24,14 @@ func (rh *RequestHandler) Payment(w http.ResponseWriter, r *http.Request) {
 	destinationObject, err := rh.AddressResolver.Resolve(destination)
 	if err != nil {
 		log.WithFields(log.Fields{"destination": destination}).Print("Cannot resolve address")
-		errorBadRequest(w, errorResponseString("invalid_destination", "Cannot resolve destination"))
+		writeError(w, horizon.PaymentCannotResolveDestination)
 		return
 	}
 
 	_, err = keypair.Parse(destinationObject.AccountId)
 	if err != nil {
 		log.WithFields(log.Fields{"AccountId": destinationObject.AccountId}).Print("Invalid AccountId in destination")
-		errorBadRequest(w, errorResponseString("invalid_destination", "destination parameter is invalid"))
+		writeError(w, horizon.PaymentInvalidDestination)
 		return
 	}
 
@@ -45,7 +45,7 @@ func (rh *RequestHandler) Payment(w http.ResponseWriter, r *http.Request) {
 		issuerKeypair, err := keypair.Parse(assetIssuer)
 		if err != nil {
 			log.WithFields(log.Fields{"asset_issuer": assetIssuer}).Print("Invalid asset_issuer parameter")
-			errorBadRequest(w, errorResponseString("invalid_issuer", "asset_issuer parameter is invalid"))
+			writeError(w, horizon.PaymentInvalidIssuer)
 			return
 		}
 
@@ -69,7 +69,7 @@ func (rh *RequestHandler) Payment(w http.ResponseWriter, r *http.Request) {
 		}
 	} else {
 		log.Print("Missing asset param.")
-		errorBadRequest(w, errorResponseString("asset_missing_param", "When passing asser both params: `asset_code`, `asset_issuer` are required"))
+		writeError(w, horizon.PaymentMissingParamAsset)
 		return
 	}
 
@@ -78,14 +78,14 @@ func (rh *RequestHandler) Payment(w http.ResponseWriter, r *http.Request) {
 
 	if !(((memoType == "") && (memo == "")) || ((memoType != "") && (memo != ""))) {
 		log.Print("Missing one of memo params.")
-		errorBadRequest(w, errorResponseString("memo_missing_param", "When passing memo both params: `memo_type`, `memo` are required"))
+		writeError(w, horizon.PaymentMissingParamMemo)
 		return
 	}
 
 	if destinationObject.MemoType != nil {
 		if memoType != "" {
 			log.Print("Memo given in request but federation returned memo fields.")
-			errorBadRequest(w, errorResponseString("cannot_use_memo", "Memo given in request but federation returned memo fields"))
+			writeError(w, horizon.PaymentCannotUseMemo)
 			return
 		}
 
@@ -101,7 +101,7 @@ func (rh *RequestHandler) Payment(w http.ResponseWriter, r *http.Request) {
 		id, err := strconv.ParseUint(memo, 10, 64)
 		if err != nil {
 			log.WithFields(log.Fields{"memo": memo}).Print("Cannot convert memo_id value to uint64")
-			errorBadRequest(w, errorResponseString("cannot_convert_memo_id", "Cannot convert memo_id value"))
+			writeError(w, horizon.PaymentInvalidMemo)
 			return
 		}
 		memoMutator = b.MemoID{id}
@@ -109,21 +109,21 @@ func (rh *RequestHandler) Payment(w http.ResponseWriter, r *http.Request) {
 		memoMutator = &b.MemoText{memo}
 	default:
 		log.Print("Not supported memo type: ", memoType)
-		errorBadRequest(w, errorResponseString("memo_not_supported", "Not supported memo type"))
+		writeError(w, horizon.PaymentInvalidMemo)
 		return
 	}
 
 	accountResponse, err := rh.Horizon.LoadAccount(sourceKeypair.Address())
 	if err != nil {
 		log.WithFields(log.Fields{"error": err}).Error("Cannot load source account")
-		errorBadRequest(w, errorResponseString("source_not_exist", "source account does not exist"))
+		writeError(w, horizon.PaymentSourceNotExist)
 		return
 	}
 
 	sequenceNumber, err := strconv.ParseUint(accountResponse.SequenceNumber, 10, 64)
 	if err != nil {
 		log.WithFields(log.Fields{"error": err}).Error("Cannot convert SequenceNumber")
-		errorServerError(w)
+		writeError(w, horizon.ServerError)
 		return
 	}
 
@@ -146,12 +146,12 @@ func (rh *RequestHandler) Payment(w http.ResponseWriter, r *http.Request) {
 		// create_account and payment errors separately
 		switch {
 		case tx.Err.Error() == "Asset code length is invalid":
-			errorBadRequest(w, errorResponseString("asset_code_invalid", "asset_code param is invalid"))
+			writeError(w, horizon.PaymentMalformedAssetCode)
 		case strings.Contains(tx.Err.Error(), "cannot parse amount"):
-			errorBadRequest(w, errorResponseString("invalid_amount", "amount is invalid"))
+			writeError(w, horizon.PaymentInvalidAmount)
 		default:
 			log.WithFields(log.Fields{"err": tx.Err}).Print("Transaction builder error")
-			errorServerError(w)
+			writeError(w, horizon.ServerError)
 		}
 		return
 	}
@@ -161,28 +161,16 @@ func (rh *RequestHandler) Payment(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		log.WithFields(log.Fields{"error": err}).Error("Cannot encode transaction envelope")
-		errorServerError(w)
+		writeError(w, horizon.ServerError)
 		return
 	}
 
 	submitResponse, err := rh.Horizon.SubmitTransaction(txeB64)
 	if err != nil {
 		log.WithFields(log.Fields{"error": err}).Error("Error submitting transaction")
-		errorServerError(w)
+		writeError(w, horizon.ServerError)
 		return
 	}
 
-	response, err := json.MarshalIndent(submitResponse, "", "  ")
-	if err != nil {
-		log.WithFields(log.Fields{"error": err}).Error("Cannot Marshal submitResponse")
-		errorServerError(w)
-		return
-	}
-
-	if submitResponse.Ledger != nil {
-		w.Write(response)
-	} else {
-		errorBadRequest(w, string(response))
-	}
-
+	write(w, submitResponse)
 }

@@ -46,7 +46,7 @@ func TestRequestHandlerAuthorize(t *testing.T) {
 				statusCode, response := getResponse(testServer, url.Values{"account_id": {accountId}, "asset_code": {assetCode}})
 				responseString := strings.TrimSpace(string(response))
 				assert.Equal(t, 400, statusCode)
-				assert.Equal(t, errorResponseString("invalid_account_id", "accountId parameter is invalid"), responseString)
+				assert.Equal(t, getResponseString(horizon.AllowTrustInvalidAccountId), responseString)
 			})
 		})
 
@@ -58,7 +58,7 @@ func TestRequestHandlerAuthorize(t *testing.T) {
 				statusCode, response := getResponse(testServer, url.Values{"account_id": {accountId}, "asset_code": {assetCode}})
 				responseString := strings.TrimSpace(string(response))
 				assert.Equal(t, 400, statusCode)
-				assert.Equal(t, errorResponseString("invalid_asset_code", "Given assetCode not allowed"), responseString)
+				assert.Equal(t, getResponseString(horizon.AllowTrustAssetCodeNotAllowed), responseString)
 			})
 		})
 
@@ -87,7 +87,7 @@ func TestRequestHandlerAuthorize(t *testing.T) {
 					statusCode, response := getResponse(testServer, url.Values{"account_id": {accountId}, "asset_code": {assetCode}})
 					responseString := strings.TrimSpace(string(response))
 					assert.Equal(t, 500, statusCode)
-					assert.Equal(t, getServerErrorResponseString(), responseString)
+					assert.Equal(t, getResponseString(horizon.ServerError), responseString)
 					mockTransactionSubmitter.AssertExpectations(t)
 				})
 			})

@@ -42,7 +42,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 				statusCode, response := getResponse(testServer, url.Values{"source": {source}})
 				responseString := strings.TrimSpace(string(response))
 				assert.Equal(t, 400, statusCode)
-				assert.Equal(t, errorResponseString("invalid_source", "source parameter is invalid"), responseString)
+				assert.Equal(t, getResponseString(horizon.PaymentInvalidSource), responseString)
 			})
 		})
 
@@ -54,7 +54,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 				statusCode, response := getResponse(testServer, url.Values{"destination": {destination}, "source": {source}})
 				responseString := strings.TrimSpace(string(response))
 				assert.Equal(t, 400, statusCode)
-				assert.Equal(t, errorResponseString("invalid_destination", "destination parameter is invalid"), responseString)
+				assert.Equal(t, getResponseString(horizon.PaymentInvalidDestination), responseString)
 			})
 		})
 
@@ -77,7 +77,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 					statusCode, response := getResponse(testServer, params)
 					responseString := strings.TrimSpace(string(response))
 					assert.Equal(t, 400, statusCode)
-					assert.Equal(t, errorResponseString("invalid_destination", "Cannot resolve destination"), responseString)
+					assert.Equal(t, getResponseString(horizon.PaymentCannotResolveDestination), responseString)
 				})
 			})
 
@@ -94,7 +94,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 					statusCode, response := getResponse(testServer, params)
 					responseString := strings.TrimSpace(string(response))
 					assert.Equal(t, 400, statusCode)
-					assert.Equal(t, errorResponseString("invalid_destination", "Cannot resolve destination"), responseString)
+					assert.Equal(t, getResponseString(horizon.PaymentCannotResolveDestination), responseString)
 				})
 			})
 
@@ -121,7 +121,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 					statusCode, response := getResponse(testServer, params)
 					responseString := strings.TrimSpace(string(response))
 					assert.Equal(t, 400, statusCode)
-					assert.Equal(t, errorResponseString("invalid_destination", "Cannot resolve destination"), responseString)
+					assert.Equal(t, getResponseString(horizon.PaymentCannotResolveDestination), responseString)
 				})
 			})
 
@@ -280,7 +280,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 				)
 				responseString := strings.TrimSpace(string(response))
 				assert.Equal(t, 400, statusCode)
-				assert.Equal(t, errorResponseString("invalid_issuer", "asset_issuer parameter is invalid"), responseString)
+				assert.Equal(t, getResponseString(horizon.PaymentInvalidIssuer), responseString)
 			})
 		})
 
@@ -315,7 +315,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 				)
 				responseString := strings.TrimSpace(string(response))
 				assert.Equal(t, 400, statusCode)
-				assert.Equal(t, errorResponseString("asset_code_invalid", "asset_code param is invalid"), responseString)
+				assert.Equal(t, getResponseString(horizon.PaymentMalformedAssetCode), responseString)
 			})
 		})
 
@@ -350,7 +350,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 				)
 				responseString := strings.TrimSpace(string(response))
 				assert.Equal(t, 400, statusCode)
-				assert.Equal(t, errorResponseString("invalid_amount", "amount is invalid"), responseString)
+				assert.Equal(t, getResponseString(horizon.PaymentInvalidAmount), responseString)
 			})
 		})
 
@@ -370,7 +370,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 					statusCode, response := getResponse(testServer, validParams)
 					responseString := strings.TrimSpace(string(response))
 					assert.Equal(t, 400, statusCode)
-					assert.Equal(t, errorResponseString("memo_missing_param", "When passing memo both params: `memo_type`, `memo` are required"), responseString)
+					assert.Equal(t, getResponseString(horizon.PaymentMissingParamMemo), responseString)
 				})
 
 				Convey("only `memo_type` param is set", func() {
@@ -378,7 +378,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 					statusCode, response := getResponse(testServer, validParams)
 					responseString := strings.TrimSpace(string(response))
 					assert.Equal(t, 400, statusCode)
-					assert.Equal(t, errorResponseString("memo_missing_param", "When passing memo both params: `memo_type`, `memo` are required"), responseString)
+					assert.Equal(t, getResponseString(horizon.PaymentMissingParamMemo), responseString)
 				})
 
 				Convey("unsupported memo_type", func() {
@@ -387,7 +387,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 					statusCode, response := getResponse(testServer, validParams)
 					responseString := strings.TrimSpace(string(response))
 					assert.Equal(t, 400, statusCode)
-					assert.Equal(t, errorResponseString("memo_not_supported", "Not supported memo type"), responseString)
+					assert.Equal(t, getResponseString(horizon.PaymentInvalidMemo), responseString)
 				})
 
 				Convey("memo is attached to the transaction", func() {
@@ -435,7 +435,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 					statusCode, response := getResponse(testServer, validParams)
 					responseString := strings.TrimSpace(string(response))
 					assert.Equal(t, 400, statusCode)
-					assert.Equal(t, errorResponseString("source_not_exist", "source account does not exist"), responseString)
+					assert.Equal(t, getResponseString(horizon.PaymentSourceNotExist), responseString)
 				})
 			})
 
@@ -453,7 +453,8 @@ func TestRequestHandlerPayment(t *testing.T) {
 				horizonResponse := horizon.SubmitTransactionResponse{
 					nil,
 					&horizon.SubmitTransactionResponseError{
-						TransactionErrorCode: "transaction_failed",
+						Status: 400,
+						Code: "transaction_failed",
 					},
 					&horizon.SubmitTransactionResponseExtras{
 						EnvelopeXdr: "envelope",

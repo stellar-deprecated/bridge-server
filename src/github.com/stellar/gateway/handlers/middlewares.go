@@ -38,7 +38,7 @@ func ApiKeyMiddleware(apiKey string) func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
 			k := r.PostFormValue("apiKey")
 			if k != apiKey {
-				errorForbidden(w, errorResponseString("forbidden", "Access denied."))
+				http.Error(w, "Forbidden", http.StatusForbidden)
 				return
 			}
 			next.ServeHTTP(w, r)

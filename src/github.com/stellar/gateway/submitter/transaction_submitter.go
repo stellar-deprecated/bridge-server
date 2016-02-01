@@ -150,7 +150,7 @@ func (ts *TransactionSubmitter) SubmitTransaction(seed string, operation, memo i
 	}
 
 	// Sync sequence number
-	if response.Errors != nil && response.Errors.TransactionErrorCode == "transaction_bad_seq" {
+	if response.Error.Code == "transaction_bad_seq" {
 		account.Mutex.Lock()
 		ts.log.Print("Syncing sequence number for ", account.Keypair.Address())
 		accountResponse, _ := ts.Horizon.LoadAccount(account.Keypair.Address())
