@@ -120,6 +120,8 @@ Check [`SubmitTransactionResponse`](./src/github.com/stellar/gateway/horizon/sub
 
 Gateway server listens for payment operations to the account specified by `accounts.receiving_account_id`. Every time a payment arrives it will send a HTTP POST request to `hooks.receive`.
 
+`Content-Type` of requests data will be `application/x-www-form-urlencoded`.
+
 ### `hooks.receive`
 
 The POST request with following parameters will be sent to this hook when a payment arrives.
