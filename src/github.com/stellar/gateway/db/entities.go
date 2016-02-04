@@ -69,9 +69,9 @@ func GetInsertQuery(objectType string) (query string, err error) {
 	case "*db.SentTransaction":
 		query = `
 		INSERT INTO SentTransaction
-			(status, source, submitted_at, succeeded_at, ledger, enveloper_xdr, result_xdr)
+			(status, source, submitted_at, succeeded_at, ledger, envelope_xdr, result_xdr)
 		VALUES
-			(:status, :source, :submitted_at, :succeeded_at, :ledger, :enveloper_xdr, :result_xdr)`
+			(:status, :source, :submitted_at, :succeeded_at, :ledger, :envelope_xdr, :result_xdr)`
 	default:
 		err = fmt.Errorf("No INSERT query for: %s (must be a pointer)", objectType)
 	}
@@ -98,7 +98,7 @@ func GetUpdateQuery(objectType string) (query string, err error) {
 			submitted_at = :submitted_at,
 			succeeded_at = :succeeded_at,
 			ledger = :ledger,
-			enveloper_xdr = :enveloper_xdr,
+			envelope_xdr = :envelope_xdr,
 			result_xdr = :result_xdr
 		WHERE
 			id = :id

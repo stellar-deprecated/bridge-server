@@ -40,7 +40,6 @@ func writeError(w http.ResponseWriter, error *horizon.SubmitTransactionResponseE
 	http.Error(w, getResponseString(error), error.Status)
 }
 
-
 func getResponseString(error *horizon.SubmitTransactionResponseError) string {
 	response := horizon.SubmitTransactionResponse{Error: error}
 	return string(response.Marshal())

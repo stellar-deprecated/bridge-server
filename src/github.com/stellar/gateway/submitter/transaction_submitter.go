@@ -150,11 +150,15 @@ func (ts *TransactionSubmitter) SubmitTransaction(seed string, operation, memo i
 	}
 
 	// Sync sequence number
-	if response.Error.Code == "transaction_bad_seq" {
+	if response.Error != nil && response.Error.Code == "transaction_bad_seq" {
 		account.Mutex.Lock()
 		ts.log.Print("Syncing sequence number for ", account.Keypair.Address())
-		accountResponse, _ := ts.Horizon.LoadAccount(account.Keypair.Address())
-		account.SequenceNumber, err = strconv.ParseUint(accountResponse.SequenceNumber, 10, 64)
+		accountResponse, err2 := ts.Horizon.LoadAccount(account.Keypair.Address())
+		if err2 != nil {
+			ts.log.Error("Error updating sequence number ", err)
+		} else {
+			account.SequenceNumber, _ = strconv.ParseUint(accountResponse.SequenceNumber, 10, 64)
+		}
 		account.Mutex.Unlock()
 	}
 

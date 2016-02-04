@@ -63,7 +63,7 @@ type SubmitTransactionResponse struct {
 }
 
 type SubmitTransactionResponseError struct {
-	Status  int
+	Status  int    `json:"-"`
 	Code    string `json:"code"`
 	Message string `json:"message"`
 }

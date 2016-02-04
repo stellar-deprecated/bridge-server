@@ -454,7 +454,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 					nil,
 					&horizon.SubmitTransactionResponseError{
 						Status: 400,
-						Code: "transaction_failed",
+						Code:   "transaction_failed",
 					},
 					&horizon.SubmitTransactionResponseExtras{
 						EnvelopeXdr: "envelope",

@@ -197,7 +197,13 @@ func (h *Horizon) SubmitTransaction(txeBase64 string) (response SubmitTransactio
 		}
 
 		transactionResult := txResult.Result.Code
-		operationsResults := *txResult.Result.Results
+		var operationsResult *xdr.OperationResult
+		if txResult.Result.Results != nil {
+			operationsResultsSlice := *txResult.Result.Results
+			if len(operationsResultsSlice) > 0 {
+				operationsResult = &operationsResultsSlice[0]
+			}
+		}
 
 		var error *SubmitTransactionResponseError
 
@@ -219,9 +225,9 @@ func (h *Horizon) SubmitTransaction(txeBase64 string) (response SubmitTransactio
 			default:
 				error = ServerError
 			}
-		} else if operationsResults != nil {
-			if operationsResults[0].Tr.AllowTrustResult != nil {
-				switch operationsResults[0].Tr.AllowTrustResult.Code {
+		} else if operationsResult != nil {
+			if operationsResult.Tr.AllowTrustResult != nil {
+				switch operationsResult.Tr.AllowTrustResult.Code {
 				case xdr.AllowTrustResultCodeAllowTrustMalformed:
 					error = AllowTrustMalformed
 				case xdr.AllowTrustResultCodeAllowTrustNoTrustLine:
@@ -233,8 +239,8 @@ func (h *Horizon) SubmitTransaction(txeBase64 string) (response SubmitTransactio
 				default:
 					error = ServerError
 				}
-			} else if operationsResults[0].Tr.PaymentResult != nil {
-				switch operationsResults[0].Tr.PaymentResult.Code {
+			} else if operationsResult.Tr.PaymentResult != nil {
+				switch operationsResult.Tr.PaymentResult.Code {
 				case xdr.PaymentResultCodePaymentMalformed:
 					error = PaymentMalformed
 				case xdr.PaymentResultCodePaymentUnderfunded:
