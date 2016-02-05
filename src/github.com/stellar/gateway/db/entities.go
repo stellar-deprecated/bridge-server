@@ -1,7 +1,6 @@
 package db
 
 import (
-	"fmt"
 	"time"
 )
 
@@ -56,55 +55,4 @@ func (st *SentTransaction) MarkSucceeded(ledger uint64) {
 func (st *SentTransaction) MarkFailed(resultXdr string) {
 	st.Status = "failure"
 	st.ResultXdr = &resultXdr
-}
-
-func GetInsertQuery(objectType string) (query string, err error) {
-	switch objectType {
-	case "*db.ReceivedPayment":
-		query = `
-		INSERT INTO ReceivedPayment
-			(operation_id, processed_at, paging_token, status)
-		VALUES
-			(:operation_id, :processed_at, :paging_token, :status)`
-	case "*db.SentTransaction":
-		query = `
-		INSERT INTO SentTransaction
-			(status, source, submitted_at, succeeded_at, ledger, envelope_xdr, result_xdr)
-		VALUES
-			(:status, :source, :submitted_at, :succeeded_at, :ledger, :envelope_xdr, :result_xdr)`
-	default:
-		err = fmt.Errorf("No INSERT query for: %s (must be a pointer)", objectType)
-	}
-	return
-}
-
-func GetUpdateQuery(objectType string) (query string, err error) {
-	switch objectType {
-	case "*db.ReceivedPayment":
-		query = `
-		UPDATE ReceivedPayment SET
-			operation_id = :operation_id,
-			processed_at = :processed_at,
-			paging_token = :paging_token,
-			status = :status
-		WHERE
-			id = :id
-		`
-	case "*db.SentTransaction":
-		query = `
-		UPDATE SentTransaction SET
-			status = :status,
-			source = :source,
-			submitted_at = :submitted_at,
-			succeeded_at = :succeeded_at,
-			ledger = :ledger,
-			envelope_xdr = :envelope_xdr,
-			result_xdr = :result_xdr
-		WHERE
-			id = :id
-		`
-	default:
-		err = fmt.Errorf("No UPDATE query for: %s (must be a pointer)", objectType)
-	}
-	return
 }

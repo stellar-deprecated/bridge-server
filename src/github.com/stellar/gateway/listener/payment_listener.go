@@ -55,7 +55,7 @@ func (pl PaymentListener) Listen() (err error) {
 		for {
 			cursor, err := pl.repository.GetLastCursorValue()
 			if err != nil {
-				pl.log.Error("Could not load last cursor from the DB")
+				pl.log.WithFields(logrus.Fields{"error": err}).Error("Could not load last cursor from the DB")
 				return
 			}
 

@@ -17,11 +17,13 @@ The `config.toml` file must be present in a working directory. Config file shoul
 
 * `port` - server listening port
 * `api_key` - when set, all requests to gateway server must contain `api_key` parameter with a correct value, otherwise the server will respond with `503 Forbidden`
-* `network_passphrase` - passphrase of the network that will be used with this gateway server, default: `Test SDF Network ; September 2015`
+* `network_passphrase` - passphrase of the network that will be used with this gateway server:
+   * test network: `Test SDF Network ; September 2015`
+   * public network: `Public Global Stellar Network ; September 2015`
 * `horizon` - URL to [horizon](https://github.com/stellar/horizon) server instance
 * `assets` - array of approved assets codes that this server can authorize and send 
 * `database`
-  * `type` - database type (sqlite3, mysql, postgres)
+  * `type` - database type (mysql, postgres)
   * `url` - url to database connection
 * `accounts`
   * `authorizing_seed` - secret seed of the account to send `allow_trust` operations
@@ -32,6 +34,13 @@ The `config.toml` file must be present in a working directory. Config file shoul
   * `error` - URL of the webhook where requests will be sent when there is an error with incoming payment
 
 Check [`config-example.toml`](./config-example.toml).
+
+The minimal set of config values contains:
+* `port`
+* `network_passphrase`
+* `horizon`
+
+It will start a server with a single endpoint: `/payment`.
 
 ## Getting started
 

@@ -8,7 +8,6 @@ import (
 	"github.com/spf13/viper"
 	"github.com/stellar/gateway"
 	"github.com/stellar/gateway/config"
-	"github.com/stellar/gateway/db/migrations"
 )
 
 var app *gateway.App
@@ -35,18 +34,6 @@ func init() {
 	rootCmd.Flags().BoolVarP(&migrateFlag, "migrate-db", "", false, "migrate DB to the newest schema version")
 }
 
-func migrate(config config.Config) {
-	migrationManager, err := migrations.NewMigrationManager(
-		config.Database.Type,
-		config.Database.Url,
-	)
-	if err != nil {
-		log.Fatal("Error migrating DB")
-		return
-	}
-	migrationManager.MigrateUp()
-}
-
 func run(cmd *cobra.Command, args []string) {
 	log.Print("Reading config.toml file")
 	err := viper.ReadInConfig()
@@ -63,12 +50,7 @@ func run(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	if migrateFlag {
-		migrate(config)
-		return
-	}
-
-	app, err = gateway.NewApp(config)
+	app, err = gateway.NewApp(config, migrateFlag)
 
 	if err != nil {
 		log.Fatal(err.Error())

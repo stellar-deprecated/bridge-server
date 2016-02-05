@@ -4,10 +4,6 @@ import (
 	"fmt"
 
 	"github.com/Sirupsen/logrus"
-	_ "github.com/go-sql-driver/mysql"
-	"github.com/jmoiron/sqlx"
-	_ "github.com/lib/pq"
-	_ "github.com/mattn/go-sqlite3"
 )
 
 type EntityManagerInterface interface {
@@ -15,47 +11,46 @@ type EntityManagerInterface interface {
 }
 
 type EntityManager struct {
-	db  *sqlx.DB
-	log *logrus.Entry
+	driver Driver
+	log    *logrus.Entry
 }
 
-func NewEntityManager(dbType string, url string) (em EntityManager, err error) {
-	em.db, err = sqlx.Connect(dbType, url)
+func NewEntityManager(driver Driver) (em EntityManager) {
+	em.driver = driver
 	em.log = logrus.WithFields(logrus.Fields{
 		"service": "EntityManager",
 	})
 	return
 }
 
-func (em *EntityManager) Persist(object Entity) (err error) {
+func (em EntityManager) Persist(object Entity) (err error) {
 	objectType := fmt.Sprintf("%T", object)
-	var query string
 
 	if object.GetId() != nil {
 		// Update
-		query, err = GetUpdateQuery(objectType)
+		switch objectType {
+		case "*db.ReceivedPayment":
+			err = em.driver.UpdateReceivedPayment(object.(*ReceivedPayment))
+		case "*db.SentTransaction":
+			err = em.driver.UpdateSentTransaction(object.(*SentTransaction))
+		default:
+			err = fmt.Errorf("Unknown object: %s (must be a pointer)", objectType)
+		}
 	} else {
 		// Insert
-		query, err = GetInsertQuery(objectType)
-	}
-
-	if err != nil {
-		return
-	}
-
-	result, err := em.db.NamedExec(query, object)
-	if err != nil {
-		return
-	}
-
-	if object.GetId() == nil {
 		var id int64
-		// Just inserted a new object - set it's ID
-		id, err = result.LastInsertId()
-		if err != nil {
-			return
+		switch objectType {
+		case "*db.ReceivedPayment":
+			id, err = em.driver.InsertReceivedPayment(object.(*ReceivedPayment))
+		case "*db.SentTransaction":
+			id, err = em.driver.InsertSentTransaction(object.(*SentTransaction))
+		default:
+			err = fmt.Errorf("Unknown object: %s (must be a pointer)", objectType)
 		}
-		object.SetId(id)
+
+		if err == nil {
+			object.SetId(id)
+		}
 	}
 	return
 }

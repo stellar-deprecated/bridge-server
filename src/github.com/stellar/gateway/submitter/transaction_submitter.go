@@ -20,7 +20,7 @@ type TransactionSubmitterInterface interface {
 type TransactionSubmitter struct {
 	Horizon       *horizon.Horizon
 	Accounts      map[string]*Account // seed => *Account
-	EntityManager *db.EntityManager
+	EntityManager db.EntityManagerInterface
 	Network       build.Network
 	log           *logrus.Entry
 }
@@ -32,7 +32,7 @@ type Account struct {
 	Mutex          sync.Mutex
 }
 
-func NewTransactionSubmitter(horizon *horizon.Horizon, entityManager *db.EntityManager, networkPassphrase string) (ts TransactionSubmitter) {
+func NewTransactionSubmitter(horizon *horizon.Horizon, entityManager db.EntityManagerInterface, networkPassphrase string) (ts TransactionSubmitter) {
 	ts.Horizon = horizon
 	ts.EntityManager = entityManager
 	ts.Accounts = make(map[string]*Account)

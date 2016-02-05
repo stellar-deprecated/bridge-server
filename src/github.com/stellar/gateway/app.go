@@ -5,10 +5,13 @@ import (
 	"flag"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
+	"os"
 	"time"
 
 	"github.com/stellar/gateway/config"
 	"github.com/stellar/gateway/db"
+	"github.com/stellar/gateway/db/drivers/mysql"
+	"github.com/stellar/gateway/db/drivers/postgres"
 	"github.com/stellar/gateway/handlers"
 	"github.com/stellar/gateway/horizon"
 	"github.com/stellar/gateway/listener"
@@ -19,6 +22,7 @@ import (
 
 type App struct {
 	config               config.Config
+	driver               db.Driver
 	entityManager        db.EntityManagerInterface
 	horizon              horizon.HorizonInterface
 	transactionSubmitter *submitter.TransactionSubmitter
@@ -26,24 +30,54 @@ type App struct {
 }
 
 // NewApp constructs an new App instance from the provided config.
-func NewApp(config config.Config) (app *App, err error) {
-	entityManager, err := db.NewEntityManager(config.Database.Type, config.Database.Url)
-	if err != nil {
-		return
+func NewApp(config config.Config, migrateFlag bool) (app *App, err error) {
+	var driver db.Driver
+	switch config.Database.Type {
+	case "mysql":
+		driver = &mysql.MysqlDriver{}
+	case "postgres":
+		driver = &postgres.PostgresDriver{}
+	case "":
+		// Allow to start gateway server with a single endpoint: /payment
+		break
+	default:
+		return nil, fmt.Errorf("%s database has no driver.", config.Database.Type)
 	}
-	repository, err := db.NewRepository(config.Database.Type, config.Database.Url)
-	if err != nil {
+
+	var entityManager db.EntityManagerInterface
+	var repository db.RepositoryInterface
+
+	if driver != nil {
+		err = driver.Init(config.Database.Url)
+		if err != nil {
+			return
+		}
+
+		entityManager = db.NewEntityManager(driver)
+		repository = db.NewRepository(driver)
+	}
+
+	if migrateFlag {
+		if driver == nil {
+			log.Fatal("No database driver.")
+			return
+		}
+
+		var migrationsApplied int
+		migrationsApplied, err = driver.MigrateUp()
+		if err != nil {
+			return
+		}
+
+		log.Info("Applied migrations: ", migrationsApplied)
+		os.Exit(0)
 		return
 	}
 
 	h := horizon.New(*config.Horizon)
 
-	if config.NetworkPassphrase == "" {
-		config.NetworkPassphrase = "Test SDF Network ; September 2015"
-	}
-
 	log.Print("Creating and initializing TransactionSubmitter")
-	ts := submitter.NewTransactionSubmitter(&h, &entityManager, config.NetworkPassphrase)
+	ts := submitter.NewTransactionSubmitter(&h, entityManager, config.NetworkPassphrase)
 	if err != nil {
 		return
 	}
@@ -79,7 +113,7 @@ func NewApp(config config.Config) (app *App, err error) {
 		log.Warning("No hooks.receive param. Skipping...")
 	} else {
 		var paymentListener listener.PaymentListener
-		paymentListener, err = listener.NewPaymentListener(&config, &entityManager, &h, &repository, time.Now)
+		paymentListener, err = listener.NewPaymentListener(&config, entityManager, &h, repository, time.Now)
 		if err != nil {
 			return
 		}
@@ -98,9 +132,10 @@ func NewApp(config config.Config) (app *App, err error) {
 
 	app = &App{
 		config:               config,
-		entityManager:        &entityManager,
+		driver:               driver,
+		entityManager:        entityManager,
 		horizon:              &h,
-		repository:           &repository,
+		repository:           repository,
 		transactionSubmitter: &ts,
 	}
 	return

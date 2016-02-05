@@ -2,10 +2,6 @@ package db
 
 import (
 	"github.com/Sirupsen/logrus"
-	_ "github.com/go-sql-driver/mysql"
-	"github.com/jmoiron/sqlx"
-	_ "github.com/lib/pq"
-	_ "github.com/mattn/go-sqlite3"
 )
 
 type RepositoryInterface interface {
@@ -13,12 +9,12 @@ type RepositoryInterface interface {
 }
 
 type Repository struct {
-	db  *sqlx.DB
-	log *logrus.Entry
+	driver Driver
+	log    *logrus.Entry
 }
 
-func NewRepository(dbType string, url string) (r Repository, err error) {
-	r.db, err = sqlx.Connect(dbType, url)
+func NewRepository(driver Driver) (r Repository) {
+	r.driver = driver
 	r.log = logrus.WithFields(logrus.Fields{
 		"service": "Repository",
 	})
@@ -26,8 +22,7 @@ func NewRepository(dbType string, url string) (r Repository, err error) {
 }
 
 func (r Repository) GetLastCursorValue() (cursor *string, err error) {
-	var receivedPayment ReceivedPayment
-	err = r.db.Get(&receivedPayment, "SELECT * FROM ReceivedPayment ORDER BY id DESC LIMIT 1")
+	receivedPayment, err := r.driver.GetLastReceivedPayment()
 	if err != nil {
 		if err.Error() == "sql: no rows in result set" {
 			return nil, nil
@@ -35,5 +30,5 @@ func (r Repository) GetLastCursorValue() (cursor *string, err error) {
 			return nil, err
 		}
 	}
-	return &receivedPayment.PagingToken, nil
+	return &receivedPayment.PagingToken, err
 }
