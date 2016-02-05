@@ -84,7 +84,7 @@ func NewApp(config config.Config, migrateFlag bool) (app *App, err error) {
 
 	log.Print("Initializing Authorizing account")
 
-	if config.Accounts.AuthorizingSeed == nil {
+	if !(config.Accounts != nil && config.Accounts.AuthorizingSeed != nil) {
 		log.Warning("No accounts.authorizing_seed param. Skipping...")
 	} else {
 		err = ts.InitAccount(*config.Accounts.AuthorizingSeed)
@@ -93,7 +93,7 @@ func NewApp(config config.Config, migrateFlag bool) (app *App, err error) {
 		}
 	}
 
-	if config.Accounts.IssuingSeed == nil {
+	if !(config.Accounts != nil && config.Accounts.IssuingSeed != nil) {
 		log.Warning("No accounts.issuing_seed param. Skipping...")
 	} else {
 		log.Print("Initializing Issuing account")
@@ -107,7 +107,7 @@ func NewApp(config config.Config, migrateFlag bool) (app *App, err error) {
 
 	log.Print("Creating and starting PaymentListener")
 
-	if config.Accounts.ReceivingAccountId == nil {
+	if !(config.Accounts != nil && config.Accounts.ReceivingAccountId != nil) {
 		log.Warning("No accounts.receiving_account_id param. Skipping...")
 	} else if config.Hooks.Receive == nil {
 		log.Warning("No hooks.receive param. Skipping...")
@@ -158,13 +158,13 @@ func (a *App) Serve() {
 		goji.Use(handlers.ApiKeyMiddleware(a.config.ApiKey))
 	}
 
-	if a.config.Accounts.AuthorizingSeed != nil {
+	if a.config.Accounts != nil && a.config.Accounts.AuthorizingSeed != nil {
 		goji.Post("/authorize", requestHandlers.Authorize)
 	} else {
 		log.Warning("accounts.authorizing_seed not provided. /authorize endpoint will not be available.")
 	}
 
-	if a.config.Accounts.IssuingSeed != nil {
+	if a.config.Accounts != nil && a.config.Accounts.IssuingSeed != nil {
 		goji.Post("/send", requestHandlers.Send)
 	} else {
 		log.Warning("accounts.issuing_seed not provided. /send endpoint will not be available.")

@@ -69,7 +69,9 @@ func (c *Config) Validate() (err error) {
 		dbUrl.RawQuery = query.Encode()
 		c.Database.Url = dbUrl.String()
 	case "postgres":
-	case "sqlite3":
+		break
+	case "":
+		// Allow to start gateway server with a single endpoint: /payment
 		break
 	default:
 		err = errors.New("Invalid database.type param")
