@@ -23,7 +23,7 @@ type SentTransaction struct {
 	Source        string     `db:"source"`
 	SubmittedAt   time.Time  `db:"submitted_at"`
 	SucceededAt   *time.Time `db:"succeeded_at"`
-	OperationType string     `db:"operation_type"`
+	OperationType string     `db:"operation_type"` // TODO
 	Ledger        *uint64    `db:"ledger"`
 	EnvelopeXdr   string     `db:"envelope_xdr"`
 	ResultXdr     *string    `db:"result_xdr"`

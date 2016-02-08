@@ -18,11 +18,12 @@ type TransactionSubmitterInterface interface {
 }
 
 type TransactionSubmitter struct {
-	Horizon       *horizon.Horizon
+	Horizon       horizon.HorizonInterface
 	Accounts      map[string]*Account // seed => *Account
 	EntityManager db.EntityManagerInterface
 	Network       build.Network
 	log           *logrus.Entry
+	now           func() time.Time
 }
 
 type Account struct {
@@ -32,7 +33,12 @@ type Account struct {
 	Mutex          sync.Mutex
 }
 
-func NewTransactionSubmitter(horizon *horizon.Horizon, entityManager db.EntityManagerInterface, networkPassphrase string) (ts TransactionSubmitter) {
+func NewTransactionSubmitter(
+	horizon horizon.HorizonInterface,
+	entityManager db.EntityManagerInterface,
+	networkPassphrase string,
+	now func() time.Time,
+) (ts TransactionSubmitter) {
 	ts.Horizon = horizon
 	ts.EntityManager = entityManager
 	ts.Accounts = make(map[string]*Account)
@@ -40,6 +46,7 @@ func NewTransactionSubmitter(horizon *horizon.Horizon, entityManager db.EntityMa
 	ts.log = logrus.WithFields(logrus.Fields{
 		"service": "TransactionSubmitter",
 	})
+	ts.now = now
 	return
 }
 
@@ -125,7 +132,7 @@ func (ts *TransactionSubmitter) SubmitTransaction(seed string, operation, memo i
 	sentTransaction := &db.SentTransaction{
 		Status:      "sending",
 		Source:      account.Keypair.Address(),
-		SubmittedAt: time.Now(),
+		SubmittedAt: ts.now(),
 		EnvelopeXdr: txeB64,
 	}
 	err = ts.EntityManager.Persist(sentTransaction)
@@ -142,7 +149,13 @@ func (ts *TransactionSubmitter) SubmitTransaction(seed string, operation, memo i
 	if response.Ledger != nil {
 		sentTransaction.MarkSucceeded(*response.Ledger)
 	} else {
-		sentTransaction.MarkFailed(response.Extras.ResultXdr)
+		var result string
+		if response.Extras != nil {
+			result = response.Extras.ResultXdr
+		} else {
+			result = "<empty>"
+		}
+		sentTransaction.MarkFailed(result)
 	}
 	err = ts.EntityManager.Persist(sentTransaction)
 	if err != nil {

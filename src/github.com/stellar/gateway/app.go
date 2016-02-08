@@ -77,7 +77,7 @@ func NewApp(config config.Config, migrateFlag bool) (app *App, err error) {
 	h := horizon.New(*config.Horizon)
 
 	log.Print("Creating and initializing TransactionSubmitter")
-	ts := submitter.NewTransactionSubmitter(&h, entityManager, config.NetworkPassphrase)
+	ts := submitter.NewTransactionSubmitter(&h, entityManager, config.NetworkPassphrase, time.Now)
 	if err != nil {
 		return
 	}
