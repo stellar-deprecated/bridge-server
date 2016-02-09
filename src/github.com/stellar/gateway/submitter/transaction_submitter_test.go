@@ -56,7 +56,7 @@ func TestTransactionSubmitter(t *testing.T) {
 					accountId,
 				).Return(
 					horizon.AccountResponse{
-						AccountId: accountId,
+						AccountId:      accountId,
 						SequenceNumber: "10372672437354496",
 					},
 					nil,
@@ -91,7 +91,7 @@ func TestTransactionSubmitter(t *testing.T) {
 						accountId,
 					).Return(
 						horizon.AccountResponse{
-							AccountId: accountId,
+							AccountId:      accountId,
 							SequenceNumber: "10372672437354496",
 						},
 						nil,
@@ -125,11 +125,11 @@ func TestTransactionSubmitter(t *testing.T) {
 						assert.Equal(t, mocks.PredefinedTime, transaction.SubmittedAt)
 						assert.Equal(t, txB64, transaction.EnvelopeXdr)
 					})
-					
+
 					mockHorizon.On("SubmitTransaction", txB64).Return(
 						horizon.SubmitTransactionResponse{
 							Ledger: nil,
-							Error: horizon.PaymentMalformed,
+							Error:  horizon.PaymentMalformed,
 						},
 						nil,
 					).Once()
@@ -152,7 +152,7 @@ func TestTransactionSubmitter(t *testing.T) {
 						accountId,
 					).Return(
 						horizon.AccountResponse{
-							AccountId: accountId,
+							AccountId:      accountId,
 							SequenceNumber: "10372672437354496",
 						},
 						nil,
@@ -186,11 +186,11 @@ func TestTransactionSubmitter(t *testing.T) {
 						assert.Equal(t, mocks.PredefinedTime, transaction.SubmittedAt)
 						assert.Equal(t, txB64, transaction.EnvelopeXdr)
 					})
-					
+
 					mockHorizon.On("SubmitTransaction", txB64).Return(
 						horizon.SubmitTransactionResponse{
 							Ledger: nil,
-							Error: horizon.TransactionBadSequence,
+							Error:  horizon.TransactionBadSequence,
 						},
 						nil,
 					).Once()
@@ -201,7 +201,7 @@ func TestTransactionSubmitter(t *testing.T) {
 						accountId,
 					).Return(
 						horizon.AccountResponse{
-							AccountId: accountId,
+							AccountId:      accountId,
 							SequenceNumber: "100",
 						},
 						nil,
@@ -226,7 +226,7 @@ func TestTransactionSubmitter(t *testing.T) {
 						accountId,
 					).Return(
 						horizon.AccountResponse{
-							AccountId: accountId,
+							AccountId:      accountId,
 							SequenceNumber: "10372672437354496",
 						},
 						nil,
@@ -260,7 +260,7 @@ func TestTransactionSubmitter(t *testing.T) {
 						assert.Equal(t, mocks.PredefinedTime, transaction.SubmittedAt)
 						assert.Equal(t, txB64, transaction.EnvelopeXdr)
 					})
-					
+
 					ledger := uint64(1486276)
 					mockHorizon.On("SubmitTransaction", txB64).Return(
 						horizon.SubmitTransactionResponse{Ledger: &ledger},
@@ -296,7 +296,7 @@ func TestTransactionSubmitter(t *testing.T) {
 						accountId,
 					).Return(
 						horizon.AccountResponse{
-							AccountId: accountId,
+							AccountId:      accountId,
 							SequenceNumber: "10372672437354496",
 						},
 						nil,
@@ -330,7 +330,7 @@ func TestTransactionSubmitter(t *testing.T) {
 						assert.Equal(t, mocks.PredefinedTime, transaction.SubmittedAt)
 						assert.Equal(t, txB64, transaction.EnvelopeXdr)
 					})
-					
+
 					ledger := uint64(1486276)
 					mockHorizon.On("SubmitTransaction", txB64).Return(
 						horizon.SubmitTransactionResponse{Ledger: &ledger},
