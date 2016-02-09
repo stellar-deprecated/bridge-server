@@ -5,7 +5,8 @@ CREATE TABLE `ReceivedPayment` (
   `processed_at` datetime NOT NULL,
   `paging_token` varchar(255) NOT NULL,
   `status` varchar(255) NOT NULL,
-  PRIMARY KEY (`id`)
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `operation_id` (`operation_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 CREATE TABLE `SentTransaction` (
