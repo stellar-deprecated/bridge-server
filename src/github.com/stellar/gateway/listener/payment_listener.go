@@ -24,6 +24,8 @@ type PaymentListener struct {
 	now            func() time.Time
 }
 
+const HOOK_TIMEOUT = 10 * time.Second
+
 func NewPaymentListener(
 	config *config.Config,
 	entityManager db.EntityManagerInterface,
@@ -130,7 +132,10 @@ func (pl PaymentListener) onPayment(payment horizon.PaymentResponse) (err error)
 		return nil
 	}
 
-	resp, err := http.PostForm(
+	client := http.Client{
+		Timeout: HOOK_TIMEOUT,
+	}
+	resp, err := client.PostForm(
 		*pl.config.Hooks.Receive,
 		url.Values{
 			"id":         {payment.Id},
