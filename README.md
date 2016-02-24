@@ -1,4 +1,11 @@
 # gateway-server
+This is a stand alone server written in go. It is designed to makes connecting to the Stellar network as easy as possible.
+It assumes you are using only one issuing account.  It requires you to implement a recieve web hook that is notified when there is an incoming payment. 
+
+Handles:
+-Creating the Stellar transactions.
+-Monitoring the receiving Stellar account.
+
 
 ## Downloading the server
 [Prebuilt binaries](https://github.com/stellar/gateway-server/releases) of the gateway-server server are available on the [releases page](https://github.com/stellar/gateway-server/releases).
