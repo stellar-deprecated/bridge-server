@@ -3,8 +3,9 @@ This is a stand alone server written in go. It is designed to makes connecting t
 It assumes you are using only one issuing account.  It requires you to implement a recieve web hook that is notified when there is an incoming payment. 
 
 Handles:
--Creating the Stellar transactions.
--Monitoring the receiving Stellar account.
+
+- Creating the Stellar transactions.
+- Monitoring the receiving Stellar account.
 
 
 ## Downloading the server
