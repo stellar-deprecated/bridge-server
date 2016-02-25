@@ -2,6 +2,10 @@
 
 As this project is pre 1.0, breaking changes may happen for minor version bumps. A breaking change will get clearly notified in this log.
 
+## 0.0.5
+
+* Add `MEMO_HASH` support.
+
 ## 0.0.4
 
 * Fixed bugs connected with running server using `postgres` DB (full refactoring of `db` package),
