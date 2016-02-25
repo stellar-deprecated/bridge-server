@@ -1,16 +1,16 @@
 package handlers
 
 import (
-	log "github.com/Sirupsen/logrus"
 	"encoding/hex"
+	log "github.com/Sirupsen/logrus"
 	"net/http"
 	"strconv"
 	"strings"
 
 	"github.com/stellar/gateway/horizon"
 	b "github.com/stellar/go-stellar-base/build"
-	"github.com/stellar/go-stellar-base/xdr"
 	"github.com/stellar/go-stellar-base/keypair"
+	"github.com/stellar/go-stellar-base/xdr"
 )
 
 func (rh *RequestHandler) Payment(w http.ResponseWriter, r *http.Request) {

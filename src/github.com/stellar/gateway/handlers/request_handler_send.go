@@ -1,8 +1,8 @@
 package handlers
 
 import (
-	log "github.com/Sirupsen/logrus"
 	"encoding/hex"
+	log "github.com/Sirupsen/logrus"
 	"net/http"
 	"strconv"
 
