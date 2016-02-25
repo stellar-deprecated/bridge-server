@@ -18,6 +18,7 @@ build() {
   rm -rf $PKG_DIR
   mkdir -p $PKG_DIR
   cp bin/$(srcBin $GOOS) $PKG_DIR/$(destBin $GOOS)
+  cp CHANGELOG.md $PKG_DIR/
   cp LICENSE.txt $PKG_DIR/
   cp config-example.toml $PKG_DIR/
   cp README.md $PKG_DIR/
