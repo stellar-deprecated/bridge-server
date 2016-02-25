@@ -381,8 +381,17 @@ func TestRequestHandlerPayment(t *testing.T) {
 					assert.Equal(t, getResponseString(horizon.PaymentMissingParamMemo), responseString)
 				})
 
-				Convey("unsupported memo_type", func() {
+				Convey("memo_type=hash to long", func() {
 					validParams.Add("memo_type", "hash")
+					validParams.Add("memo", "012345678901234567890123456789012345678901234567890123456789012")
+					statusCode, response := getResponse(testServer, validParams)
+					responseString := strings.TrimSpace(string(response))
+					assert.Equal(t, 400, statusCode)
+					assert.Equal(t, getResponseString(horizon.PaymentInvalidMemo), responseString)
+				})
+
+				Convey("unsupported memo_type", func() {
+					validParams.Add("memo_type", "return_hash")
 					validParams.Add("memo", "0123456789")
 					statusCode, response := getResponse(testServer, validParams)
 					responseString := strings.TrimSpace(string(response))
@@ -412,6 +421,40 @@ func TestRequestHandlerPayment(t *testing.T) {
 
 					validParams.Add("memo_type", "id")
 					validParams.Add("memo", "123")
+					statusCode, response := getResponse(testServer, validParams)
+					responseString := strings.TrimSpace(string(response))
+
+					expectedResponse, err := json.MarshalIndent(horizonResponse, "", "  ")
+					if err != nil {
+						panic(err)
+					}
+
+					assert.Equal(t, 200, statusCode)
+					assert.Equal(t, string(expectedResponse), responseString)
+				})
+
+				Convey("memo hash is attached to the transaction", func() {
+					mockHorizon.On(
+						"LoadAccount",
+						"GCF3WVYTHF75PEG6622G5G6KU26GOSDQPDHSCJ3DQD7VONH4EYVDOGKJ",
+					).Return(
+						horizon.AccountResponse{
+							SequenceNumber: "100",
+						},
+						nil,
+					).Once()
+
+					var ledger uint64
+					ledger = 1988727
+					horizonResponse := horizon.SubmitTransactionResponse{&ledger, nil, nil}
+
+					mockHorizon.On(
+						"SubmitTransaction",
+						"AAAAAIu7VxM5f9eQ3va0bpvKprxnSHB4zyEnY4D/VzT8Jio3AAAAZAAAAAAAAABlAAAAAAAAAAMCADrUIHRM3rjlJN62XzjLUJXTDQAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAQAAAADkhVuboDyZuBz9qkCLPGYF/jNmapt51Hcp74xNrumNVgAAAAFVU0QAAAAAAOSFW5ugPJm4HP2qQIs8ZgX+M2Zqm3nUdynvjE2u6Y1WAAAAAAvrwgAAAAAAAAAAAfwmKjcAAABAEV6Lzok4i4C1jJA3PVVARGx2+yfVw8odprnnnG0hqkUUwKnvVQcd59UJwbfzTG7oxR5DvxflV4aQ6RmZsIcmDQ==",
+					).Return(horizonResponse, nil).Once()
+
+					validParams.Add("memo_type", "hash")
+					validParams.Add("memo", "02003AD420744CDEB8E524DEB65F38CB5095D30D000000000000000000000000")
 					statusCode, response := getResponse(testServer, validParams)
 					responseString := strings.TrimSpace(string(response))
 

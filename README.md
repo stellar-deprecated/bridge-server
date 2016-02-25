@@ -79,8 +79,8 @@ name |  | description
 `amount` | required | Amount to send
 `asset_code` | optional | Asset code (XLM when empty)
 `asset_issuer` | optional | Account ID of asset issuer (XLM when empty)
-`memo_type` | optional | Memo type, one of: `id`, `text`
-`memo` | optional | Memo value, when `memo_type` is `id` it must be uint64
+`memo_type` | optional | Memo type, one of: `id`, `text`, `hash`
+`memo` | optional | Memo value, when `memo_type` is `id` it must be uint64, when `hash` it must be 32 bytes hex value
 
 #### Response
 
@@ -126,8 +126,8 @@ name |  | description
 `destination` | required | Account ID or Stellar address (ex. `bob*stellar.org`) of the destination account
 `asset_code` | required | Asset code of the asset to send. Must be present in `assets` config array.
 `amount` | required | Amount to send.
-`memo_type` | optional | Memo type, one of: `id`, `text`
-`memo` | optional | Memo value, when `memo_type` is `id` it must be uint64
+`memo_type` | optional | Memo type, one of: `id`, `text`, `hash`
+`memo` | optional | Memo value, when `memo_type` is `id` it must be uint64, when `hash` it must be 32 bytes hex value
 
 #### Response
 

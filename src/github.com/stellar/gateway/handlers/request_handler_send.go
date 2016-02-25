@@ -2,12 +2,14 @@ package handlers
 
 import (
 	log "github.com/Sirupsen/logrus"
+	"encoding/hex"
 	"net/http"
 	"strconv"
 
 	"github.com/stellar/gateway/horizon"
 	b "github.com/stellar/go-stellar-base/build"
 	"github.com/stellar/go-stellar-base/keypair"
+	"github.com/stellar/go-stellar-base/xdr"
 )
 
 func (rh *RequestHandler) Send(w http.ResponseWriter, r *http.Request) {
@@ -86,6 +88,17 @@ func (rh *RequestHandler) Send(w http.ResponseWriter, r *http.Request) {
 		memoMutator = b.MemoID{id}
 	case memoType == "text":
 		memoMutator = b.MemoText{memo}
+	case memoType == "hash":
+		memoBytes, err := hex.DecodeString(memo)
+		if err != nil || len(memoBytes) != 32 {
+			log.WithFields(log.Fields{"memo": memo}).Print("Cannot decode hash memo value")
+			writeError(w, horizon.PaymentInvalidMemo)
+			return
+		}
+		var b32 [32]byte
+		copy(b32[:], memoBytes[0:32])
+		hash := xdr.Hash(b32)
+		memoMutator = &b.MemoHash{hash}
 	default:
 		log.Print("Not supported memo type: ", memoType)
 		writeError(w, horizon.PaymentInvalidMemo)
