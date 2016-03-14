@@ -64,6 +64,10 @@ func (pl PaymentListener) Listen() (err error) {
 			var cursorValue string
 			if cursor != nil {
 				cursorValue = *cursor
+			} else {
+				// If no last cursor saved set it to: `now`
+				cursorValue = "now"
+				cursor = &cursorValue
 			}
 
 			pl.log.WithFields(logrus.Fields{
