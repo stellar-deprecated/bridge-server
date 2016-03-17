@@ -28,6 +28,19 @@ func (d *MysqlDriver) MigrateUp(component string) (migrationsApplied int, err er
 	return
 }
 
+func (d *MysqlDriver) GetAuthorizedTransactionByMemo(memo string) (*entities.AuthorizedTransaction, error) {
+	var authorizedTransaction entities.AuthorizedTransaction
+	err := d.database.Get(&authorizedTransaction, "SELECT * FROM AuthorizedTransaction WHERE memo = ?", memo)
+	if err != nil {
+		if err.Error() == "sql: no rows in result set" {
+			return nil, nil
+		} else {
+			return nil, err
+		}
+	}
+	return &authorizedTransaction, nil
+}
+
 func (d *MysqlDriver) GetLastReceivedPayment() (*entities.ReceivedPayment, error) {
 	var receivedPayment entities.ReceivedPayment
 	err := d.database.Get(&receivedPayment, "SELECT * FROM ReceivedPayment ORDER BY id DESC LIMIT 1")

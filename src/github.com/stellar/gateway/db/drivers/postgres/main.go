@@ -27,6 +27,15 @@ func (d *PostgresDriver) MigrateUp(component string) (migrationsApplied int, err
 	return
 }
 
+func (d *PostgresDriver) GetAuthorizedTransactionByMemo(memo string) (*entities.AuthorizedTransaction, error) {
+	var authorizedTransaction entities.AuthorizedTransaction
+	err := d.database.Get(&authorizedTransaction, "SELECT * FROM AuthorizedTransaction WHERE memo = :memo;", memo)
+	if err != nil {
+		return nil, err
+	}
+	return &authorizedTransaction, nil
+}
+
 func (d *PostgresDriver) GetLastReceivedPayment() (*entities.ReceivedPayment, error) {
 	var receivedPayment entities.ReceivedPayment
 	err := d.database.Get(&receivedPayment, "SELECT * FROM ReceivedPayment ORDER BY id DESC LIMIT 1")

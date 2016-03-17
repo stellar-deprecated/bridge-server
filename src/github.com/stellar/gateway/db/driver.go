@@ -11,5 +11,6 @@ type Driver interface {
 	Insert(object entities.Entity) (id int64, err error)
 	Update(object entities.Entity) (err error)
 
+	GetAuthorizedTransactionByMemo(memo string) (*entities.AuthorizedTransaction, error)
 	GetLastReceivedPayment() (*entities.ReceivedPayment, error)
 }

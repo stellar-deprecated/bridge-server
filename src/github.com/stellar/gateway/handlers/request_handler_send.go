@@ -112,7 +112,10 @@ func (rh *RequestHandler) Send(w http.ResponseWriter, r *http.Request) {
 			url.Values{"data": {string(data)}},
 		)
 		if err != nil {
-			log.WithFields(log.Fields{"auth_server": stellarToml.AuthServer}).Error("Error sending request to auth server")
+			log.WithFields(log.Fields{
+				"auth_server": stellarToml.AuthServer,
+				"err":         err,
+			}).Error("Error sending request to auth server")
 			writeError(w, horizon.ServerError)
 			return
 		}

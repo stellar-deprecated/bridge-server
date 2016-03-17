@@ -2,10 +2,12 @@ package db
 
 import (
 	"github.com/Sirupsen/logrus"
+	"github.com/stellar/gateway/db/entities"
 )
 
 type RepositoryInterface interface {
 	GetLastCursorValue() (cursor *string, err error)
+	GetAuthorizedTransactionByMemo(memo string) (*entities.AuthorizedTransaction, error)
 }
 
 type Repository struct {
@@ -30,4 +32,12 @@ func (r Repository) GetLastCursorValue() (cursor *string, err error) {
 	} else {
 		return &receivedPayment.PagingToken, nil
 	}
+}
+
+func (r Repository) GetAuthorizedTransactionByMemo(memo string) (*entities.AuthorizedTransaction, error) {
+	authorizedTransaction, err := r.driver.GetAuthorizedTransactionByMemo(memo)
+	if err != nil {
+		return nil, err
+	}
+	return authorizedTransaction, err
 }
