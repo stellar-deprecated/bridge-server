@@ -33,12 +33,12 @@ type AddressResolver struct {
 func (ar AddressResolver) Resolve(address string) (destination StellarDestination, stellarToml StellarToml, err error) {
 
 	// TESTING
-	authServer := "http://localhost:8001"
-	return StellarDestination{
-			AccountId: "GAUEKNDV3Y4WYSWSRTUKQFGQVBI2F6SU7J26DIII5YPP4AGGLT7JGTXB",
-		}, StellarToml{
-			AuthServer: &authServer,
-		}, nil
+	// authServer := "http://localhost:8001"
+	// return StellarDestination{
+	// 		AccountId: "GAUEKNDV3Y4WYSWSRTUKQFGQVBI2F6SU7J26DIII5YPP4AGGLT7JGTXB",
+	// 	}, StellarToml{
+	// 		AuthServer: &authServer,
+	// 	}, nil
 
 	// TODO create constructor New()
 	if ar.helper == nil {
