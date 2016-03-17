@@ -2,11 +2,13 @@ package handlers
 
 import (
 	"encoding/hex"
+	"encoding/json"
 	log "github.com/Sirupsen/logrus"
 	"net/http"
 	"strconv"
 
 	"github.com/stellar/gateway/horizon"
+	ch "github.com/stellar/gateway/compliance/handlers"
 	b "github.com/stellar/go-stellar-base/build"
 	"github.com/stellar/go-stellar-base/keypair"
 	"github.com/stellar/go-stellar-base/xdr"
@@ -17,7 +19,7 @@ func (rh *RequestHandler) Send(w http.ResponseWriter, r *http.Request) {
 	assetCode := r.PostFormValue("asset_code")
 	amount := r.PostFormValue("amount")
 
-	destinationObject, err := rh.AddressResolver.Resolve(destination)
+	destinationObject, stellarToml, err := rh.AddressResolver.Resolve(destination)
 	if err != nil {
 		log.WithFields(log.Fields{"destination": destination}).Print("Cannot resolve address")
 		writeError(w, horizon.PaymentCannotResolveDestination)
@@ -56,22 +58,71 @@ func (rh *RequestHandler) Send(w http.ResponseWriter, r *http.Request) {
 
 	memoType := r.PostFormValue("memo_type")
 	memo := r.PostFormValue("memo")
+	extraMemo := r.PostFormValue("extra_memo")
 
-	if !(((memoType == "") && (memo == "")) || ((memoType != "") && (memo != ""))) {
-		log.Print("Missing one of memo params.")
-		writeError(w, horizon.PaymentMissingParamMemo)
-		return
-	}
+	if extraMemo != "" && rh.Config.Compliance != nil {
+		// Create memo using extraMemo data and send it auth server
+		authData := ch.AuthData{
+			Sender: "",
+			NeedInfo: false,
+			Tx: "",
+			Memo: "",
+		}
 
-	if destinationObject.MemoType != nil {
-		if memoType != "" {
-			log.Print("Memo given in request but federation returned memo fields.")
-			writeError(w, horizon.PaymentCannotUseMemo)
+		data, err := json.Marshal(data)
+		if err != nil {
+			writeError(w, horizon.ServerError)
 			return
 		}
 
-		memoType = *destinationObject.MemoType
-		memo = *destinationObject.Memo
+		client := http.Client{
+			Timeout: HOOK_TIMEOUT,
+		}
+		resp, err := client.PostForm(
+			stellarToml.AuthServer,
+			url.Values{"data": {data}},
+		)
+		if err != nil {
+			pl.log.WithFields(logrus.Fields{"auth_server": stellarToml.AuthServer}).Error("Error sending request to auth server")
+			writeError(w, horizon.ServerError)
+			return
+		}
+
+		if resp.StatusCode != 200 {
+			defer resp.Body.Close()
+			body, err := ioutil.ReadAll(resp.Body)
+			if err != nil {
+				pl.log.Error("Error reading auth server response")
+				writeError(w, horizon.ServerError)
+				return
+			}
+
+			pl.log.WithFields(logrus.Fields{
+				"status": resp.StatusCode,
+				"body":   string(body),
+			}).Error("Error response from auth server")
+			writeError(w, horizon.ServerError)
+			return
+		}
+
+		// Success
+	} else {
+		if !(((memoType == "") && (memo == "")) || ((memoType != "") && (memo != ""))) {
+			log.Print("Missing one of memo params.")
+			writeError(w, horizon.PaymentMissingParamMemo)
+			return
+		}
+
+		if destinationObject.MemoType != nil {
+			if memoType != "" {
+				log.Print("Memo given in request but federation returned memo fields.")
+				writeError(w, horizon.PaymentCannotUseMemo)
+				return
+			}
+
+			memoType = *destinationObject.MemoType
+			memo = *destinationObject.Memo
+		}
 	}
 
 	var memoMutator interface{}

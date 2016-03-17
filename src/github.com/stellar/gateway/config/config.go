@@ -10,6 +10,7 @@ import (
 type Config struct {
 	Port              *int
 	Horizon           *string
+	Compliance        *string
 	ApiKey            string `mapstructure:"api_key"`
 	NetworkPassphrase string `mapstructure:"network_passphrase"`
 	Assets            []string

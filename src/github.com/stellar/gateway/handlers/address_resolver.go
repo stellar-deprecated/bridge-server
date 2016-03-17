@@ -11,6 +11,7 @@ import (
 )
 
 type StellarToml struct {
+	AuthServer       *string `toml:"AUTH_SERVER"`
 	FederationServer *string `toml:"FEDERATION_SERVER"`
 }
 
@@ -29,12 +30,11 @@ type AddressResolver struct {
 	helper AddressResolverHelperInterface
 }
 
-func (ar AddressResolver) Resolve(address string) (destination StellarDestination, err error) {
+func (ar AddressResolver) Resolve(address string) (destination StellarDestination, stellarToml StellarToml, err error) {
 	tokens := strings.Split(address, "*")
 	if len(tokens) == 1 {
 		destination.AccountId = address
 	} else if len(tokens) == 2 {
-		var stellarToml StellarToml
 		stellarToml, err = ar.helper.GetStellarToml(tokens[1])
 		if err != nil {
 			return
