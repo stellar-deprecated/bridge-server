@@ -20,7 +20,7 @@ func main() {
 }
 
 func init() {
-	viper.SetConfigName("config")
+	viper.SetConfigName("config_gateway")
 	viper.SetConfigType("toml")
 	viper.AddConfigPath(".")
 
@@ -35,7 +35,7 @@ func init() {
 }
 
 func run(cmd *cobra.Command, args []string) {
-	log.Print("Reading config.toml file")
+	log.Print("Reading config_gateway.toml file")
 	err := viper.ReadInConfig()
 	if err != nil {
 		log.Fatal("Error reading config file: ", err)

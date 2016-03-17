@@ -16,6 +16,7 @@ import (
 )
 
 type TransactionSubmitterInterface interface {
+	BuildTransaction(seed string, operation, memo interface{}) (transaction *xdr.Transaction, err error)
 	SubmitTransaction(seed string, operation, memo interface{}) (response horizon.SubmitTransactionResponse, err error)
 }
 
@@ -84,8 +85,40 @@ func (ts *TransactionSubmitter) GetAccount(seed string) (account *Account, err e
 	return
 }
 
-func (ts *TransactionSubmitter) BuildTransaction(seed string, operation, memo interface{}) (transaction xdr.Transaction, err error) {
-	//
+// Needed for Compliance Protocol. The sequence number in built transaction will be equal 0!
+func (ts *TransactionSubmitter) BuildTransaction(seed string, operation, memo interface{}) (transaction *xdr.Transaction, err error) {
+	account, err := ts.GetAccount(seed)
+	if err != nil {
+		return
+	}
+
+	operationMutator, ok := operation.(build.TransactionMutator)
+	if !ok {
+		ts.log.Error("Cannot cast operationMutator to build.TransactionMutator")
+		err = errors.New("Cannot cast operationMutator to build.TransactionMutator")
+		return
+	}
+
+	mutators := []build.TransactionMutator{
+		build.SourceAccount{account.Seed},
+		build.Sequence{0},
+		ts.Network,
+		operationMutator,
+	}
+
+	if memo != nil {
+		memoMutator, ok := memo.(build.TransactionMutator)
+		if !ok {
+			ts.log.Error("Cannot cast memo to build.TransactionMutator")
+			err = errors.New("Cannot cast memo to build.TransactionMutator")
+			return
+		}
+		mutators = append(mutators, memoMutator)
+	}
+
+	txBuilder := build.Transaction(mutators...)
+
+	return txBuilder.TX, txBuilder.Err
 }
 
 func (ts *TransactionSubmitter) SubmitTransaction(seed string, operation, memo interface{}) (response horizon.SubmitTransactionResponse, err error) {

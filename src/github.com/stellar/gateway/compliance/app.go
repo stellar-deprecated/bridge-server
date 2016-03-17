@@ -43,7 +43,7 @@ func NewApp(config config.Config, migrateFlag bool) (app *App, err error) {
 
 	if migrateFlag {
 		var migrationsApplied int
-		migrationsApplied, err = driver.MigrateUp()
+		migrationsApplied, err = driver.MigrateUp("compliance")
 		if err != nil {
 			return
 		}
@@ -72,7 +72,7 @@ func (a *App) Serve() {
 	external := web.New()
 	external.Use(gatewayHandlers.StripTrailingSlashMiddleware())
 	external.Use(gatewayHandlers.HeadersMiddleware())
-	external.Post("/auth", requestHandlers.HandlerAuth)
+	external.Post("/", requestHandlers.HandlerAuth)
 	externalPortString := fmt.Sprintf(":%d", *a.config.ExternalPort)
 	log.Println("Starting external server on", externalPortString)
 	go graceful.ListenAndServe(externalPortString, external)
