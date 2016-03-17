@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/stellar/gateway/db"
+	"github.com/stellar/gateway/db/entities"
 	"github.com/stellar/go-stellar-base/hash"
 	"github.com/stellar/go-stellar-base/xdr"
 	"github.com/zenazn/goji/web"
@@ -94,10 +94,18 @@ func (rh *RequestHandler) HandlerAuth(c web.C, w http.ResponseWriter, r *http.Re
 		return
 	}
 
+	var memo *string
+
+	if tx.Memo.Hash != nil {
+		memoBytes := [32]byte(*tx.Memo.Hash)
+		memoHex := base64.StdEncoding.EncodeToString(memoBytes[:])
+		memo = &memoHex
+	}
 	transactionHash := hash.Hash(txBytes.Bytes())
 
-	authorizedTransaction := &db.AuthorizedTransaction{
+	authorizedTransaction := &entities.AuthorizedTransaction{
 		TransactionId:  hex.EncodeToString(transactionHash[:]),
+		Memo:           memo,
 		TransactionXdr: authData.Tx,
 		AuthorizedAt:   time.Now(),
 		Data:           data,

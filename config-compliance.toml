@@ -1,7 +1,0 @@
-external_port = 8001
-internal_port = 8002
-network_passphrase = "Test SDF Network ; September 2015"
-
-[database]
-type = "mysql"
-url = "root:@/compliance"

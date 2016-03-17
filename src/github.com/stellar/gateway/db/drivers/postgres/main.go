@@ -20,6 +20,13 @@ func (d *PostgresDriver) Init(url string) (err error) {
 	return
 }
 
+// go-bindata -ignore .+\.go$ -pkg postgres -o bindata.go ./migrations
+func (d *PostgresDriver) MigrateUp(component string) (migrationsApplied int, err error) {
+	source := d.getAssetMigrationSource()
+	migrationsApplied, err = migrate.Exec(d.database.DB, "postgres", source, migrate.Up)
+	return
+}
+
 func (d *PostgresDriver) GetLastReceivedPayment() (*entities.ReceivedPayment, error) {
 	var receivedPayment entities.ReceivedPayment
 	err := d.database.Get(&receivedPayment, "SELECT * FROM ReceivedPayment ORDER BY id DESC LIMIT 1")
@@ -146,13 +153,6 @@ func getTypeData(object interface{}) (typeValue reflect.Type, tableName string, 
 	default:
 		return typeValue, tableName, fmt.Errorf("Unknown entity type: %T", object)
 	}
-	return
-}
-
-// go-bindata -ignore .+\.go$ -pkg postgres -o bindata.go ./migrations
-func (d *PostgresDriver) MigrateUp() (migrationsApplied int, err error) {
-	source := d.getAssetMigrationSource()
-	migrationsApplied, err = migrate.Exec(d.database.DB, "postgres", source, migrate.Up)
 	return
 }
 

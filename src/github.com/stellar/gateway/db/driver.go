@@ -6,7 +6,7 @@ import (
 
 type Driver interface {
 	Init(url string) (err error)
-	MigrateUp() (migrationsApplied int, err error)
+	MigrateUp(component string) (migrationsApplied int, err error)
 
 	Insert(object entities.Entity) (id int64, err error)
 	Update(object entities.Entity) (err error)

@@ -21,9 +21,9 @@ func (d *MysqlDriver) Init(url string) (err error) {
 	return
 }
 
-// go-bindata -ignore .+\.go$ -pkg mysql -o bindata.go ./migrations
-func (d *MysqlDriver) MigrateUp() (migrationsApplied int, err error) {
-	source := d.getAssetMigrationSource()
+// go-bindata -ignore .+\.go$ -pkg mysql -o bindata.go ./migrations*
+func (d *MysqlDriver) MigrateUp(component string) (migrationsApplied int, err error) {
+	source := d.getAssetMigrationSource(component)
 	migrationsApplied, err = migrate.Exec(d.database.DB, "mysql", source, migrate.Up)
 	return
 }
@@ -147,11 +147,11 @@ func getTypeData(object interface{}) (typeValue reflect.Type, tableName string, 
 	return
 }
 
-func (d *MysqlDriver) getAssetMigrationSource() (source *migrate.AssetMigrationSource) {
+func (d *MysqlDriver) getAssetMigrationSource(component string) (source *migrate.AssetMigrationSource) {
 	source = &migrate.AssetMigrationSource{
 		Asset:    Asset,
 		AssetDir: AssetDir,
-		Dir:      "migrations",
+		Dir:      "migrations_" + component,
 	}
 	return
 }

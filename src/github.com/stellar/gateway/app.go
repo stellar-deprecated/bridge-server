@@ -64,7 +64,7 @@ func NewApp(config config.Config, migrateFlag bool) (app *App, err error) {
 		}
 
 		var migrationsApplied int
-		migrationsApplied, err = driver.MigrateUp()
+		migrationsApplied, err = driver.MigrateUp("gateway")
 		if err != nil {
 			return
 		}
@@ -109,7 +109,7 @@ func NewApp(config config.Config, migrateFlag bool) (app *App, err error) {
 
 	if !(config.Accounts != nil && config.Accounts.ReceivingAccountId != nil) {
 		log.Warning("No accounts.receiving_account_id param. Skipping...")
-	} else if config.Hooks.Receive == nil {
+	} else if !(config.Hooks != nil && config.Hooks.Receive != nil) {
 		log.Warning("No hooks.receive param. Skipping...")
 	} else {
 		var paymentListener listener.PaymentListener
