@@ -24,11 +24,10 @@ func NewRepository(driver Driver) (r Repository) {
 func (r Repository) GetLastCursorValue() (cursor *string, err error) {
 	receivedPayment, err := r.driver.GetLastReceivedPayment()
 	if err != nil {
-		if err.Error() == "sql: no rows in result set" {
-			return nil, nil
-		} else {
-			return nil, err
-		}
+		return nil, err
+	} else if receivedPayment == nil {
+		return nil, nil
+	} else {
+		return &receivedPayment.PagingToken, nil
 	}
-	return &receivedPayment.PagingToken, err
 }
