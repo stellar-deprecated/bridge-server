@@ -1,6 +1,7 @@
 package listener
 
 import (
+	"encoding/json"
 	"errors"
 	"io/ioutil"
 	"net/http"
@@ -8,6 +9,7 @@ import (
 	"time"
 
 	"github.com/Sirupsen/logrus"
+	complianceHandlers "github.com/stellar/gateway/compliance/handlers"
 	"github.com/stellar/gateway/config"
 	"github.com/stellar/gateway/db"
 	"github.com/stellar/gateway/db/entities"
@@ -65,12 +67,11 @@ func (pl PaymentListener) Listen() (err error) {
 			var cursorValue string
 			if cursor != nil {
 				cursorValue = *cursor
+			} else {
+				// If no last cursor saved set it to: `now`
+				cursorValue = "now"
+				cursor = &cursorValue
 			}
-			// } else {
-			// 	// If no last cursor saved set it to: `now`
-			// 	cursorValue = "now"
-			// 	cursor = &cursorValue
-			// }
 
 			pl.log.WithFields(logrus.Fields{
 				"accountId": accountId,
@@ -138,6 +139,41 @@ func (pl PaymentListener) onPayment(payment horizon.PaymentResponse) (err error)
 		return nil
 	}
 
+	var receiveResponse complianceHandlers.ReceiveResponse
+
+	// Request extra_memo from compliance server
+	if pl.config.Compliance != nil && payment.Memo.Type == "hash" {
+		resp, err := http.PostForm(
+			*pl.config.Compliance+"/receive",
+			url.Values{"memo": {string(payment.Memo.Value)}},
+		)
+		if err != nil {
+			pl.log.WithFields(logrus.Fields{"err": err}).Error("Error sending request to compliance server")
+			return err
+		}
+
+		defer resp.Body.Close()
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			pl.log.Error("Error reading compliance server response")
+			return err
+		}
+
+		if resp.StatusCode != 200 {
+			pl.log.WithFields(logrus.Fields{
+				"status": resp.StatusCode,
+				"body":   string(body),
+			}).Error("Error response from compliance server")
+			return err
+		}
+
+		err = json.Unmarshal([]byte(body), &receiveResponse)
+		if err != nil {
+			pl.log.WithFields(logrus.Fields{"err": err}).Error("Cannot unmarshal receiveResponse")
+			return err
+		}
+	}
+
 	client := http.Client{
 		Timeout: HOOK_TIMEOUT,
 	}
@@ -150,6 +186,7 @@ func (pl PaymentListener) onPayment(payment horizon.PaymentResponse) (err error)
 			"asset_code": {payment.AssetCode},
 			"memo_type":  {payment.Memo.Type},
 			"memo":       {payment.Memo.Value},
+			"extra_memo": {receiveResponse.Memo},
 		},
 	)
 	if err != nil {

@@ -8,6 +8,7 @@ import (
 var (
 	InternalServerError = &ErrorResponse{Code: "internal_server_error", Message: "Internal Server Error, please try again.", Status: http.StatusInternalServerError}
 	InvalidParameter    = &ErrorResponse{Code: "invalid_parameter", Message: "Invalid parameter.", Status: http.StatusBadRequest}
+	TransactionNotFound = &ErrorResponse{Code: "transaction_not_found", Message: "Transaction not found.", Status: http.StatusNotFound}
 )
 
 func WriteError(w http.ResponseWriter, error *ErrorResponse) {

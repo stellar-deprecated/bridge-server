@@ -14,10 +14,6 @@ type RequestHandler struct {
 	Repository    db.RepositoryInterface
 }
 
-func (rh *RequestHandler) HandlerSendPayment(c web.C, w http.ResponseWriter, r *http.Request) {
+func (rh *RequestHandler) HandlerSend(c web.C, w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("send_payment"))
-}
-
-func (rh *RequestHandler) HandlerReceivePayment(c web.C, w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("receive_payment"))
 }
