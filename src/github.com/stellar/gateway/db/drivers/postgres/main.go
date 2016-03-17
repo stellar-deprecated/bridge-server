@@ -70,6 +70,8 @@ func (d *PostgresDriver) Insert(object entities.Entity) (id int64, err error) {
 	}
 
 	switch object := object.(type) {
+	case *entities.AuthorizedTransaction:
+		err = stmt.Get(&id, object)
 	case *entities.SentTransaction:
 		err = stmt.Get(&id, object)
 	case *entities.ReceivedPayment:
@@ -119,6 +121,8 @@ func (d *PostgresDriver) Update(object entities.Entity) (err error) {
 	query += strings.Join(fields, ", ") + " WHERE id = :id;"
 
 	switch object := object.(type) {
+	case *entities.AuthorizedTransaction:
+		_, err = d.database.NamedExec(query, object)
 	case *entities.SentTransaction:
 		_, err = d.database.NamedExec(query, object)
 	case *entities.ReceivedPayment:
@@ -130,6 +134,9 @@ func (d *PostgresDriver) Update(object entities.Entity) (err error) {
 
 func getTypeData(object interface{}) (typeValue reflect.Type, tableName string, err error) {
 	switch object := object.(type) {
+	case *entities.AuthorizedTransaction:
+		typeValue = reflect.TypeOf(*object)
+		tableName = "AuthorizedTransaction"
 	case *entities.SentTransaction:
 		typeValue = reflect.TypeOf(*object)
 		tableName = "SentTransaction"

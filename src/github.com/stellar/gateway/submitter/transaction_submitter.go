@@ -12,6 +12,7 @@ import (
 	"github.com/stellar/gateway/horizon"
 	"github.com/stellar/go-stellar-base/build"
 	"github.com/stellar/go-stellar-base/keypair"
+	"github.com/stellar/go-stellar-base/xdr"
 )
 
 type TransactionSubmitterInterface interface {
@@ -81,6 +82,10 @@ func (ts *TransactionSubmitter) GetAccount(seed string) (account *Account, err e
 		ts.Accounts[seed] = account
 	}
 	return
+}
+
+func (ts *TransactionSubmitter) BuildTransaction(seed string, operation, memo interface{}) (transaction xdr.Transaction, err error) {
+	//
 }
 
 func (ts *TransactionSubmitter) SubmitTransaction(seed string, operation, memo interface{}) (response horizon.SubmitTransactionResponse, err error) {
