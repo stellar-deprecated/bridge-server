@@ -6,7 +6,7 @@ import (
 	"time"
 
 	. "github.com/smartystreets/goconvey/convey"
-	"github.com/stellar/gateway/db"
+	"github.com/stellar/gateway/db/entities"
 	"github.com/stellar/gateway/horizon"
 	"github.com/stellar/gateway/mocks"
 	b "github.com/stellar/go-stellar-base/build"
@@ -105,9 +105,9 @@ func TestTransactionSubmitter(t *testing.T) {
 					// Persist sending transaction
 					mockEntityManager.On(
 						"Persist",
-						mock.AnythingOfType("*db.SentTransaction"),
+						mock.AnythingOfType("*entities.SentTransaction"),
 					).Return(nil).Once().Run(func(args mock.Arguments) {
-						transaction := args.Get(0).(*db.SentTransaction)
+						transaction := args.Get(0).(*entities.SentTransaction)
 						assert.Equal(t, "sending", transaction.Status)
 						assert.Equal(t, "GCLOMB72ODBFUGK4E2BK7VMR3RNZ5WSTMEOGNA2YUVHFR3WMH2XBAB6H", transaction.Source)
 						assert.Equal(t, mocks.PredefinedTime, transaction.SubmittedAt)
@@ -117,9 +117,9 @@ func TestTransactionSubmitter(t *testing.T) {
 					// Persist failure
 					mockEntityManager.On(
 						"Persist",
-						mock.AnythingOfType("*db.SentTransaction"),
+						mock.AnythingOfType("*entities.SentTransaction"),
 					).Return(nil).Once().Run(func(args mock.Arguments) {
-						transaction := args.Get(0).(*db.SentTransaction)
+						transaction := args.Get(0).(*entities.SentTransaction)
 						assert.Equal(t, "failure", transaction.Status)
 						assert.Equal(t, "GCLOMB72ODBFUGK4E2BK7VMR3RNZ5WSTMEOGNA2YUVHFR3WMH2XBAB6H", transaction.Source)
 						assert.Equal(t, mocks.PredefinedTime, transaction.SubmittedAt)
@@ -166,9 +166,9 @@ func TestTransactionSubmitter(t *testing.T) {
 					// Persist sending transaction
 					mockEntityManager.On(
 						"Persist",
-						mock.AnythingOfType("*db.SentTransaction"),
+						mock.AnythingOfType("*entities.SentTransaction"),
 					).Return(nil).Once().Run(func(args mock.Arguments) {
-						transaction := args.Get(0).(*db.SentTransaction)
+						transaction := args.Get(0).(*entities.SentTransaction)
 						assert.Equal(t, "sending", transaction.Status)
 						assert.Equal(t, "GCLOMB72ODBFUGK4E2BK7VMR3RNZ5WSTMEOGNA2YUVHFR3WMH2XBAB6H", transaction.Source)
 						assert.Equal(t, mocks.PredefinedTime, transaction.SubmittedAt)
@@ -178,9 +178,9 @@ func TestTransactionSubmitter(t *testing.T) {
 					// Persist failure
 					mockEntityManager.On(
 						"Persist",
-						mock.AnythingOfType("*db.SentTransaction"),
+						mock.AnythingOfType("*entities.SentTransaction"),
 					).Return(nil).Once().Run(func(args mock.Arguments) {
-						transaction := args.Get(0).(*db.SentTransaction)
+						transaction := args.Get(0).(*entities.SentTransaction)
 						assert.Equal(t, "failure", transaction.Status)
 						assert.Equal(t, "GCLOMB72ODBFUGK4E2BK7VMR3RNZ5WSTMEOGNA2YUVHFR3WMH2XBAB6H", transaction.Source)
 						assert.Equal(t, mocks.PredefinedTime, transaction.SubmittedAt)
@@ -240,9 +240,9 @@ func TestTransactionSubmitter(t *testing.T) {
 					// Persist sending transaction
 					mockEntityManager.On(
 						"Persist",
-						mock.AnythingOfType("*db.SentTransaction"),
+						mock.AnythingOfType("*entities.SentTransaction"),
 					).Return(nil).Once().Run(func(args mock.Arguments) {
-						transaction := args.Get(0).(*db.SentTransaction)
+						transaction := args.Get(0).(*entities.SentTransaction)
 						assert.Equal(t, "sending", transaction.Status)
 						assert.Equal(t, "GCLOMB72ODBFUGK4E2BK7VMR3RNZ5WSTMEOGNA2YUVHFR3WMH2XBAB6H", transaction.Source)
 						assert.Equal(t, mocks.PredefinedTime, transaction.SubmittedAt)
@@ -252,9 +252,9 @@ func TestTransactionSubmitter(t *testing.T) {
 					// Persist failure
 					mockEntityManager.On(
 						"Persist",
-						mock.AnythingOfType("*db.SentTransaction"),
+						mock.AnythingOfType("*entities.SentTransaction"),
 					).Return(nil).Once().Run(func(args mock.Arguments) {
-						transaction := args.Get(0).(*db.SentTransaction)
+						transaction := args.Get(0).(*entities.SentTransaction)
 						assert.Equal(t, "success", transaction.Status)
 						assert.Equal(t, "GCLOMB72ODBFUGK4E2BK7VMR3RNZ5WSTMEOGNA2YUVHFR3WMH2XBAB6H", transaction.Source)
 						assert.Equal(t, mocks.PredefinedTime, transaction.SubmittedAt)
@@ -310,9 +310,9 @@ func TestTransactionSubmitter(t *testing.T) {
 					// Persist sending transaction
 					mockEntityManager.On(
 						"Persist",
-						mock.AnythingOfType("*db.SentTransaction"),
+						mock.AnythingOfType("*entities.SentTransaction"),
 					).Return(nil).Once().Run(func(args mock.Arguments) {
-						transaction := args.Get(0).(*db.SentTransaction)
+						transaction := args.Get(0).(*entities.SentTransaction)
 						assert.Equal(t, "sending", transaction.Status)
 						assert.Equal(t, "GCLOMB72ODBFUGK4E2BK7VMR3RNZ5WSTMEOGNA2YUVHFR3WMH2XBAB6H", transaction.Source)
 						assert.Equal(t, mocks.PredefinedTime, transaction.SubmittedAt)
@@ -322,9 +322,9 @@ func TestTransactionSubmitter(t *testing.T) {
 					// Persist failure
 					mockEntityManager.On(
 						"Persist",
-						mock.AnythingOfType("*db.SentTransaction"),
+						mock.AnythingOfType("*entities.SentTransaction"),
 					).Return(nil).Once().Run(func(args mock.Arguments) {
-						transaction := args.Get(0).(*db.SentTransaction)
+						transaction := args.Get(0).(*entities.SentTransaction)
 						assert.Equal(t, "success", transaction.Status)
 						assert.Equal(t, "GCLOMB72ODBFUGK4E2BK7VMR3RNZ5WSTMEOGNA2YUVHFR3WMH2XBAB6H", transaction.Source)
 						assert.Equal(t, mocks.PredefinedTime, transaction.SubmittedAt)

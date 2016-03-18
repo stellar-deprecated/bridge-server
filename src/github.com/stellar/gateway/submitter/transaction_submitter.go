@@ -8,6 +8,7 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/stellar/gateway/db"
+	"github.com/stellar/gateway/db/entities"
 	"github.com/stellar/gateway/horizon"
 	"github.com/stellar/go-stellar-base/build"
 	"github.com/stellar/go-stellar-base/keypair"
@@ -129,8 +130,8 @@ func (ts *TransactionSubmitter) SubmitTransaction(seed string, operation, memo i
 		return
 	}
 
-	sentTransaction := &db.SentTransaction{
-		Status:      "sending",
+	sentTransaction := &entities.SentTransaction{
+		Status:      entities.SENT_TRANSACTION_STATUS_SENDING,
 		Source:      account.Keypair.Address(),
 		SubmittedAt: ts.now(),
 		EnvelopeXdr: txeB64,

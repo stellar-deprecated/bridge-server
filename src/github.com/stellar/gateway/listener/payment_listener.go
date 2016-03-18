@@ -10,6 +10,7 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/stellar/gateway/config"
 	"github.com/stellar/gateway/db"
+	"github.com/stellar/gateway/db/entities"
 	"github.com/stellar/gateway/horizon"
 	"github.com/stellar/go-stellar-base/keypair"
 )
@@ -95,13 +96,13 @@ func (pl PaymentListener) Listen() (err error) {
 func (pl PaymentListener) onPayment(payment horizon.PaymentResponse) (err error) {
 	pl.log.WithFields(logrus.Fields{"id": payment.Id}).Info("New payment")
 
-	dbPayment := db.ReceivedPayment{
+	dbPayment := entities.ReceivedPayment{
 		OperationId: payment.Id,
 		ProcessedAt: pl.now(),
 		PagingToken: payment.PagingToken,
 	}
 
-	savePayment := func(payment *db.ReceivedPayment) (err error) {
+	savePayment := func(payment *entities.ReceivedPayment) (err error) {
 		err = pl.entityManager.Persist(payment)
 		return
 	}

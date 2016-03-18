@@ -39,7 +39,7 @@ func (rh *RequestHandler) Authorize(w http.ResponseWriter, r *http.Request) {
 	)
 
 	if err != nil {
-		log.Print("Error submitting transaction ", err)
+		log.WithFields(log.Fields{"err": err}).Error("Error submitting transaction")
 		writeError(w, horizon.ServerError)
 		return
 	}

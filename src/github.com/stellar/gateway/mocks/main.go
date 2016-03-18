@@ -3,7 +3,7 @@ package mocks
 import (
 	"time"
 
-	"github.com/stellar/gateway/db"
+	"github.com/stellar/gateway/db/entities"
 	"github.com/stellar/gateway/horizon"
 	"github.com/stretchr/testify/mock"
 )
@@ -12,7 +12,7 @@ type MockEntityManager struct {
 	mock.Mock
 }
 
-func (m *MockEntityManager) Persist(object db.Entity) (err error) {
+func (m *MockEntityManager) Persist(object entities.Entity) (err error) {
 	a := m.Called(object)
 	return a.Error(0)
 }

@@ -1,13 +1,12 @@
 package db
 
 import (
-	"fmt"
-
 	"github.com/Sirupsen/logrus"
+	"github.com/stellar/gateway/db/entities"
 )
 
 type EntityManagerInterface interface {
-	Persist(object Entity) (err error)
+	Persist(object entities.Entity) (err error)
 }
 
 type EntityManager struct {
@@ -23,34 +22,15 @@ func NewEntityManager(driver Driver) (em EntityManager) {
 	return
 }
 
-func (em EntityManager) Persist(object Entity) (err error) {
-	objectType := fmt.Sprintf("%T", object)
-
-	if object.GetId() != nil {
-		// Update
-		switch objectType {
-		case "*db.ReceivedPayment":
-			err = em.driver.UpdateReceivedPayment(object.(*ReceivedPayment))
-		case "*db.SentTransaction":
-			err = em.driver.UpdateSentTransaction(object.(*SentTransaction))
-		default:
-			err = fmt.Errorf("Unknown object: %s (must be a pointer)", objectType)
-		}
+// Persists an object in DB.
+//
+// If `object.IsNew()` equals true object will be inserted.
+// Otherwise, it will found using `object.GetId()` and updated.
+func (em EntityManager) Persist(object entities.Entity) (err error) {
+	if object.IsNew() {
+		_, err = em.driver.Insert(object)
 	} else {
-		// Insert
-		var id int64
-		switch objectType {
-		case "*db.ReceivedPayment":
-			id, err = em.driver.InsertReceivedPayment(object.(*ReceivedPayment))
-		case "*db.SentTransaction":
-			id, err = em.driver.InsertSentTransaction(object.(*SentTransaction))
-		default:
-			err = fmt.Errorf("Unknown object: %s (must be a pointer)", objectType)
-		}
-
-		if err == nil {
-			object.SetId(id)
-		}
+		err = em.driver.Update(object)
 	}
 	return
 }

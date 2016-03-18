@@ -1,10 +1,14 @@
 package postgres
 
 import (
+	"fmt"
+	"reflect"
+	"strings"
+
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 	"github.com/rubenv/sql-migrate"
-	"github.com/stellar/gateway/db"
+	"github.com/stellar/gateway/db/entities"
 )
 
 type PostgresDriver struct {
@@ -16,89 +20,132 @@ func (d *PostgresDriver) Init(url string) (err error) {
 	return
 }
 
-// go-bindata -ignore .+\.go$ -pkg postgres -o bindata.go ./migrations
-func (d *PostgresDriver) MigrateUp() (migrationsApplied int, err error) {
-	source := d.getAssetMigrationSource()
-	migrationsApplied, err = migrate.Exec(d.database.DB, "postgres", source, migrate.Up)
-	return
-}
-
-func (d *PostgresDriver) InsertReceivedPayment(object *db.ReceivedPayment) (id int64, err error) {
-	query := `
-	INSERT INTO ReceivedPayment
-		(operation_id, processed_at, paging_token, status)
-	VALUES
-		(:operation_id, :processed_at, :paging_token, :status)
-	RETURNING id`
-	id, err = d.insert(query, object)
-	return
-}
-
-func (d *PostgresDriver) UpdateReceivedPayment(object *db.ReceivedPayment) (err error) {
-	query := `
-	UPDATE ReceivedPayment SET
-		operation_id = :operation_id,
-		processed_at = :processed_at,
-		paging_token = :paging_token,
-		status = :status
-	WHERE
-		id = :id`
-	err = d.update(query, object)
-	return
-}
-
-func (d *PostgresDriver) GetLastReceivedPayment() (*db.ReceivedPayment, error) {
-	var receivedPayment db.ReceivedPayment
+func (d *PostgresDriver) GetLastReceivedPayment() (*entities.ReceivedPayment, error) {
+	var receivedPayment entities.ReceivedPayment
 	err := d.database.Get(&receivedPayment, "SELECT * FROM ReceivedPayment ORDER BY id DESC LIMIT 1")
 	if err != nil {
-		return nil, err
+		if err.Error() == "sql: no rows in result set" {
+			return nil, nil
+		} else {
+			return nil, err
+		}
 	}
 	return &receivedPayment, nil
 }
 
-func (d *PostgresDriver) InsertSentTransaction(object *db.SentTransaction) (id int64, err error) {
-	query := `
-	INSERT INTO SentTransaction
-		(status, source, submitted_at, succeeded_at, ledger, envelope_xdr, result_xdr)
-	VALUES
-		(:status, :source, :submitted_at, :succeeded_at, :ledger, :envelope_xdr, :result_xdr)
-	RETURNING id`
-	id, err = d.insert(query, object)
-	return
-}
+func (d *PostgresDriver) Insert(object entities.Entity) (id int64, err error) {
+	value, tableName, err := getTypeData(object)
 
-func (d *PostgresDriver) UpdateSentTransaction(object *db.SentTransaction) (err error) {
-	query := `
-	UPDATE SentTransaction SET
-		status = :status,
-		source = :source,
-		submitted_at = :submitted_at,
-		succeeded_at = :succeeded_at,
-		ledger = :ledger,
-		envelope_xdr = :envelope_xdr,
-		result_xdr = :result_xdr
-	WHERE
-		id = :id`
-	err = d.update(query, object)
-	return
-}
+	if err != nil {
+		return 0, err
+	}
 
-func (d *PostgresDriver) insert(query string, object interface{}) (id int64, err error) {
+	fieldsCount := value.NumField()
+	var fieldNames []string
+	var fieldValues []string
+
+	for i := 0; i < fieldsCount; i++ {
+		field := value.Field(i)
+		tag := field.Tag.Get("db")
+		if tag == "" {
+			continue
+		}
+
+		if tag == "id" && object.GetId() == nil {
+			// To handle error:
+			// null value in column "id" violates not-null constraint
+			continue
+		}
+
+		fieldNames = append(fieldNames, tag)
+		fieldValues = append(fieldValues, ":"+tag)
+	}
+
+	query := "INSERT INTO " + tableName + " (" + strings.Join(fieldNames, ", ") + ") VALUES (" + strings.Join(fieldValues, ", ") + ") RETURNING id;"
+
 	// TODO cache prepared statement
 	stmt, err := d.database.PrepareNamed(query)
 	if err != nil {
 		return
 	}
 
-	err = stmt.Get(&id, object)
+	switch object := object.(type) {
+	case *entities.SentTransaction:
+		err = stmt.Get(&id, object)
+	case *entities.ReceivedPayment:
+		err = stmt.Get(&id, object)
+	}
+
 	if err != nil {
 		return
+	}
+
+	if id == 0 {
+		// Not autoincrement
+		if object.GetId() == nil {
+			return 0, fmt.Errorf("Not autoincrement but ID nil")
+		}
+		id = *object.GetId()
+	}
+
+	if err == nil {
+		object.SetId(id)
+		object.SetExists()
+	}
+
+	return
+}
+
+func (d *PostgresDriver) Update(object entities.Entity) (err error) {
+	value, tableName, err := getTypeData(object)
+
+	if err != nil {
+		return err
+	}
+
+	fieldsCount := value.NumField()
+
+	query := "UPDATE " + tableName + " SET "
+	var fields []string
+
+	for i := 0; i < fieldsCount; i++ {
+		field := value.Field(i)
+		if field.Tag.Get("db") == "id" || field.Tag.Get("db") == "" {
+			continue
+		}
+		fields = append(fields, field.Tag.Get("db")+" = :"+field.Tag.Get("db"))
+	}
+
+	query += strings.Join(fields, ", ") + " WHERE id = :id;"
+
+	switch object := object.(type) {
+	case *entities.SentTransaction:
+		_, err = d.database.NamedExec(query, object)
+	case *entities.ReceivedPayment:
+		_, err = d.database.NamedExec(query, object)
+	}
+
+	return
+}
+
+func getTypeData(object interface{}) (typeValue reflect.Type, tableName string, err error) {
+	switch object := object.(type) {
+	case *entities.SentTransaction:
+		typeValue = reflect.TypeOf(*object)
+		tableName = "SentTransaction"
+	case *entities.ReceivedPayment:
+		typeValue = reflect.TypeOf(*object)
+		tableName = "ReceivedPayment"
+	default:
+		return typeValue, tableName, fmt.Errorf("Unknown entity type: %T", object)
 	}
 	return
 }
 
-func (d *PostgresDriver) update(query string, object interface{}) (err error) {
-	_, err = d.database.NamedExec(query, object)
+// go-bindata -ignore .+\.go$ -pkg postgres -o bindata.go ./migrations
+func (d *PostgresDriver) MigrateUp() (migrationsApplied int, err error) {
+	source := d.getAssetMigrationSource()
+	migrationsApplied, err = migrate.Exec(d.database.DB, "postgres", source, migrate.Up)
 	return
 }
 

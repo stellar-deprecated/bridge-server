@@ -10,7 +10,7 @@ import (
 
 	. "github.com/smartystreets/goconvey/convey"
 	"github.com/stellar/gateway/config"
-	"github.com/stellar/gateway/db"
+	"github.com/stellar/gateway/db/entities"
 	"github.com/stellar/gateway/horizon"
 	"github.com/stellar/gateway/mocks"
 	"github.com/stretchr/testify/assert"
@@ -69,7 +69,7 @@ func TestPaymentListener(t *testing.T) {
 
 		mocks.PredefinedTime = time.Now()
 
-		dbPayment := db.ReceivedPayment{
+		dbPayment := entities.ReceivedPayment{
 			OperationId: operation.Id,
 			ProcessedAt: mocks.PredefinedTime,
 			PagingToken: operation.PagingToken,
