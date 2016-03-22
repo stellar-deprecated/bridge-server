@@ -8,6 +8,8 @@ import (
 type RepositoryInterface interface {
 	GetLastCursorValue() (cursor *string, err error)
 	GetAuthorizedTransactionByMemo(memo string) (*entities.AuthorizedTransaction, error)
+	GetAllowedFiByDomain(domain string) (*entities.AllowedFi, error)
+	GetAllowedUserByDomainAndUserId(domain, userId string) (*entities.AllowedUser, error)
 }
 
 type Repository struct {
@@ -35,9 +37,28 @@ func (r Repository) GetLastCursorValue() (cursor *string, err error) {
 }
 
 func (r Repository) GetAuthorizedTransactionByMemo(memo string) (*entities.AuthorizedTransaction, error) {
-	authorizedTransaction, err := r.driver.GetAuthorizedTransactionByMemo(memo)
-	if err != nil {
+	authorizedTransaction, err := r.driver.GetOne(&entities.AuthorizedTransaction{}, "memo = ?", memo)
+	if authorizedTransaction == nil {
 		return nil, err
+	} else {
+		return authorizedTransaction.(*entities.AuthorizedTransaction), err
 	}
-	return authorizedTransaction, err
+}
+
+func (r Repository) GetAllowedFiByDomain(domain string) (*entities.AllowedFi, error) {
+	allowedFi, err := r.driver.GetOne(&entities.AllowedFi{}, "domain = ?", domain)
+	if allowedFi == nil {
+		return nil, err
+	} else {
+		return allowedFi.(*entities.AllowedFi), err
+	}
+}
+
+func (r Repository) GetAllowedUserByDomainAndUserId(domain, userId string) (*entities.AllowedUser, error) {
+	allowedUser, err := r.driver.GetOne(&entities.AllowedUser{}, "fi_domain = ? && user_id = ?", domain, userId)
+	if allowedUser == nil {
+		return nil, err
+	} else {
+		return allowedUser.(*entities.AllowedUser), err
+	}
 }

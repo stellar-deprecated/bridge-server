@@ -1,4 +1,4 @@
-package gateway
+package bridge
 
 import (
 	"errors"
@@ -8,13 +8,14 @@ import (
 	"os"
 	"time"
 
-	"github.com/stellar/gateway/config"
+	"github.com/stellar/gateway/bridge/config"
+	"github.com/stellar/gateway/bridge/handlers"
 	"github.com/stellar/gateway/db"
 	"github.com/stellar/gateway/db/drivers/mysql"
 	"github.com/stellar/gateway/db/drivers/postgres"
-	"github.com/stellar/gateway/handlers"
 	"github.com/stellar/gateway/horizon"
 	"github.com/stellar/gateway/listener"
+	"github.com/stellar/gateway/server"
 	"github.com/stellar/gateway/submitter"
 	"github.com/zenazn/goji"
 	"github.com/zenazn/goji/web/middleware"
@@ -152,10 +153,10 @@ func (a *App) Serve() {
 	flag.Set("bind", portString)
 
 	goji.Abandon(middleware.Logger)
-	goji.Use(handlers.StripTrailingSlashMiddleware())
-	goji.Use(handlers.HeadersMiddleware())
+	goji.Use(server.StripTrailingSlashMiddleware())
+	goji.Use(server.HeadersMiddleware())
 	if a.config.ApiKey != "" {
-		goji.Use(handlers.ApiKeyMiddleware(a.config.ApiKey))
+		goji.Use(server.ApiKeyMiddleware(a.config.ApiKey))
 	}
 
 	if a.config.Accounts != nil && a.config.Accounts.AuthorizingSeed != nil {

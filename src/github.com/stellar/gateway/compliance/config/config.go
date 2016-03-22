@@ -8,11 +8,15 @@ import (
 type Config struct {
 	ExternalPort      *int   `mapstructure:"external_port"`
 	InternalPort      *int   `mapstructure:"internal_port"`
-	NeedsAuth         *bool  `mapstructure:"needs_auth"`
+	NeedsAuth         bool   `mapstructure:"needs_auth"`
 	NetworkPassphrase string `mapstructure:"network_passphrase"`
 	Database          struct {
 		Type string
 		Url  string
+	}
+	Keys struct {
+		SigningSeed string `mapstructure:"signing_seed"`
+		Encryption  string `mapstructure:"encryption"`
 	}
 	Callbacks *Callbacks
 }
@@ -36,6 +40,11 @@ func (c *Config) Validate() (err error) {
 
 	if c.NetworkPassphrase == "" {
 		err = errors.New("network_passphrase param is required")
+		return
+	}
+
+	if c.Keys.SigningSeed == "" || c.Keys.Encryption == "" {
+		err = errors.New("keys.signing_seed and keys.encryption params are required")
 		return
 	}
 

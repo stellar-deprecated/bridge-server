@@ -10,7 +10,7 @@ import (
 	"github.com/stellar/gateway/db"
 	"github.com/stellar/gateway/db/drivers/mysql"
 	"github.com/stellar/gateway/db/drivers/postgres"
-	gatewayHandlers "github.com/stellar/gateway/handlers"
+	"github.com/stellar/gateway/server"
 	"github.com/zenazn/goji/graceful"
 	"github.com/zenazn/goji/web"
 )
@@ -70,8 +70,8 @@ func (a *App) Serve() {
 
 	// External endpoints
 	external := web.New()
-	external.Use(gatewayHandlers.StripTrailingSlashMiddleware())
-	external.Use(gatewayHandlers.HeadersMiddleware())
+	external.Use(server.StripTrailingSlashMiddleware())
+	external.Use(server.HeadersMiddleware())
 	external.Post("/", requestHandlers.HandlerAuth)
 	externalPortString := fmt.Sprintf(":%d", *a.config.ExternalPort)
 	log.Println("Starting external server on", externalPortString)
@@ -79,10 +79,12 @@ func (a *App) Serve() {
 
 	// Internal endpoints
 	internal := web.New()
-	internal.Use(gatewayHandlers.StripTrailingSlashMiddleware())
-	internal.Use(gatewayHandlers.HeadersMiddleware())
-	internal.Get("/send", requestHandlers.HandlerSend)
+	internal.Use(server.StripTrailingSlashMiddleware())
+	internal.Use(server.HeadersMiddleware())
+	internal.Post("/send", requestHandlers.HandlerSend)
 	internal.Post("/receive", requestHandlers.HandlerReceive)
+	internal.Post("/allow_access", requestHandlers.HandlerAllowAccess)
+	internal.Post("/remove_access", requestHandlers.HandlerRemoveAccess)
 	internalPortString := fmt.Sprintf(":%d", *a.config.InternalPort)
 	log.Println("Starting internal server on", internalPortString)
 	graceful.ListenAndServe(internalPortString, internal)

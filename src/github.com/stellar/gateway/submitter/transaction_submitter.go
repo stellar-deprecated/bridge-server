@@ -1,7 +1,9 @@
 package submitter
 
 import (
+	"bytes"
 	"errors"
+	"fmt"
 	"strconv"
 	"sync"
 	"time"
@@ -11,13 +13,14 @@ import (
 	"github.com/stellar/gateway/db/entities"
 	"github.com/stellar/gateway/horizon"
 	"github.com/stellar/go-stellar-base/build"
+	"github.com/stellar/go-stellar-base/hash"
 	"github.com/stellar/go-stellar-base/keypair"
 	"github.com/stellar/go-stellar-base/xdr"
 )
 
 type TransactionSubmitterInterface interface {
-	BuildTransaction(seed string, operation, memo interface{}) (transaction *xdr.Transaction, err error)
 	SubmitTransaction(seed string, operation, memo interface{}) (response horizon.SubmitTransactionResponse, err error)
+	SignAndSubmitRawTransaction(seed string, tx *xdr.Transaction) (response horizon.SubmitTransactionResponse, err error)
 }
 
 type TransactionSubmitter struct {
@@ -85,86 +88,41 @@ func (ts *TransactionSubmitter) GetAccount(seed string) (account *Account, err e
 	return
 }
 
-// Needed for Compliance Protocol. The sequence number in built transaction will be equal 0!
-func (ts *TransactionSubmitter) BuildTransaction(seed string, operation, memo interface{}) (transaction *xdr.Transaction, err error) {
+// This method will:
+// - update sequence number of the transaction to the current one,
+// - sign it,
+// - submit it to the network.
+func (ts *TransactionSubmitter) SignAndSubmitRawTransaction(seed string, tx *xdr.Transaction) (response horizon.SubmitTransactionResponse, err error) {
 	account, err := ts.GetAccount(seed)
 	if err != nil {
 		return
 	}
-
-	operationMutator, ok := operation.(build.TransactionMutator)
-	if !ok {
-		ts.log.Error("Cannot cast operationMutator to build.TransactionMutator")
-		err = errors.New("Cannot cast operationMutator to build.TransactionMutator")
-		return
-	}
-
-	mutators := []build.TransactionMutator{
-		build.SourceAccount{account.Seed},
-		build.Sequence{0},
-		ts.Network,
-		operationMutator,
-	}
-
-	if memo != nil {
-		memoMutator, ok := memo.(build.TransactionMutator)
-		if !ok {
-			ts.log.Error("Cannot cast memo to build.TransactionMutator")
-			err = errors.New("Cannot cast memo to build.TransactionMutator")
-			return
-		}
-		mutators = append(mutators, memoMutator)
-	}
-
-	txBuilder := build.Transaction(mutators...)
-
-	return txBuilder.TX, txBuilder.Err
-}
-
-func (ts *TransactionSubmitter) SubmitTransaction(seed string, operation, memo interface{}) (response horizon.SubmitTransactionResponse, err error) {
-	account, err := ts.GetAccount(seed)
-	if err != nil {
-		return
-	}
-
-	var sequenceNumber uint64
 
 	account.Mutex.Lock()
 	account.SequenceNumber++
-	sequenceNumber = account.SequenceNumber
+	tx.SeqNum = xdr.SequenceNumber(account.SequenceNumber)
 	account.Mutex.Unlock()
 
-	operationMutator, ok := operation.(build.TransactionMutator)
-	if !ok {
-		ts.log.Error("Cannot cast operationMutator to build.TransactionMutator")
-		err = errors.New("Cannot cast operationMutator to build.TransactionMutator")
+	hash, err := TransactionHash(tx, ts.Network.Passphrase)
+	if err != nil {
+		ts.log.Print("Error calculating transaction hash")
 		return
 	}
 
-	mutators := []build.TransactionMutator{
-		build.SourceAccount{account.Seed},
-		build.Sequence{sequenceNumber},
-		ts.Network,
-		operationMutator,
-	}
-
-	if memo != nil {
-		memoMutator, ok := memo.(build.TransactionMutator)
-		if !ok {
-			ts.log.Error("Cannot cast memo to build.TransactionMutator")
-			err = errors.New("Cannot cast memo to build.TransactionMutator")
-			return
-		}
-		mutators = append(mutators, memoMutator)
-	}
-
-	tx := build.Transaction(mutators...)
-
-	txe := tx.Sign(seed)
-	txeB64, err := txe.Base64()
-
+	sig, err := account.Keypair.SignDecorated(hash[:])
 	if err != nil {
-		ts.log.Error("Cannot encode transaction envelope ", err)
+		ts.log.Print("Error signing a transaction")
+		return
+	}
+
+	envelopeXdr := xdr.TransactionEnvelope{
+		Tx:         *tx,
+		Signatures: []xdr.DecoratedSignature{sig},
+	}
+
+	txeB64, err := xdr.MarshalBase64(envelopeXdr)
+	if err != nil {
+		ts.log.Print("Cannot encode transaction envelope")
 		return
 	}
 
@@ -213,6 +171,89 @@ func (ts *TransactionSubmitter) SubmitTransaction(seed string, operation, memo i
 		}
 		account.Mutex.Unlock()
 	}
-
 	return
+}
+
+func (ts *TransactionSubmitter) SubmitTransaction(seed string, operation, memo interface{}) (response horizon.SubmitTransactionResponse, err error) {
+	account, err := ts.GetAccount(seed)
+	if err != nil {
+		return
+	}
+
+	operationMutator, ok := operation.(build.TransactionMutator)
+	if !ok {
+		ts.log.Error("Cannot cast operationMutator to build.TransactionMutator")
+		err = errors.New("Cannot cast operationMutator to build.TransactionMutator")
+		return
+	}
+
+	mutators := []build.TransactionMutator{
+		build.SourceAccount{account.Seed},
+		ts.Network,
+		operationMutator,
+	}
+
+	if memo != nil {
+		memoMutator, ok := memo.(build.TransactionMutator)
+		if !ok {
+			ts.log.Error("Cannot cast memo to build.TransactionMutator")
+			err = errors.New("Cannot cast memo to build.TransactionMutator")
+			return
+		}
+		mutators = append(mutators, memoMutator)
+	}
+
+	txBuilder := build.Transaction(mutators...)
+
+	return ts.SignAndSubmitRawTransaction(seed, txBuilder.TX)
+}
+
+// Needed for compliance server. The sequence number in built transaction will be equal 0!
+func BuildTransaction(accountId, networkPassphrase string, operation, memo interface{}) (transaction *xdr.Transaction, err error) {
+	operationMutator, ok := operation.(build.TransactionMutator)
+	if !ok {
+		err = errors.New("Cannot cast operationMutator to build.TransactionMutator")
+		return
+	}
+
+	mutators := []build.TransactionMutator{
+		build.SourceAccount{accountId},
+		build.Sequence{0},
+		build.Network{networkPassphrase},
+		operationMutator,
+	}
+
+	if memo != nil {
+		memoMutator, ok := memo.(build.TransactionMutator)
+		if !ok {
+			err = errors.New("Cannot cast memo to build.TransactionMutator")
+			return
+		}
+		mutators = append(mutators, memoMutator)
+	}
+
+	txBuilder := build.Transaction(mutators...)
+
+	return txBuilder.TX, txBuilder.Err
+}
+
+func TransactionHash(tx *xdr.Transaction, networkPassphrase string) ([32]byte, error) {
+	var txBytes bytes.Buffer
+
+	_, err := fmt.Fprintf(&txBytes, "%s", hash.Hash([]byte(networkPassphrase)))
+	if err != nil {
+		return [32]byte{}, err
+	}
+
+	_, err = xdr.Marshal(&txBytes, xdr.EnvelopeTypeEnvelopeTypeTx)
+	if err != nil {
+		return [32]byte{}, err
+	}
+
+	_, err = xdr.Marshal(&txBytes, tx)
+	if err != nil {
+		return [32]byte{}, err
+	}
+
+	return hash.Hash(txBytes.Bytes()), nil
 }

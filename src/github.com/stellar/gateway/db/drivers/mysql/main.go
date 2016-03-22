@@ -28,19 +28,6 @@ func (d *MysqlDriver) MigrateUp(component string) (migrationsApplied int, err er
 	return
 }
 
-func (d *MysqlDriver) GetAuthorizedTransactionByMemo(memo string) (*entities.AuthorizedTransaction, error) {
-	var authorizedTransaction entities.AuthorizedTransaction
-	err := d.database.Get(&authorizedTransaction, "SELECT * FROM AuthorizedTransaction WHERE memo = ?", memo)
-	if err != nil {
-		if err.Error() == "sql: no rows in result set" {
-			return nil, nil
-		} else {
-			return nil, err
-		}
-	}
-	return &authorizedTransaction, nil
-}
-
 func (d *MysqlDriver) GetLastReceivedPayment() (*entities.ReceivedPayment, error) {
 	var receivedPayment entities.ReceivedPayment
 	err := d.database.Get(&receivedPayment, "SELECT * FROM ReceivedPayment ORDER BY id DESC LIMIT 1")
@@ -80,6 +67,10 @@ func (d *MysqlDriver) Insert(object entities.Entity) (id int64, err error) {
 	var result sql.Result
 	switch object := object.(type) {
 	case *entities.AuthorizedTransaction:
+		result, err = d.database.NamedExec(query, object)
+	case *entities.AllowedFi:
+		result, err = d.database.NamedExec(query, object)
+	case *entities.AllowedUser:
 		result, err = d.database.NamedExec(query, object)
 	case *entities.SentTransaction:
 		result, err = d.database.NamedExec(query, object)
@@ -134,6 +125,10 @@ func (d *MysqlDriver) Update(object entities.Entity) (err error) {
 	switch object := object.(type) {
 	case *entities.AuthorizedTransaction:
 		_, err = d.database.NamedExec(query, object)
+	case *entities.AllowedFi:
+		_, err = d.database.NamedExec(query, object)
+	case *entities.AllowedUser:
+		_, err = d.database.NamedExec(query, object)
 	case *entities.SentTransaction:
 		_, err = d.database.NamedExec(query, object)
 	case *entities.ReceivedPayment:
@@ -143,11 +138,48 @@ func (d *MysqlDriver) Update(object entities.Entity) (err error) {
 	return
 }
 
+func (d *MysqlDriver) Delete(object entities.Entity) (err error) {
+	_, tableName, err := getTypeData(object)
+
+	if err != nil {
+		return
+	}
+
+	query := "DELETE FROM " + tableName + " WHERE id = :id;"
+	_, err = d.database.NamedExec(query, object)
+
+	return
+}
+
+func (d *MysqlDriver) GetOne(object entities.Entity, where string, params ...interface{}) (entities.Entity, error) {
+	_, tableName, err := getTypeData(object)
+	if err != nil {
+		return nil, err
+	}
+
+	err = d.database.Get(object, "SELECT * FROM "+tableName+" WHERE "+where+" LIMIT 1;", params...)
+	if err != nil {
+		if err.Error() == "sql: no rows in result set" {
+			return nil, nil
+		} else {
+			return nil, err
+		}
+	}
+	object.SetExists() // Mark this entity as existing
+	return object, err
+}
+
 func getTypeData(object interface{}) (typeValue reflect.Type, tableName string, err error) {
 	switch object := object.(type) {
 	case *entities.AuthorizedTransaction:
 		typeValue = reflect.TypeOf(*object)
 		tableName = "AuthorizedTransaction"
+	case *entities.AllowedFi:
+		typeValue = reflect.TypeOf(*object)
+		tableName = "AllowedFi"
+	case *entities.AllowedUser:
+		typeValue = reflect.TypeOf(*object)
+		tableName = "AllowedUser"
 	case *entities.SentTransaction:
 		typeValue = reflect.TypeOf(*object)
 		tableName = "SentTransaction"

@@ -9,11 +9,11 @@ import (
 	"time"
 
 	"github.com/Sirupsen/logrus"
-	complianceHandlers "github.com/stellar/gateway/compliance/handlers"
-	"github.com/stellar/gateway/config"
+	"github.com/stellar/gateway/bridge/config"
 	"github.com/stellar/gateway/db"
 	"github.com/stellar/gateway/db/entities"
 	"github.com/stellar/gateway/horizon"
+	"github.com/stellar/gateway/protocols/compliance"
 	"github.com/stellar/go-stellar-base/keypair"
 )
 
@@ -139,7 +139,7 @@ func (pl PaymentListener) onPayment(payment horizon.PaymentResponse) (err error)
 		return nil
 	}
 
-	var receiveResponse complianceHandlers.ReceiveResponse
+	var receiveResponse compliance.ReceiveResponse
 
 	// Request extra_memo from compliance server
 	if pl.config.Compliance != nil && payment.Memo.Type == "hash" {

@@ -4,7 +4,8 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"net/http"
 
-	"github.com/stellar/gateway/horizon"
+	h "github.com/stellar/gateway/horizon"
+	"github.com/stellar/gateway/server"
 	b "github.com/stellar/go-stellar-base/build"
 	"github.com/stellar/go-stellar-base/keypair"
 )
@@ -16,13 +17,13 @@ func (rh *RequestHandler) Authorize(w http.ResponseWriter, r *http.Request) {
 	_, err := keypair.Parse(accountId)
 	if err != nil {
 		log.Print("Invalid accountId parameter: ", accountId)
-		writeError(w, horizon.AllowTrustInvalidAccountId)
+		server.Write(w, h.NewErrorResponse(h.AllowTrustInvalidAccountId))
 		return
 	}
 
 	if !rh.isAssetAllowed(assetCode) {
 		log.Print("Asset code not allowed: ", assetCode)
-		writeError(w, horizon.AllowTrustAssetCodeNotAllowed)
+		server.Write(w, h.NewErrorResponse(h.AllowTrustAssetCodeNotAllowed))
 		return
 	}
 
@@ -40,9 +41,9 @@ func (rh *RequestHandler) Authorize(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		log.WithFields(log.Fields{"err": err}).Error("Error submitting transaction")
-		writeError(w, horizon.ServerError)
+		server.Write(w, h.NewErrorResponse(h.ServerError))
 		return
 	}
 
-	write(w, submitResponse)
+	server.Write(w, &submitResponse)
 }

@@ -10,7 +10,7 @@ import (
 	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
-	"github.com/stellar/gateway/config"
+	"github.com/stellar/gateway/bridge/config"
 	"github.com/stellar/gateway/horizon"
 	"github.com/stellar/gateway/mocks"
 	"github.com/stretchr/testify/assert"

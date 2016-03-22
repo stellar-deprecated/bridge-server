@@ -1,6 +1,7 @@
 package postgres
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 	"strings"
@@ -146,6 +147,15 @@ func (d *PostgresDriver) Update(object entities.Entity) (err error) {
 	}
 
 	return
+}
+
+func (d *PostgresDriver) Delete(object entities.Entity) (err error) {
+	err = errors.New("Not implemented yet")
+	return
+}
+
+func (d *PostgresDriver) GetOne(object entities.Entity, where string, params ...interface{}) (entities.Entity, error) {
+	return nil, errors.New("Not implemented yet")
 }
 
 func getTypeData(object interface{}) (typeValue reflect.Type, tableName string, err error) {

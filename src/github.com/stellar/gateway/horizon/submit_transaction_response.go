@@ -73,13 +73,16 @@ type SubmitTransactionResponseExtras struct {
 	ResultXdr   string `json:"result_xdr"`
 }
 
-func NewErrorResponse(code, message string) (resp SubmitTransactionResponse) {
-	error := SubmitTransactionResponseError{
-		Code:    code,
-		Message: message,
+func NewErrorResponse(error *SubmitTransactionResponseError) *SubmitTransactionResponse {
+	return &SubmitTransactionResponse{Error: error}
+}
+
+func (response *SubmitTransactionResponse) HTTPStatus() int {
+	if response.Error == nil {
+		return 200
+	} else {
+		return response.Error.Status
 	}
-	resp.Error = &error
-	return
 }
 
 func (response *SubmitTransactionResponse) Marshal() []byte {

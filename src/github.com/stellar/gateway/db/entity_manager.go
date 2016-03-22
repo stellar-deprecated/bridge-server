@@ -6,7 +6,8 @@ import (
 )
 
 type EntityManagerInterface interface {
-	Persist(object entities.Entity) (err error)
+	Delete(object entities.Entity) (err error)
+	Persist(object entities.Entity) error
 }
 
 type EntityManager struct {
@@ -20,6 +21,11 @@ func NewEntityManager(driver Driver) (em EntityManager) {
 		"service": "EntityManager",
 	})
 	return
+}
+
+// Delete an object from DB.
+func (em EntityManager) Delete(object entities.Entity) error {
+	return em.driver.Delete(object)
 }
 
 // Persists an object in DB.

@@ -6,11 +6,11 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"github.com/stellar/gateway"
-	"github.com/stellar/gateway/config"
+	"github.com/stellar/gateway/bridge"
+	"github.com/stellar/gateway/bridge/config"
 )
 
-var app *gateway.App
+var app *bridge.App
 var rootCmd *cobra.Command
 var migrateFlag bool
 
@@ -20,14 +20,14 @@ func main() {
 }
 
 func init() {
-	viper.SetConfigName("config_gateway")
+	viper.SetConfigName("config_bridge")
 	viper.SetConfigType("toml")
 	viper.AddConfigPath(".")
 
 	rootCmd = &cobra.Command{
-		Use:   "gateway",
-		Short: "stellar gateway server",
-		Long:  `stellar gateway server`,
+		Use:   "bridge",
+		Short: "stellar bridge server",
+		Long:  `stellar bridge server`,
 		Run:   run,
 	}
 
@@ -35,7 +35,7 @@ func init() {
 }
 
 func run(cmd *cobra.Command, args []string) {
-	log.Print("Reading config_gateway.toml file")
+	log.Print("Reading config_bridge.toml file")
 	err := viper.ReadInConfig()
 	if err != nil {
 		log.Fatal("Error reading config file: ", err)
@@ -50,7 +50,7 @@ func run(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	app, err = gateway.NewApp(config, migrateFlag)
+	app, err = bridge.NewApp(config, migrateFlag)
 
 	if err != nil {
 		log.Fatal(err.Error())
