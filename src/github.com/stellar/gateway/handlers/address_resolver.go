@@ -72,7 +72,8 @@ type AddressResolverHelper struct{}
 
 func (ar AddressResolverHelper) GetStellarToml(domain string) (stellarToml StellarToml, err error) {
 	var resp *http.Response
-	resp, err = http.Get("https://www." + domain + "/.well-known/stellar.toml")
+	// TODO change to https
+	resp, err = http.Get("http://www." + domain + "/.well-known/stellar.toml")
 	if err != nil {
 		return
 	}

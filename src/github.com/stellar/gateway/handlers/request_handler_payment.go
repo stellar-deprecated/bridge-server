@@ -26,7 +26,10 @@ func (rh *RequestHandler) Payment(w http.ResponseWriter, r *http.Request) {
 	destination := r.PostFormValue("destination")
 	destinationObject, _, err := rh.AddressResolver.Resolve(destination)
 	if err != nil {
-		log.WithFields(log.Fields{"destination": destination}).Print("Cannot resolve address")
+		log.WithFields(log.Fields{
+			"destination": destination,
+			"err":         err,
+		}).Print("Cannot resolve address")
 		writeError(w, horizon.PaymentCannotResolveDestination)
 		return
 	}
