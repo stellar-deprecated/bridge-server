@@ -81,7 +81,7 @@ func (ar AddressResolverHelper) GetDestination(federationUrl, address string) (d
 	if err != nil {
 		return
 	}
-	if resp.StatusCode == 200 {
+	if resp.StatusCode != 200 {
 		err = errors.New("Federation response status code indicates error")
 		return
 	}
