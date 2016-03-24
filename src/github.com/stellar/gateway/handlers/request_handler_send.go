@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	log "github.com/Sirupsen/logrus"
 	"io/ioutil"
 	"net/http"
@@ -21,8 +22,6 @@ import (
 
 func (rh *RequestHandler) Send(w http.ResponseWriter, r *http.Request) {
 	destination := r.PostFormValue("destination")
-	assetCode := r.PostFormValue("asset_code")
-	amount := r.PostFormValue("amount")
 
 	destinationObject, stellarToml, err := rh.AddressResolver.Resolve(destination)
 	if err != nil {
@@ -41,26 +40,25 @@ func (rh *RequestHandler) Send(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !rh.isAssetAllowed(assetCode) {
-		log.Print("Asset code not allowed: ", assetCode)
-		writeError(w, horizon.PaymentAssetCodeNotAllowed)
-		return
+	var operationBuilder interface{}
+	var errorResponse *horizon.SubmitTransactionResponseError
+
+	paymentType := r.PostFormValue("type")
+	switch paymentType {
+		case "":
+		case "payment":
+			log.Println("payment")
+			operationBuilder, errorResponse = rh.createSendPaymentOperation(r, destinationObject)
+		case "path_payment":
+			log.Println("path_payment")
+			operationBuilder, errorResponse = rh.createSendPathPaymentOperation(r, destinationObject)
+		default:
+			writeError(w, horizon.PaymentInvalidType)
+			return
 	}
 
-	issuingKeypair, err := keypair.Parse(*rh.Config.Accounts.IssuingSeed)
-	if err != nil {
-		log.Print("Invalid issuingSeed")
-		writeError(w, horizon.ServerError)
-		return
-	}
-
-	operationMutator := b.Payment(
-		b.Destination{destinationObject.AccountId},
-		b.CreditAmount{assetCode, issuingKeypair.Address(), amount},
-	)
-	if operationMutator.Err != nil {
-		log.Print("Error creating operationMutator ", operationMutator.Err)
-		writeError(w, horizon.ServerError)
+	if errorResponse != nil {
+		writeError(w, errorResponse)
 		return
 	}
 
@@ -84,7 +82,7 @@ func (rh *RequestHandler) Send(w http.ResponseWriter, r *http.Request) {
 
 		transaction, err := rh.TransactionSubmitter.BuildTransaction(
 			*rh.Config.Accounts.IssuingSeed,
-			operationMutator,
+			operationBuilder,
 			memoMutator,
 		)
 
@@ -187,7 +185,7 @@ func (rh *RequestHandler) Send(w http.ResponseWriter, r *http.Request) {
 
 	submitResponse, err := rh.TransactionSubmitter.SubmitTransaction(
 		*rh.Config.Accounts.IssuingSeed,
-		operationMutator,
+		operationBuilder,
 		memoMutator,
 	)
 	if err != nil {
@@ -197,4 +195,113 @@ func (rh *RequestHandler) Send(w http.ResponseWriter, r *http.Request) {
 	}
 
 	write(w, submitResponse)
+}
+
+func (rh *RequestHandler) createSendPaymentOperation(r *http.Request, destinationObject StellarDestination) (operationBuilder interface{}, errorResponse *horizon.SubmitTransactionResponseError) {
+	assetCode := r.PostFormValue("asset_code")
+	amount := r.PostFormValue("amount")
+
+	if !rh.isAssetAllowed(assetCode) {
+		log.Print("Asset code not allowed: ", assetCode)
+		errorResponse = horizon.PaymentAssetCodeNotAllowed
+		return
+	}
+
+	issuingKeypair, err := keypair.Parse(*rh.Config.Accounts.IssuingSeed)
+	if err != nil {
+		log.Print("Invalid issuingSeed")
+		errorResponse = horizon.ServerError
+		return
+	}
+
+	operationBuilder = b.Payment(
+		b.Destination{destinationObject.AccountId},
+		b.CreditAmount{assetCode, issuingKeypair.Address(), amount},
+	)
+	if operationBuilder.(b.PaymentBuilder).Err != nil {
+		log.Print("Error creating operationBuilder ", operationBuilder.(b.PaymentBuilder).Err)
+		errorResponse = horizon.ServerError
+	}
+	return
+}
+
+func (rh *RequestHandler) createSendPathPaymentOperation(r *http.Request, destinationObject StellarDestination) (operationBuilder interface{}, errorResponse *horizon.SubmitTransactionResponseError) {
+	sendMax := r.PostFormValue("send_max")
+	sendAssetCode := r.PostFormValue("send_asset_code")
+	sendAssetIssuer := r.PostFormValue("send_asset_issuer")
+
+	var sendAsset b.Asset
+	if sendAssetCode != "" && sendAssetIssuer != "" {
+		sendAsset = b.Asset{Code: sendAssetCode, Issuer: sendAssetIssuer}
+	} else if sendAssetCode == "" && sendAssetIssuer == "" {
+		sendAsset = b.Asset{Native: true}
+	} else {
+		log.Print("Missing send asset param.")
+		errorResponse = horizon.PaymentMissingParamAsset
+		return
+	}
+
+	destinationAmount := r.PostFormValue("destination_amount")
+	destinationAssetCode := r.PostFormValue("destination_asset_code")
+	destinationAssetIssuer := r.PostFormValue("destination_asset_issuer")
+
+	var destinationAsset b.Asset
+	if destinationAssetCode != "" && destinationAssetIssuer != "" {
+		destinationAsset = b.Asset{Code: destinationAssetCode, Issuer: destinationAssetIssuer}
+	} else if destinationAssetCode == "" && destinationAssetIssuer == "" {
+		destinationAsset = b.Asset{Native: true}
+	} else {
+		log.Print("Missing destination asset param.")
+		errorResponse = horizon.PaymentMissingParamAsset
+		return
+	}
+
+	// TODO check the fields
+
+	var path []b.Asset
+
+	for i := 0; ; i++ {
+		codeFieldName := fmt.Sprintf("path[%d][asset_code]", i)
+		issuerFieldName := fmt.Sprintf("path[%d][asset_issuer]", i)
+
+		// If the element does not exist in PostForm break the loop
+		if _, exists := r.PostForm[codeFieldName]; !exists {
+			break
+		}
+
+		code := r.PostFormValue(codeFieldName)
+		issuer := r.PostFormValue(issuerFieldName)
+
+		if code == "" && issuer == "" {
+			path = append(path, b.Asset{Native: true})
+		} else {
+			path = append(path, b.Asset{Code: code, Issuer: issuer})
+		}
+    }
+
+    log.Println(destinationObject.AccountId)
+    log.Println(sendAsset)
+    log.Println(destinationAsset)
+    log.Println(path)
+
+	operationBuilder = b.PathPayment(
+		b.Destination{destinationObject.AccountId},
+		b.PathSend{
+			Asset: sendAsset,
+			MaxAmount: sendMax,
+		},
+		b.PathDestination{
+			Asset: destinationAsset,
+			Amount: destinationAmount,
+		},
+		b.Path{Assets: path},
+	)
+
+	if operationBuilder.(b.PathPaymentBuilder).Err != nil {
+		log.WithFields(log.Fields{"err": operationBuilder.(b.PathPaymentBuilder).Err}).Print("Error building operation")
+		errorResponse = horizon.ServerError
+		return
+	}
+
+	return 
 }
