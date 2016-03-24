@@ -45,16 +45,16 @@ func (rh *RequestHandler) Send(w http.ResponseWriter, r *http.Request) {
 
 	paymentType := r.PostFormValue("type")
 	switch paymentType {
-		case "":
-		case "payment":
-			log.Println("payment")
-			operationBuilder, errorResponse = rh.createSendPaymentOperation(r, destinationObject)
-		case "path_payment":
-			log.Println("path_payment")
-			operationBuilder, errorResponse = rh.createSendPathPaymentOperation(r, destinationObject)
-		default:
-			writeError(w, horizon.PaymentInvalidType)
-			return
+	case "":
+	case "payment":
+		log.Println("payment")
+		operationBuilder, errorResponse = rh.createSendPaymentOperation(r, destinationObject)
+	case "path_payment":
+		log.Println("path_payment")
+		operationBuilder, errorResponse = rh.createSendPathPaymentOperation(r, destinationObject)
+	default:
+		writeError(w, horizon.PaymentInvalidType)
+		return
 	}
 
 	if errorResponse != nil {
@@ -277,21 +277,21 @@ func (rh *RequestHandler) createSendPathPaymentOperation(r *http.Request, destin
 		} else {
 			path = append(path, b.Asset{Code: code, Issuer: issuer})
 		}
-    }
+	}
 
-    log.Println(destinationObject.AccountId)
-    log.Println(sendAsset)
-    log.Println(destinationAsset)
-    log.Println(path)
+	log.Println(destinationObject.AccountId)
+	log.Println(sendAsset)
+	log.Println(destinationAsset)
+	log.Println(path)
 
 	operationBuilder = b.PathPayment(
 		b.Destination{destinationObject.AccountId},
 		b.PathSend{
-			Asset: sendAsset,
+			Asset:     sendAsset,
 			MaxAmount: sendMax,
 		},
 		b.PathDestination{
-			Asset: destinationAsset,
+			Asset:  destinationAsset,
 			Amount: destinationAmount,
 		},
 		b.Path{Assets: path},
@@ -303,5 +303,5 @@ func (rh *RequestHandler) createSendPathPaymentOperation(r *http.Request, destin
 		return
 	}
 
-	return 
+	return
 }
