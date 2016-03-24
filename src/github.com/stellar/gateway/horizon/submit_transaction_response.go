@@ -31,6 +31,7 @@ var (
 	// /send & /payment
 
 	// input errors
+	PaymentInvalidType              = &SubmitTransactionResponseError{Code: "invalid_type", Message: "Invalid operation type.", Status: http.StatusBadRequest}
 	PaymentInvalidSource            = &SubmitTransactionResponseError{Code: "invalid_source", Message: "source parameter is invalid.", Status: http.StatusBadRequest}
 	PaymentCannotResolveDestination = &SubmitTransactionResponseError{Code: "cannot_resolve_destination", Message: "Cannot resolve federated Stellar address.", Status: http.StatusBadRequest}
 	PaymentInvalidDestination       = &SubmitTransactionResponseError{Code: "invalid_destination", Message: "destination parameter is invalid.", Status: http.StatusBadRequest}

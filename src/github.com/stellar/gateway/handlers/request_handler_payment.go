@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/hex"
+	"fmt"
 	log "github.com/Sirupsen/logrus"
 	"net/http"
 	"strconv"
@@ -37,41 +38,25 @@ func (rh *RequestHandler) Payment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	amount := r.PostFormValue("amount")
-	assetCode := r.PostFormValue("asset_code")
-	assetIssuer := r.PostFormValue("asset_issuer")
-
 	var operationBuilder interface{}
+	var errorResponse *horizon.SubmitTransactionResponseError
 
-	if assetCode != "" && assetIssuer != "" {
-		issuerKeypair, err := keypair.Parse(assetIssuer)
-		if err != nil {
-			log.WithFields(log.Fields{"asset_issuer": assetIssuer}).Print("Invalid asset_issuer parameter")
-			writeError(w, horizon.PaymentInvalidIssuer)
+	paymentType := r.PostFormValue("type")
+	switch paymentType {
+		case "":
+		case "payment":
+			log.Println("payment")
+			operationBuilder, errorResponse = rh.createPaymentOperation(r, destinationObject)
+		case "path_payment":
+			log.Println("path_payment")
+			operationBuilder, errorResponse = rh.createPathPaymentOperation(r, destinationObject)
+		default:
+			writeError(w, horizon.PaymentInvalidType)
 			return
-		}
+	}
 
-		operationBuilder = b.Payment(
-			b.Destination{destinationObject.AccountId},
-			b.CreditAmount{assetCode, issuerKeypair.Address(), amount},
-		)
-	} else if assetCode == "" && assetIssuer == "" {
-		mutators := []interface{}{
-			b.Destination{destinationObject.AccountId},
-			b.NativeAmount{amount},
-		}
-
-		// Check if destination account exist
-		_, err = rh.Horizon.LoadAccount(destinationObject.AccountId)
-		if err != nil {
-			log.WithFields(log.Fields{"error": err}).Error("Error loading account")
-			operationBuilder = b.CreateAccount(mutators...)
-		} else {
-			operationBuilder = b.Payment(mutators...)
-		}
-	} else {
-		log.Print("Missing asset param.")
-		writeError(w, horizon.PaymentMissingParamAsset)
+	if errorResponse != nil {
+		writeError(w, errorResponse)
 		return
 	}
 
@@ -186,4 +171,135 @@ func (rh *RequestHandler) Payment(w http.ResponseWriter, r *http.Request) {
 	}
 
 	write(w, submitResponse)
+}
+
+func (rh *RequestHandler) createPaymentOperation(r *http.Request, destinationObject StellarDestination) (operationBuilder interface{}, errorResponse *horizon.SubmitTransactionResponseError) {
+	amount := r.PostFormValue("amount")
+	assetCode := r.PostFormValue("asset_code")
+	assetIssuer := r.PostFormValue("asset_issuer")
+
+	if assetCode != "" && assetIssuer != "" {
+		issuerKeypair, err := keypair.Parse(assetIssuer)
+		if err != nil {
+			log.WithFields(log.Fields{"asset_issuer": assetIssuer}).Print("Invalid asset_issuer parameter")
+			errorResponse = horizon.PaymentInvalidIssuer
+			return
+		}
+
+		operationBuilder = b.Payment(
+			b.Destination{destinationObject.AccountId},
+			b.CreditAmount{assetCode, issuerKeypair.Address(), amount},
+		)
+
+		if operationBuilder.(b.PaymentBuilder).Err != nil {
+			log.WithFields(log.Fields{"err": operationBuilder.(b.PaymentBuilder).Err}).Print("Error building operation")
+			errorResponse = horizon.ServerError
+			return
+		}
+	} else if assetCode == "" && assetIssuer == "" {
+		mutators := []interface{}{
+			b.Destination{destinationObject.AccountId},
+			b.NativeAmount{amount},
+		}
+
+		// Check if destination account exist
+		_, err := rh.Horizon.LoadAccount(destinationObject.AccountId)
+		if err != nil {
+			log.WithFields(log.Fields{"error": err}).Error("Error loading account")
+			operationBuilder = b.CreateAccount(mutators...)
+			if operationBuilder.(b.CreateAccountBuilder).Err != nil {
+				log.WithFields(log.Fields{"err": operationBuilder.(b.CreateAccountBuilder).Err}).Print("Error building operation")
+				errorResponse = horizon.ServerError
+				return
+			}
+		} else {
+			operationBuilder = b.Payment(mutators...)
+			if operationBuilder.(b.PaymentBuilder).Err != nil {
+				log.WithFields(log.Fields{"err": operationBuilder.(b.PaymentBuilder).Err}).Print("Error building operation")
+				errorResponse = horizon.ServerError
+				return
+			}
+		}
+	} else {
+		log.Print("Missing asset param.")
+		errorResponse = horizon.PaymentMissingParamAsset
+		return
+	}
+	return
+}
+
+func (rh *RequestHandler) createPathPaymentOperation(r *http.Request, destinationObject StellarDestination) (operationBuilder interface{}, errorResponse *horizon.SubmitTransactionResponseError) {
+	sendMax := r.PostFormValue("send_max")
+	sendAssetCode := r.PostFormValue("send_asset_code")
+	sendAssetIssuer := r.PostFormValue("send_asset_issuer")
+
+	var sendAsset b.Asset
+	if sendAssetCode != "" && sendAssetIssuer != "" {
+		sendAsset = b.Asset{Code: sendAssetCode, Issuer: sendAssetIssuer}
+	} else if sendAssetCode == "" && sendAssetIssuer == "" {
+		sendAsset = b.Asset{Native: true}
+	} else {
+		log.Print("Missing send asset param.")
+		errorResponse = horizon.PaymentMissingParamAsset
+		return
+	}
+
+	destinationAmount := r.PostFormValue("destination_amount")
+	destinationAssetCode := r.PostFormValue("destination_asset_code")
+	destinationAssetIssuer := r.PostFormValue("destination_asset_issuer")
+
+	var destinationAsset b.Asset
+	if destinationAssetCode != "" && destinationAssetIssuer != "" {
+		destinationAsset = b.Asset{Code: destinationAssetCode, Issuer: destinationAssetIssuer}
+	} else if destinationAssetCode == "" && destinationAssetIssuer == "" {
+		destinationAsset = b.Asset{Native: true}
+	} else {
+		log.Print("Missing destination asset param.")
+		errorResponse = horizon.PaymentMissingParamAsset
+		return
+	}
+
+	// TODO check the fields
+
+	var path []b.Asset
+
+	for i := 0; ; i++ {
+		codeFieldName := fmt.Sprintf("path[%d][asset_code]", i)
+		issuerFieldName := fmt.Sprintf("path[%d][asset_issuer]", i)
+
+		// If the element does not exist in PostForm break the loop
+		if _, exists := r.PostForm[codeFieldName]; !exists {
+			break
+		}
+
+		code := r.PostFormValue(codeFieldName)
+		issuer := r.PostFormValue(issuerFieldName)
+
+		if code == "" && issuer == "" {
+			path = append(path, b.Asset{Native: true})
+		} else {
+			path = append(path, b.Asset{Code: code, Issuer: issuer})
+		}
+    }
+
+	operationBuilder = b.PathPayment(
+		b.Destination{destinationObject.AccountId},
+		b.PathSend{
+			Asset: sendAsset,
+			MaxAmount: sendMax,
+		},
+		b.PathDestination{
+			Asset: destinationAsset,
+			Amount: destinationAmount,
+		},
+		b.Path{Assets: path},
+	)
+
+	if operationBuilder.(b.PathPaymentBuilder).Err != nil {
+		log.WithFields(log.Fields{"err": operationBuilder.(b.PathPaymentBuilder).Err}).Print("Error building operation")
+		errorResponse = horizon.ServerError
+		return
+	}
+
+	return 
 }

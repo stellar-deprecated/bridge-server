@@ -68,19 +68,43 @@ Then you can start the server:
 
 ### POST /payment
 
-Builds and submits a transaction with a single [`payment`](https://www.stellar.org/developers/learn/concepts/list-of-operations.html#payment) operation built from following parameters.
+Builds and submits a transaction with a single [`payment`](https://www.stellar.org/developers/learn/concepts/list-of-operations.html#payment), [`path_payment`](https://www.stellar.org/developers/learn/concepts/list-of-operations.html#path-payment) or [`create_account`](https://www.stellar.org/developers/learn/concepts/list-of-operations.html#create-account) (when sending native asset to account that does not exist) operation built from following parameters.
 
 #### Request Parameters
+
+Every request must contain required parameters from the following list. Additionally, depending on `type` parameter, every request must contain required parameters for equivalent operation type (check tables below).
 
 name |  | description
 --- | --- | ---
 `source` | required | Secret seed of transaction source account
 `destination` | required | Account ID or Stellar address (ex. `bob*stellar.org`) of payment destination account
+`type` | optional | Operation type: `payment` (default) or `path_payment`.
+`memo_type` | optional | Memo type, one of: `id`, `text`, `hash`
+`memo` | optional | Memo value, when `memo_type` is `id` it must be uint64, when `hash` it must be 32 bytes hex value
+
+##### CreateAccount / Payment operation parameters
+
+name |  | description
+--- | --- | ---
 `amount` | required | Amount to send
 `asset_code` | optional | Asset code (XLM when empty)
 `asset_issuer` | optional | Account ID of asset issuer (XLM when empty)
-`memo_type` | optional | Memo type, one of: `id`, `text`, `hash`
-`memo` | optional | Memo value, when `memo_type` is `id` it must be uint64, when `hash` it must be 32 bytes hex value
+
+##### PathPayment operation parameters
+
+name |  | description
+--- | --- | ---
+`send_max` | required | Maximum amount of send_asset to send
+`send_asset_code` | optional | Sending asset code (XLM when empty)
+`send_asset_issuer` | optional | Account ID of sending asset issuer (XLM when empty)
+`destination_amount` | required | Amount of destination_asset to receiving account will get
+`destination_asset_code` | optional | Destination asset code (XLM when empty)
+`destination_asset_issuer` | optional | Account ID of destination asset issuer (XLM when empty)
+`path[n][asset_code]` | optional | Asset code of `n`th asset on the path (XLM when empty, but empty parameter must be sent!)
+`path[n][asset_issuer]` | optional | Account ID of `n`th asset issuer (XLM when empty, but empty parameter must be sent!)
+`path[n+1][asset_code]` | optional | Asset code of `n+1`th asset on the path (XLM when empty, but empty parameter must be sent!)
+`path[n+1][asset_issuer]` | optional | Account ID of `n+1`th asset issuer (XLM when empty, but empty parameter must be sent!)
+... | ... | _Up to 5 assets in the path..._
 
 #### Response
 

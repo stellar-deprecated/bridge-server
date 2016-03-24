@@ -175,6 +175,18 @@ func (m Network) MutateTransaction(o *TransactionBuilder) error {
 
 // MutateTransaction for PaymentBuilder causes the underylying PaymentOp
 // to be added to the operation list for the provided transaction
+func (m PathPaymentBuilder) MutateTransaction(o *TransactionBuilder) error {
+	if m.Err != nil {
+		return m.Err
+	}
+
+	m.O.Body, m.Err = xdr.NewOperationBody(xdr.OperationTypePathPayment, m.P)
+	o.TX.Operations = append(o.TX.Operations, m.O)
+	return m.Err
+}
+
+// MutateTransaction for PaymentBuilder causes the underylying PaymentOp
+// to be added to the operation list for the provided transaction
 func (m PaymentBuilder) MutateTransaction(o *TransactionBuilder) error {
 	if m.Err != nil {
 		return m.Err
