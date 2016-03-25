@@ -1,13 +1,20 @@
 package handlers
 
 import (
+	"bytes"
+	"crypto/sha256"
+	"encoding/base64"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
+	"io/ioutil"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 
+	ch "github.com/stellar/gateway/compliance/handlers"
 	"github.com/stellar/gateway/horizon"
 	b "github.com/stellar/go-stellar-base/build"
 	"github.com/stellar/go-stellar-base/keypair"
@@ -24,7 +31,7 @@ func (rh *RequestHandler) Payment(w http.ResponseWriter, r *http.Request) {
 	}
 
 	destination := r.PostFormValue("destination")
-	destinationObject, _, err := rh.AddressResolver.Resolve(destination)
+	destinationObject, stellarToml, err := rh.AddressResolver.Resolve(destination)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"destination": destination,
@@ -65,53 +72,123 @@ func (rh *RequestHandler) Payment(w http.ResponseWriter, r *http.Request) {
 
 	memoType := r.PostFormValue("memo_type")
 	memo := r.PostFormValue("memo")
-
-	if !(((memoType == "") && (memo == "")) || ((memoType != "") && (memo != ""))) {
-		log.Print("Missing one of memo params.")
-		writeError(w, horizon.PaymentMissingParamMemo)
-		return
-	}
-
-	if destinationObject.MemoType != nil {
-		if memoType != "" {
-			log.Print("Memo given in request but federation returned memo fields.")
-			writeError(w, horizon.PaymentCannotUseMemo)
-			return
-		}
-
-		memoType = *destinationObject.MemoType
-		memo = *destinationObject.Memo
-	}
-
+	extraMemo := r.PostFormValue("extra_memo")
 	var memoMutator interface{}
-	switch {
-	case memoType == "":
-		break
-	case memoType == "id":
-		id, err := strconv.ParseUint(memo, 10, 64)
-		if err != nil {
-			log.WithFields(log.Fields{"memo": memo}).Print("Cannot convert memo_id value to uint64")
-			writeError(w, horizon.PaymentInvalidMemo)
+
+	if extraMemo != "" && rh.Config.Compliance != nil {
+		if stellarToml.AuthServer == nil {
+			log.Print("No AUTH_SERVER in stellar.toml")
+			writeError(w, horizon.ServerError)
 			return
 		}
-		memoMutator = b.MemoID{id}
-	case memoType == "text":
-		memoMutator = &b.MemoText{memo}
-	case memoType == "hash":
-		memoBytes, err := hex.DecodeString(memo)
-		if err != nil || len(memoBytes) != 32 {
-			log.WithFields(log.Fields{"memo": memo}).Print("Cannot decode hash memo value")
-			writeError(w, horizon.PaymentInvalidMemo)
-			return
-		}
+
+		memoBytes := sha256.Sum256([]byte(extraMemo))
 		var b32 [32]byte
 		copy(b32[:], memoBytes[0:32])
 		hash := xdr.Hash(b32)
 		memoMutator = &b.MemoHash{hash}
-	default:
-		log.Print("Not supported memo type: ", memoType)
-		writeError(w, horizon.PaymentInvalidMemo)
-		return
+
+		transaction, err := rh.TransactionSubmitter.BuildTransaction(
+			*rh.Config.Accounts.IssuingSeed,
+			operationBuilder,
+			memoMutator,
+		)
+
+		var txBytes bytes.Buffer
+		_, err = xdr.Marshal(&txBytes, transaction)
+		if err != nil {
+			log.Print("Error mashaling transaction")
+			writeError(w, horizon.ServerError)
+			return
+		}
+
+		authData := ch.AuthData{
+			Tx:   base64.StdEncoding.EncodeToString(txBytes.Bytes()),
+			Memo: extraMemo,
+		}
+
+		data, err := json.Marshal(authData)
+		if err != nil {
+			writeError(w, horizon.ServerError)
+			return
+		}
+
+		resp, err := http.PostForm(
+			*stellarToml.AuthServer,
+			url.Values{"data": {string(data)}},
+		)
+		if err != nil {
+			log.WithFields(log.Fields{
+				"auth_server": stellarToml.AuthServer,
+				"err":         err,
+			}).Error("Error sending request to auth server")
+			writeError(w, horizon.ServerError)
+			return
+		}
+
+		defer resp.Body.Close()
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			log.Error("Error reading auth server response")
+			writeError(w, horizon.ServerError)
+			return
+		}
+
+		if resp.StatusCode != 200 {
+			log.WithFields(log.Fields{
+				"status": resp.StatusCode,
+				"body":   string(body),
+			}).Error("Error response from auth server")
+			writeError(w, horizon.ServerError)
+			return
+		}
+	} else {
+		if !(((memoType == "") && (memo == "")) || ((memoType != "") && (memo != ""))) {
+			log.Print("Missing one of memo params.")
+			writeError(w, horizon.PaymentMissingParamMemo)
+			return
+		}
+
+		if destinationObject.MemoType != nil {
+			if memoType != "" {
+				log.Print("Memo given in request but federation returned memo fields.")
+				writeError(w, horizon.PaymentCannotUseMemo)
+				return
+			}
+
+			memoType = *destinationObject.MemoType
+			memo = *destinationObject.Memo
+		}
+
+		switch {
+		case memoType == "":
+			break
+		case memoType == "id":
+			id, err := strconv.ParseUint(memo, 10, 64)
+			if err != nil {
+				log.WithFields(log.Fields{"memo": memo}).Print("Cannot convert memo_id value to uint64")
+				writeError(w, horizon.PaymentInvalidMemo)
+				return
+			}
+			memoMutator = b.MemoID{id}
+		case memoType == "text":
+			memoMutator = b.MemoText{memo}
+		case memoType == "hash":
+			memoBytes, err := hex.DecodeString(memo)
+			if err != nil || len(memoBytes) != 32 {
+				log.WithFields(log.Fields{"memo": memo}).Print("Cannot decode hash memo value")
+				writeError(w, horizon.PaymentInvalidMemo)
+				return
+			}
+			var b32 [32]byte
+			copy(b32[:], memoBytes[0:32])
+			hash := xdr.Hash(b32)
+			memoMutator = &b.MemoHash{hash}
+		default:
+			log.Print("Not supported memo type: ", memoType)
+			writeError(w, horizon.PaymentInvalidMemo)
+			return
+		}
 	}
 
 	accountResponse, err := rh.Horizon.LoadAccount(sourceKeypair.Address())
