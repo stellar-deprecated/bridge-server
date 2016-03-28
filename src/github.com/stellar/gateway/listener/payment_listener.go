@@ -107,7 +107,7 @@ func (pl PaymentListener) onPayment(payment horizon.PaymentResponse) (err error)
 		return
 	}
 
-	if payment.Type != "payment" {
+	if payment.Type != "payment" && payment.Type != "path_payment" {
 		dbPayment.Status = "Not a payment operation"
 		savePayment(&dbPayment)
 		return
