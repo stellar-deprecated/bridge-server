@@ -29,14 +29,13 @@ The `config.toml` file must be present in a working directory. Config file shoul
    * test network: `Test SDF Network ; September 2015`
    * public network: `Public Global Stellar Network ; September 2015`
 * `horizon` - URL to [horizon](https://github.com/stellar/horizon) server instance
-* `assets` - array of approved assets codes that this server can authorize and send 
+* `assets` - array of approved assets codes that this server can authorize or receive. These are currency code/issuer pairs. 
 * `database`
   * `type` - database type (mysql, postgres)
   * `url` - url to database connection
 * `accounts`
-  * `authorizing_seed` - secret seed of the account to send `allow_trust` operations
-  * `issuing_seed` - secret seed of the account to send `payment` operations
-  * `receiving_account_id` - ID of the account to track incoming payments
+  * `authorizing_seed` - The secret seed of the public key that is able to submit `allow_trust` operations on the issuing account.
+  * `receiving_account_id` - The account ID that receives incoming payments. The `receive hook` will be called when a payment is received by this account.
 * `hooks`
   * `receive` - URL of the webhook where requests will be sent when a new payment appears in receiving account. **WARNING** Gateway server can send multiple requests to this webhook for a single payment! You need to be prepared for it. See: [Security](#security).
   * `error` - URL of the webhook where requests will be sent when there is an error with incoming payment
