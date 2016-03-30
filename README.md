@@ -34,6 +34,7 @@ The `config.toml` file must be present in a working directory. Config file shoul
   * `type` - database type (mysql, postgres)
   * `url` - url to database connection
 * `accounts`
+  * `base_seed` - The secret seed of the account used to send payments. If left blank you will need to pass it in calls to `/payment`. 
   * `authorizing_seed` - The secret seed of the public key that is able to submit `allow_trust` operations on the issuing account.
   * `receiving_account_id` - The account ID that receives incoming payments. The `receive hook` will be called when a payment is received by this account.
 * `hooks`
@@ -75,9 +76,8 @@ Every request must contain required parameters from the following list. Addition
 
 name |  | description
 --- | --- | ---
-`source` | required | Secret seed of transaction source account
+`source` | optional | Secret seed of transaction source account. If ommitted it will use the `base_seed` specified in the config file.
 `destination` | required | Account ID or Stellar address (ex. `bob*stellar.org`) of payment destination account
-`type` | optional | Operation type: `payment` (default) or `path_payment`.
 `memo_type` | optional | Memo type, one of: `id`, `text`, `hash`
 `memo` | optional | Memo value, when `memo_type` is `id` it must be uint64, when `hash` it must be 32 bytes hex value
 
@@ -138,23 +138,6 @@ name |  | description
 
 Check [`SubmitTransactionResponse`](./src/github.com/stellar/gateway/horizon/submit_transaction_response.go) struct.
 
-### POST /send
-
-Builds and submits a transaction with a [`payment`](https://www.stellar.org/developers/learn/concepts/list-of-operations.html#payment) operation. The source of this transaction will be the account specified by `accounts.issuing_seed` config parameter.
-
-#### Request Parameters
-
-name |  | description
---- | --- | ---
-`destination` | required | Account ID or Stellar address (ex. `bob*stellar.org`) of the destination account
-`asset_code` | required | Asset code of the asset to send. Must be present in `assets` config array.
-`amount` | required | Amount to send.
-`memo_type` | optional | Memo type, one of: `id`, `text`, `hash`
-`memo` | optional | Memo value, when `memo_type` is `id` it must be uint64, when `hash` it must be 32 bytes hex value
-
-#### Response
-
-Check [`SubmitTransactionResponse`](./src/github.com/stellar/gateway/horizon/submit_transaction_response.go) struct.
 
 ## Hooks
 
