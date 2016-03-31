@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strings"
+	"strconv"
 
 	"github.com/BurntSushi/toml"
 )
@@ -97,7 +98,7 @@ func (ar AddressResolverHelper) GetDestination(federationUrl, address string) (d
 		return
 	}
 	if resp.StatusCode != 200 {
-		err = errors.New("Federation response status code indicates error")
+		err = errors.New("Federation response status code("+strconv.Itoa(resp.StatusCode)+") indicates error")
 		return
 	}
 

@@ -7,6 +7,8 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"encoding/json"
 	log "github.com/Sirupsen/logrus"
 	"io/ioutil"
 	"net/http"
@@ -19,9 +21,11 @@ import (
 	b "github.com/stellar/go-stellar-base/build"
 	"github.com/stellar/go-stellar-base/keypair"
 	"github.com/stellar/go-stellar-base/xdr"
+	ch "github.com/stellar/gateway/compliance/handlers"
 )
 
 func (rh *RequestHandler) Payment(w http.ResponseWriter, r *http.Request) {
+
 	source := r.PostFormValue("source")
 	sourceKeypair, err := keypair.Parse(source)
 	if err != nil {
