@@ -21,8 +21,8 @@ func (rh *RequestHandler) Authorize(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !rh.isAssetAllowed(assetCode) {
-		log.Print("Asset code not allowed: ", assetCode)
+	if !rh.isAssetAllowed(assetCode, *rh.Config.Accounts.IssuingAccountId) {
+		log.WithFields(log.Fields{"asset_code": assetCode}).Warn("Asset code not allowed")
 		server.Write(w, h.NewErrorResponse(h.AllowTrustAssetCodeNotAllowed))
 		return
 	}

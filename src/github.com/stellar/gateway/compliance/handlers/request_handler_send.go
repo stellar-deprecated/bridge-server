@@ -22,30 +22,25 @@ import (
 )
 
 func (rh *RequestHandler) HandlerSend(c web.C, w http.ResponseWriter, r *http.Request) {
-	source := r.PostFormValue("source")
-	sender := r.PostFormValue("sender")
-	destination := r.PostFormValue("destination")
-	amount := r.PostFormValue("amount")
-	assetCode := r.PostFormValue("asset_code")
-	assetIssuer := r.PostFormValue("asset_issuer")
-	extraMemo := r.PostFormValue("extra_memo")
+	request := &compliance.SendRequest{}
+	request.FromRequest(r)
 
-	_, err := keypair.Parse(source)
+	_, err := keypair.Parse(request.Source)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"parameter": "source",
-			"value":     source,
+			"value":     request.Source,
 		}).Error("Invalid parameter")
 		server.Write(w, compliance.InvalidParameterError)
 		return
 	}
 
-	// TODO check the rest of params
+	// TODO check the rest of params using SendRequest.Validate()
 
-	destinationObject, stellarToml, err := federation.Resolve(destination)
+	destinationObject, stellarToml, err := federation.Resolve(request.Destination)
 	if err != nil {
 		log.WithFields(log.Fields{
-			"destination": destination,
+			"destination": request.Destination,
 			"err":         err,
 		}).Print("Cannot resolve address")
 		server.Write(w, compliance.CannotResolveDestination)
@@ -60,7 +55,11 @@ func (rh *RequestHandler) HandlerSend(c web.C, w http.ResponseWriter, r *http.Re
 
 	operationMutator := b.Payment(
 		b.Destination{destinationObject.AccountId},
-		b.CreditAmount{assetCode, assetIssuer, amount},
+		b.CreditAmount{
+			request.AssetCode,
+			request.AssetIssuer,
+			request.Amount,
+		},
 	)
 	if operationMutator.Err != nil {
 		log.WithFields(log.Fields{
@@ -70,14 +69,14 @@ func (rh *RequestHandler) HandlerSend(c web.C, w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	memoBytes := sha256.Sum256([]byte(extraMemo))
+	memoBytes := sha256.Sum256([]byte(request.ExtraMemo))
 	var b32 [32]byte
 	copy(b32[:], memoBytes[0:32])
 	hash := xdr.Hash(b32)
 	memoMutator := &b.MemoHash{hash}
 
 	transaction, err := submitter.BuildTransaction(
-		source,
+		request.Source,
 		rh.Config.NetworkPassphrase,
 		operationMutator,
 		memoMutator,
@@ -94,10 +93,10 @@ func (rh *RequestHandler) HandlerSend(c web.C, w http.ResponseWriter, r *http.Re
 	txBase64 := base64.StdEncoding.EncodeToString(txBytes.Bytes())
 
 	authData := compliance.AuthData{
-		Sender:   sender,
+		Sender:   request.Sender,
 		NeedInfo: true,
 		Tx:       txBase64,
-		Memo:     extraMemo,
+		Memo:     request.ExtraMemo,
 	}
 
 	data, err := json.Marshal(authData)

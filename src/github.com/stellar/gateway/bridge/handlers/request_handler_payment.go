@@ -2,11 +2,10 @@ package handlers
 
 import (
 	"encoding/hex"
-	"io/ioutil"
 	"encoding/json"
 	log "github.com/Sirupsen/logrus"
+	"io/ioutil"
 	"net/http"
-	"net/url"
 	"strconv"
 	"strings"
 
@@ -28,6 +27,8 @@ func (rh *RequestHandler) Payment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// TODO switch to protocols.FormRequest
+	sender := r.PostFormValue("sender")
 	destination := r.PostFormValue("destination")
 	amount := r.PostFormValue("amount")
 	assetCode := r.PostFormValue("asset_code")
@@ -38,19 +39,19 @@ func (rh *RequestHandler) Payment(w http.ResponseWriter, r *http.Request) {
 
 	if extraMemo != "" && rh.Config.Compliance != nil {
 		// Compliance server part
-		sender := r.PostFormValue("sender")
+		request := &compliance.SendRequest{
+			Source:      sourceKeypair.Address(),
+			Sender:      sender,
+			Destination: destination,
+			Amount:      amount,
+			AssetCode:   assetCode,
+			AssetIssuer: assetIssuer,
+			ExtraMemo:   extraMemo,
+		}
 
 		resp, err := http.PostForm(
 			*rh.Config.Compliance+"/send",
-			url.Values{
-				"source":       {sourceKeypair.Address()},
-				"sender":       {sender},
-				"destination":  {destination},
-				"amount":       {amount},
-				"asset_code":   {assetCode},
-				"asset_issuer": {assetIssuer},
-				"extra_memo":   {extraMemo},
-			},
+			request.ToValues(),
 		)
 		if err != nil {
 			log.WithFields(log.Fields{"err": err}).Error("Error sending request to compliance server")
@@ -91,7 +92,7 @@ func (rh *RequestHandler) Payment(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		submitResponse, err := rh.TransactionSubmitter.SignAndSubmitRawTransaction(*rh.Config.Accounts.IssuingSeed, &tx)
+		submitResponse, err := rh.TransactionSubmitter.SignAndSubmitRawTransaction(source, &tx)
 		if err != nil {
 			log.WithFields(log.Fields{"err": err}).Error("Error submitting transaction")
 			server.Write(w, h.NewErrorResponse(h.ServerError))

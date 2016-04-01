@@ -17,9 +17,9 @@ type RequestHandler struct {
 	TransactionSubmitter submitter.TransactionSubmitterInterface
 }
 
-func (rh *RequestHandler) isAssetAllowed(code string) bool {
-	for _, b := range rh.Config.Assets {
-		if b == code {
+func (rh *RequestHandler) isAssetAllowed(code string, issuer string) bool {
+	for _, asset := range rh.Config.Assets {
+		if asset.Code == code && asset.Issuer == issuer {
 			return true
 		}
 	}

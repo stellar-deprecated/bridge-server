@@ -39,6 +39,7 @@ The `config.toml` file must be present in a working directory. Config file shoul
 * `accounts`
   * `base_seed` - The secret seed of the account used to send payments. If left blank you will need to pass it in calls to `/payment`. 
   * `authorizing_seed` - The secret seed of the public key that is able to submit `allow_trust` operations on the issuing account.
+  * `issuing_account_id` - The account ID of the issuing account.
   * `receiving_account_id` - The account ID that receives incoming payments. The `receive hook` will be called when a payment is received by this account.
 * `hooks`
   * `receive` - URL of the webhook where requests will be sent when a new payment is sent to the receiving account. **WARNING** The bridge server can send multiple requests to this webhook for a single payment! You need to be prepared for it. See: [Security](#security).
@@ -184,3 +185,15 @@ After a successful build, you should find `bin/bridge` in the project directory.
 ```
 gb test
 ```
+
+## Documentation
+
+```
+godoc -goroot=. -http=:6060
+```
+
+Then simply open:
+```
+http://localhost:6060/pkg/github.com/stellar/gateway/
+```
+in a browser.

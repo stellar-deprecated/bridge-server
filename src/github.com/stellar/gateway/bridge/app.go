@@ -94,11 +94,11 @@ func NewApp(config config.Config, migrateFlag bool) (app *App, err error) {
 		}
 	}
 
-	if !(config.Accounts != nil && config.Accounts.IssuingSeed != nil) {
-		log.Warning("No accounts.issuing_seed param. Skipping...")
+	if !(config.Accounts != nil && config.Accounts.BaseSeed != nil) {
+		log.Warning("No accounts.base_seed param. Skipping...")
 	} else {
-		log.Print("Initializing Issuing account")
-		err = ts.InitAccount(*config.Accounts.IssuingSeed)
+		log.Print("Initializing Base account")
+		err = ts.InitAccount(*config.Accounts.BaseSeed)
 		if err != nil {
 			return
 		}
@@ -163,12 +163,6 @@ func (a *App) Serve() {
 		goji.Post("/authorize", requestHandlers.Authorize)
 	} else {
 		log.Warning("accounts.authorizing_seed not provided. /authorize endpoint will not be available.")
-	}
-
-	if a.config.Accounts != nil && a.config.Accounts.IssuingSeed != nil {
-		goji.Post("/send", requestHandlers.Send)
-	} else {
-		log.Warning("accounts.issuing_seed not provided. /send endpoint will not be available.")
 	}
 
 	goji.Post("/payment", requestHandlers.Payment)

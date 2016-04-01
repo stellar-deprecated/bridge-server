@@ -13,7 +13,7 @@ type Config struct {
 	Compliance        *string
 	ApiKey            string `mapstructure:"api_key"`
 	NetworkPassphrase string `mapstructure:"network_passphrase"`
-	Assets            []string
+	Assets            []Asset
 	Database          struct {
 		Type string
 		Url  string
@@ -22,9 +22,15 @@ type Config struct {
 	Hooks    *Hooks
 }
 
+type Asset struct {
+	Code   string
+	Issuer string
+}
+
 type Accounts struct {
 	AuthorizingSeed    *string `mapstructure:"authorizing_seed"`
-	IssuingSeed        *string `mapstructure:"issuing_seed"`
+	BaseSeed           *string `mapstructure:"base_seed"`
+	IssuingAccountId   *string `mapstructure:"issuing_account_id"`
 	ReceivingAccountId *string `mapstructure:"receiving_account_id"`
 }
 
@@ -88,10 +94,18 @@ func (c *Config) Validate() (err error) {
 			}
 		}
 
-		if c.Accounts.IssuingSeed != nil {
-			_, err = keypair.Parse(*c.Accounts.IssuingSeed)
+		if c.Accounts.BaseSeed != nil {
+			_, err = keypair.Parse(*c.Accounts.BaseSeed)
 			if err != nil {
-				err = errors.New("accounts.issuing_seed is invalid")
+				err = errors.New("accounts.base_seed is invalid")
+				return
+			}
+		}
+
+		if c.Accounts.IssuingAccountId != nil {
+			_, err = keypair.Parse(*c.Accounts.IssuingAccountId)
+			if err != nil {
+				err = errors.New("accounts.issuing_account_id is invalid")
 				return
 			}
 		}

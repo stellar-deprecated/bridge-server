@@ -14,17 +14,15 @@ import (
 	"github.com/stellar/gateway/db/entities"
 	"github.com/stellar/gateway/horizon"
 	"github.com/stellar/gateway/protocols/compliance"
-	"github.com/stellar/go-stellar-base/keypair"
 )
 
 type PaymentListener struct {
-	config         *config.Config
-	entityManager  db.EntityManagerInterface
-	horizon        horizon.HorizonInterface
-	log            *logrus.Entry
-	repository     db.RepositoryInterface
-	issuingAccount keypair.KP
-	now            func() time.Time
+	config        *config.Config
+	entityManager db.EntityManagerInterface
+	horizon       horizon.HorizonInterface
+	log           *logrus.Entry
+	repository    db.RepositoryInterface
+	now           func() time.Time
 }
 
 const HOOK_TIMEOUT = 10 * time.Second
@@ -40,7 +38,6 @@ func NewPaymentListener(
 	pl.entityManager = entityManager
 	pl.horizon = horizon
 	pl.repository = repository
-	pl.issuingAccount, err = keypair.Parse(*config.Accounts.IssuingSeed)
 	pl.now = now
 	pl.log = logrus.WithFields(logrus.Fields{
 		"service": "PaymentListener",
@@ -220,12 +217,8 @@ func (pl PaymentListener) onPayment(payment horizon.PaymentResponse) (err error)
 }
 
 func (pl PaymentListener) isAssetAllowed(code string, issuer string) bool {
-	if issuer != pl.issuingAccount.Address() {
-		return false
-	}
-
-	for _, b := range pl.config.Assets {
-		if b == code {
+	for _, asset := range pl.config.Assets {
+		if asset.Code == code && asset.Issuer == issuer {
 			return true
 		}
 	}
