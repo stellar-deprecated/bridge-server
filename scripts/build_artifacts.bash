@@ -8,7 +8,7 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 build() {
   GOOS=$1
-  RELEASE="gateway-$VERSION-$GOOS-$GOARCH"
+  RELEASE="bridge-$VERSION-$GOOS-$GOARCH"
   PKG_DIR="$DIST/$RELEASE"
 
   # do the actual build
@@ -31,7 +31,7 @@ build() {
 
 srcBin() {
   GOOS=$1
-  BIN="gateway-$GOOS-$GOARCH"
+  BIN="bridge-$GOOS-$GOARCH"
 
   if [ "$GOOS" = "windows" ]; then
     BIN+=".exe"
@@ -42,9 +42,9 @@ srcBin() {
 
 destBin() {
   if [ "$1" = "windows" ]; then
-    echo "gateway.exe"
+    echo "bridge.exe"
   else
-    echo "gateway"
+    echo "bridge"
   fi
 }
 

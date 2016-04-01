@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strings"
+	"strconv"
 
 	"github.com/stellar/gateway/protocols/stellartoml"
 )
@@ -52,8 +53,8 @@ func GetDestination(federationUrl, address string) (response Response, err error
 	if err != nil {
 		return
 	}
-	if resp.StatusCode == 200 {
-		err = errors.New("Federation response status code indicates error")
+	if !(resp.StatusCode >= 200 && resp.StatusCode < 300) {
+		err = errors.New("Federation response status code ("+strconv.Itoa(resp.StatusCode)+") indicates error")
 		return
 	}
 
