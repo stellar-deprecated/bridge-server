@@ -88,10 +88,10 @@ func (ar AddressResolverHelper) GetStellarToml(domain string) (stellarToml Stell
 }
 
 func (ar AddressResolverHelper) GetDestination(federationUrl, address string) (destination StellarDestination, err error) {
-	if !strings.HasPrefix(federationUrl, "https://") {
-		err = errors.New("Only HTTPS federation servers allowed")
-		return
-	}
+	// if !strings.HasPrefix(federationUrl, "https://") {
+	// 	err = errors.New("Only HTTPS federation servers allowed")
+	// 	return
+	// }
 
 	resp, err := http.Get(federationUrl + "?type=name&q=" + address)
 	if err != nil {
