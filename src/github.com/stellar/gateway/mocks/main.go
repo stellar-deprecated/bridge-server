@@ -1,6 +1,8 @@
 package mocks
 
 import (
+	"net/http"
+	"net/url"
 	"time"
 
 	"github.com/stellar/gateway/db/entities"
@@ -37,6 +39,15 @@ func (m *MockFederationResolver) Resolve(address string) (response federation.Re
 func (m *MockFederationResolver) GetDestination(federationUrl, address string) (response federation.Response, err error) {
 	a := m.Called(federationUrl, address)
 	return a.Get(0).(federation.Response), a.Error(1)
+}
+
+type MockHttpClient struct {
+	mock.Mock
+}
+
+func (m *MockHttpClient) PostForm(url string, data url.Values) (resp *http.Response, err error) {
+	a := m.Called(url, data)
+	return a.Get(0).(*http.Response), a.Error(1)
 }
 
 type MockHorizon struct {

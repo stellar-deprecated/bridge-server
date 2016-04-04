@@ -66,7 +66,11 @@ func (request *FormRequest) ToValues(object interface{}) (values url.Values) {
 		}
 		switch field.Interface().(type) {
 		case string:
-			values.Set(tag, rvalue.Field(i).String())
+			value := rvalue.Field(i).String()
+			if value == "" {
+				continue
+			}
+			values.Set(tag, value)
 		case []Asset:
 			assets := rvalue.Field(i).Interface().([]Asset)
 			for i, asset := range assets {

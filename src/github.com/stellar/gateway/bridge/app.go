@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
+	"net/http"
 	"os"
 	"time"
 
@@ -137,13 +138,20 @@ func NewApp(config config.Config, migrateFlag bool) (app *App, err error) {
 
 	err = g.Provide(
 		&inject.Object{Value: &requestHandler},
+		&inject.Object{Value: &config},
 		&inject.Object{Value: &stellartoml.Resolver{}},
 		&inject.Object{Value: &federation.Resolver{}},
 		&inject.Object{Value: &h},
+		&inject.Object{Value: &ts},
 		&inject.Object{Value: &paymentListener},
+		&inject.Object{Value: &http.Client{}},
 	)
 
 	if err != nil {
+		log.Fatal("Injector: ", err)
+	}
+
+	if err := g.Populate(); err != nil {
 		log.Fatal("Injector: ", err)
 	}
 

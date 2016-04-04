@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	log "github.com/Sirupsen/logrus"
 	"io/ioutil"
 	"net/http"
@@ -34,6 +35,9 @@ func (rh *RequestHandler) Payment(w http.ResponseWriter, r *http.Request) {
 	assetIssuer := r.PostFormValue("asset_issuer")
 	memoType := r.PostFormValue("memo_type")
 	memo := r.PostFormValue("memo")
+	sendMax := r.PostFormValue("send_max")
+	sendAssetCode := r.PostFormValue("send_asset_code")
+	sendAssetIssuer := r.PostFormValue("send_asset_issuer")
 	extraMemo := r.PostFormValue("extra_memo")
 
 	if extraMemo != "" && rh.Config.Compliance != nil {
@@ -48,7 +52,7 @@ func (rh *RequestHandler) Payment(w http.ResponseWriter, r *http.Request) {
 			ExtraMemo:   extraMemo,
 		}
 
-		resp, err := http.PostForm(
+		resp, err := rh.Client.PostForm(
 			*rh.Config.Compliance+"/send",
 			request.ToValues(),
 		)
@@ -115,6 +119,45 @@ func (rh *RequestHandler) Payment(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		var payWithMutator *b.PayWithPath
+
+		if sendMax != "" {
+			// Path payment
+			var sendAsset b.Asset
+			if sendAssetCode != "" && sendAssetIssuer != "" {
+				sendAsset = b.CreditAsset(sendAssetCode, sendAssetIssuer)
+			} else if sendAssetCode == "" && sendAssetIssuer == "" {
+				sendAsset = b.NativeAsset()
+			} else {
+				log.Print("Missing send asset param.")
+				server.Write(w, h.NewErrorResponse(h.PaymentMissingParamAsset))
+				return
+			}
+
+			payWith := b.PayWith(sendAsset, sendMax)
+
+			for i := 0; ; i++ {
+				codeFieldName := fmt.Sprintf("path[%d][asset_code]", i)
+				issuerFieldName := fmt.Sprintf("path[%d][asset_issuer]", i)
+
+				// If the element does not exist in PostForm break the loop
+				if _, exists := r.PostForm[codeFieldName]; !exists {
+					break
+				}
+
+				code := r.PostFormValue(codeFieldName)
+				issuer := r.PostFormValue(issuerFieldName)
+
+				if code == "" && issuer == "" {
+					payWith = payWith.Through(b.NativeAsset())
+				} else {
+					payWith = payWith.Through(b.CreditAsset(code, issuer))
+				}
+			}
+
+			payWithMutator = &payWith
+		}
+
 		var operationBuilder interface{}
 
 		if assetCode != "" && assetIssuer != "" {
@@ -125,14 +168,24 @@ func (rh *RequestHandler) Payment(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
-			operationBuilder = b.Payment(
+			mutators := []interface{}{
 				b.Destination{destinationObject.AccountId},
 				b.CreditAmount{assetCode, issuerKeypair.Address(), amount},
-			)
+			}
+
+			if payWithMutator != nil {
+				mutators = append(mutators, *payWithMutator)
+			}
+
+			operationBuilder = b.Payment(mutators...)
 		} else if assetCode == "" && assetIssuer == "" {
 			mutators := []interface{}{
 				b.Destination{destinationObject.AccountId},
 				b.NativeAmount{amount},
+			}
+
+			if payWithMutator != nil {
+				mutators = append(mutators, *payWithMutator)
 			}
 
 			// Check if destination account exist

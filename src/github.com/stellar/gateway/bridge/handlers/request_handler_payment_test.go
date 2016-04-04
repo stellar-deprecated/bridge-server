@@ -14,6 +14,8 @@ import (
 	"github.com/stellar/gateway/bridge/config"
 	"github.com/stellar/gateway/horizon"
 	"github.com/stellar/gateway/mocks"
+	"github.com/stellar/gateway/net"
+	// "github.com/stellar/gateway/protocols/compliance"
 	"github.com/stellar/gateway/protocols/federation"
 	"github.com/stellar/gateway/protocols/stellartoml"
 	"github.com/stretchr/testify/assert"
@@ -21,23 +23,26 @@ import (
 )
 
 func TestRequestHandlerPayment(t *testing.T) {
+	complianceUrl := "http://compliance"
+	c := &config.Config{
+		NetworkPassphrase: "Test SDF Network ; September 2015",
+		Compliance:        &complianceUrl,
+	}
 	mockHorizon := new(mocks.MockHorizon)
+	mockHttpClient := new(mocks.MockHttpClient)
 	mockTransactionSubmitter := new(mocks.MockTransactionSubmitter)
 	mockFederationResolver := new(mocks.MockFederationResolver)
 	mockStellartomlResolver := new(mocks.MockStellartomlResolver)
-
-	requestHandler := RequestHandler{
-		Config: &config.Config{
-			NetworkPassphrase: "Test SDF Network ; September 2015",
-		},
-	}
+	requestHandler := RequestHandler{}
 
 	// Inject mocks
 	var g inject.Graph
 
 	err := g.Provide(
 		&inject.Object{Value: &requestHandler},
+		&inject.Object{Value: c},
 		&inject.Object{Value: mockHorizon},
+		&inject.Object{Value: mockHttpClient},
 		&inject.Object{Value: mockTransactionSubmitter},
 		&inject.Object{Value: mockFederationResolver},
 		&inject.Object{Value: mockStellartomlResolver},
@@ -357,7 +362,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 			})
 		})
 
-		Convey("When params are valid", func() {
+		Convey("When params are valid (payment operation)", func() {
 			validParams := url.Values{
 				// GCF3WVYTHF75PEG6622G5G6KU26GOSDQPDHSCJ3DQD7VONH4EYVDOGKJ
 				"source":       {"SDWLS4G3XCNIYPKXJWWGGJT6UDY63WV6PEFTWP7JZMQB4RE7EUJQN5XM"},
@@ -622,6 +627,200 @@ func TestRequestHandlerPayment(t *testing.T) {
 					assert.Equal(t, string(expectedResponse), responseString)
 				})
 			})
+		})
+
+		Convey("When params are valid (path payment operation)", func() {
+			validParams := url.Values{
+				// GCF3WVYTHF75PEG6622G5G6KU26GOSDQPDHSCJ3DQD7VONH4EYVDOGKJ
+				"source":       {"SDWLS4G3XCNIYPKXJWWGGJT6UDY63WV6PEFTWP7JZMQB4RE7EUJQN5XM"},
+				"destination":  {"GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632"},
+				"amount":       {"20"},
+				"asset_code":   {"USD"},
+				"asset_issuer": {"GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632"},
+				"send_max":     {"100"},
+			}
+
+			// Source
+			mockHorizon.On(
+				"LoadAccount",
+				"GCF3WVYTHF75PEG6622G5G6KU26GOSDQPDHSCJ3DQD7VONH4EYVDOGKJ",
+			).Return(
+				horizon.AccountResponse{
+					SequenceNumber: "100",
+				},
+				nil,
+			).Once()
+
+			// Destination
+			mockFederationResolver.On(
+				"Resolve",
+				"GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632",
+			).Return(
+				federation.Response{AccountId: "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632"},
+				stellartoml.StellarToml{},
+				nil,
+			).Once()
+
+			mockHorizon.On(
+				"LoadAccount",
+				"GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632",
+			).Return(
+				horizon.AccountResponse{
+					SequenceNumber: "100",
+				},
+				nil,
+			).Once()
+
+			Convey("transaction success (send native)", func() {
+				var ledger uint64
+				ledger = 1988727
+				horizonResponse := horizon.SubmitTransactionResponse{&ledger, nil, nil}
+
+				mockHorizon.On(
+					"SubmitTransaction",
+					"AAAAAIu7VxM5f9eQ3va0bpvKprxnSHB4zyEnY4D/VzT8Jio3AAAAZAAAAAAAAABlAAAAAAAAAAAAAAABAAAAAAAAAAIAAAAAAAAAADuaygAAAAAA5IVbm6A8mbgc/apAizxmBf4zZmqbedR3Ke+MTa7pjVYAAAABVVNEAAAAAADkhVuboDyZuBz9qkCLPGYF/jNmapt51Hcp74xNrumNVgAAAAAL68IAAAAAAAAAAAAAAAAB/CYqNwAAAECx9I76SOIjCL3pgwZdmFj9KWFzvNL82dt3+Laokh6Zm2v0o1UNq1mQsrqrv0mXM6uNcA96NbkfbogtXauHmwML",
+				).Return(horizonResponse, nil).Once()
+
+				Convey("it should return success", func() {
+					statusCode, response := getResponse(testServer, validParams)
+					responseString := strings.TrimSpace(string(response))
+
+					expectedResponse, err := json.MarshalIndent(horizonResponse, "", "  ")
+					if err != nil {
+						panic(err)
+					}
+
+					assert.Equal(t, 200, statusCode)
+					assert.Equal(t, string(expectedResponse), responseString)
+				})
+			})
+
+			Convey("transaction success (send credit)", func() {
+				validParams["send_asset_code"] = []string{"USD"}
+				validParams["send_asset_issuer"] = []string{"GBDOSO3K4JTGSWJSIHXAOFIBMAABVM3YK3FI6VJPKIHHM56XAFIUCGD6"}
+
+				var ledger uint64
+				ledger = 1988727
+				horizonResponse := horizon.SubmitTransactionResponse{&ledger, nil, nil}
+
+				mockHorizon.On(
+					"SubmitTransaction",
+					"AAAAAIu7VxM5f9eQ3va0bpvKprxnSHB4zyEnY4D/VzT8Jio3AAAAZAAAAAAAAABlAAAAAAAAAAAAAAABAAAAAAAAAAIAAAABVVNEAAAAAABG6Ttq4mZpWTJB7gcVAWAAGrN4VsqPVS9SDnZ31wFRQQAAAAA7msoAAAAAAOSFW5ugPJm4HP2qQIs8ZgX+M2Zqm3nUdynvjE2u6Y1WAAAAAVVTRAAAAAAA5IVbm6A8mbgc/apAizxmBf4zZmqbedR3Ke+MTa7pjVYAAAAAC+vCAAAAAAAAAAAAAAAAAfwmKjcAAABA3rQOu+r9DvUhGDSOVaD05RWgzvzMJt49opYNfGLLOSo7/29rUkPIyw5PgV/1arrTwj90HRnzmVjHJK2xy+MfBQ==",
+				).Return(horizonResponse, nil).Once()
+
+				Convey("it should return success", func() {
+					statusCode, response := getResponse(testServer, validParams)
+					responseString := strings.TrimSpace(string(response))
+
+					expectedResponse, err := json.MarshalIndent(horizonResponse, "", "  ")
+					if err != nil {
+						panic(err)
+					}
+
+					assert.Equal(t, 200, statusCode)
+					assert.Equal(t, string(expectedResponse), responseString)
+				})
+			})
+
+			Convey("transaction success (path)", func() {
+				validParams["send_asset_code"] = []string{"USD"}
+				validParams["send_asset_issuer"] = []string{"GBDOSO3K4JTGSWJSIHXAOFIBMAABVM3YK3FI6VJPKIHHM56XAFIUCGD6"}
+
+				// Native
+				validParams["path[0][asset_code]"] = []string{""}
+				validParams["path[0][asset_issuer]"] = []string{""}
+				// Credit
+				validParams["path[1][asset_code]"] = []string{"EUR"}
+				validParams["path[1][asset_issuer]"] = []string{"GAF3PBFQLH57KPECN4GRGHU5NUZ3XXKYYWLOTBIRJMBYHPUBWANIUCZU"}
+
+				var ledger uint64
+				ledger = 1988727
+				horizonResponse := horizon.SubmitTransactionResponse{&ledger, nil, nil}
+
+				mockHorizon.On(
+					"SubmitTransaction",
+					"AAAAAIu7VxM5f9eQ3va0bpvKprxnSHB4zyEnY4D/VzT8Jio3AAAAZAAAAAAAAABlAAAAAAAAAAAAAAABAAAAAAAAAAIAAAABVVNEAAAAAABG6Ttq4mZpWTJB7gcVAWAAGrN4VsqPVS9SDnZ31wFRQQAAAAA7msoAAAAAAOSFW5ugPJm4HP2qQIs8ZgX+M2Zqm3nUdynvjE2u6Y1WAAAAAVVTRAAAAAAA5IVbm6A8mbgc/apAizxmBf4zZmqbedR3Ke+MTa7pjVYAAAAAC+vCAAAAAAIAAAAAAAAAAUVVUgAAAAAAC7eEsFn79TyCbw0THp1tM7vdWMWW6YURSwODvoGwGooAAAAAAAAAAfwmKjcAAABAyO0YxnfaIdY51J9BaPyZYNxsBY2AhWCZpK6FRlaE+ZbdmznZ9cio2G7+fJgl3hWZUrQknQHElmzAZdgsqNnZAQ==",
+				).Return(horizonResponse, nil).Once()
+
+				Convey("it should return success", func() {
+					statusCode, response := getResponse(testServer, validParams)
+					responseString := strings.TrimSpace(string(response))
+
+					expectedResponse, err := json.MarshalIndent(horizonResponse, "", "  ")
+					if err != nil {
+						panic(err)
+					}
+
+					assert.Equal(t, 200, statusCode)
+					assert.Equal(t, string(expectedResponse), responseString)
+				})
+			})
+		})
+	})
+
+	Convey("Given payment compliance request", t, func() {
+		Convey("When params are correct", func() {
+			params := url.Values{
+				// GAW77Z6GPWXSODJOMF5L5BMX6VMYGEJRKUNBC2CZ725JTQZORK74HQQD
+				"source":       {"SARMR3N465GTEHQLR3TSHDD7FHFC2I22ECFLYCHAZDEJWBVED66RW7FQ"},
+				"sender":       {"alice*stellar.org"},
+				"destination":  {"bob*stellar.org"},
+				"amount":       {"20"},
+				"asset_code":   {"USD"},
+				"asset_issuer": {"GCF3WVYTHF75PEG6622G5G6KU26GOSDQPDHSCJ3DQD7VONH4EYVDOGKJ"},
+				"extra_memo":   {"hello world"},
+			}
+
+			Convey("it should return error when compliance server returns error", func() {
+				mockHttpClient.On(
+					"PostForm",
+					"http://compliance/send",
+					mock.AnythingOfType("url.Values"),
+				).Return(
+					net.BuildHttpResponse(400, "error"),
+					nil,
+				).Run(func(args mock.Arguments) {
+					values := args.Get(1).(url.Values)
+					// bridge server does not send source seed to compliance
+					assert.Equal(t, []string{"GAW77Z6GPWXSODJOMF5L5BMX6VMYGEJRKUNBC2CZ725JTQZORK74HQQD"}, values["source"])
+					values.Del("source")
+					params.Del("source")
+					assert.Equal(t, values.Encode(), params.Encode())
+				}).Once()
+
+				statusCode, response := getResponse(testServer, params)
+				responseString := strings.TrimSpace(string(response))
+				assert.Equal(t, 500, statusCode)
+				expectedResponse := horizon.SubmitTransactionResponse{Error: horizon.ServerError}
+				assert.Equal(t, expectedResponse.Marshal(), []byte(responseString))
+			})
+
+			// Convey("it should submit transaction when compliance server returns success", func() {
+			// 	complianceResponse := compliance.SendResponse{
+			// 		TransactionXdr: "AAAAALYGRy91n6qDiQbE2utm2q3y08aIcIMkXTk7mJJ+QsL3AAAAZAAihMUAAADEAAAAAAAAAAEAAAAYMSBhbW91bnQgPiA1NS0xMTk5MTE5OTEyAAAAAQAAAAEAAAAAtgZHL3WfqoOJBsTa62barfLTxohwgyRdOTuYkn5CwvcAAAABAAAAALYGRy91n6qDiQbE2utm2q3y08aIcIMkXTk7mJJ+QsL3AAAAAVVTRAAAAAAAbLWrwunL5+YfOqVjiuffegKXvZPJjDPhYM6naeifvQcAAAAAAJiWgAAAAAAAAAABfkLC9wAAAEBoDhM7OnYfhzhpL1NFEqJSThHKZW7GRRxLooTFSbIq9OaQmzX2TzGSnlCwxcHcdYT4+9UTA4iZw0HOBwhBZ6YL",
+			// 	}
+
+			// 	mockHttpClient.On(
+			// 		"PostForm",
+			// 		"http://compliance/send",
+			// 		mock.AnythingOfType("url.Values"),
+			// 	).Return(
+			// 		net.BuildHttpResponse(200, string(complianceResponse.Marshal())),
+			// 		nil,
+			// 	).Run(func(args mock.Arguments) {
+			// 		values := args.Get(1).(url.Values)
+			// 		assert.Equal(t, []string{"GAW77Z6GPWXSODJOMF5L5BMX6VMYGEJRKUNBC2CZ725JTQZORK74HQQD"}, values["source"])
+			// 		values.Del("source")
+			// 		params.Del("source")
+			// 		assert.Equal(t, values.Encode(), params.Encode())
+			// 	}).Once()
+
+			// 	statusCode, response := getResponse(testServer, params)
+			// 	responseString := strings.TrimSpace(string(response))
+			// 	assert.Equal(t, 200, statusCode)
+			// 	expectedResponse := horizon.SubmitTransactionResponse{Error: horizon.ServerError}
+			// 	assert.Equal(t, expectedResponse.Marshal(), []byte(responseString))
+			// })
 		})
 	})
 }

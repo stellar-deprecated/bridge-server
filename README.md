@@ -82,11 +82,11 @@ name |  | description
 --- | --- | ---
 `source` | optional | Secret seed of transaction source account. If ommitted it will use the `base_seed` specified in the config file.
 `destination` | required | Account ID or Stellar address (ex. `bob*stellar.org`) of payment destination account
-`amount` | required | Amount to send
+`amount` | required | Amount that destination will receive
 `memo_type` | optional | Memo type, one of: `id`, `text`, `hash`, `extra`
-`memo` | optional | Memo value, when `memo_type` is `extra` you can include any info here and it will be included in the pre-image of the transaction's memo hash. See the [Stellar Memo Convention](). `id` it must be uint64, when `hash` it must be 32 bytes hex value.  
-`asset_code` | optional | Asset code (XLM when empty)
-`asset_issuer` | optional | Account ID of asset issuer (XLM when empty)
+`memo` | optional | Memo value, when `memo_type` is `extra` you can include any info here and it will be included in the pre-image of the transaction's memo hash. See the [Stellar Memo Convention](https://github.com/stellar/stellar-protocol/issues/28). `id` it must be uint64, when `hash` it must be 32 bytes hex value.  
+`asset_code` | optional | Asset code (XLM when empty) destination will receive
+`asset_issuer` | optional | Account ID of asset issuer (XLM when empty) destination will receive
 `send_max` | optional | [path_payment] Maximum amount of send_asset to send
 `send_asset_code` | optional | [path_payment] Sending asset code (XLM when empty)
 `send_asset_issuer` | optional | [path_payment] Account ID of sending asset issuer (XLM when empty)
@@ -118,7 +118,7 @@ http://localhost:8001/payment
 Can be used to authorize other accounts to hold your assets.
 It will build and submits a transaction with a [`allow_trust`](https://www.stellar.org/developers/learn/concepts/list-of-operations.html#allow-trust) operation. 
 The source of this transaction will be the account specified by `accounts.authorizing_seed` config parameter. 
-You should make sure that this account is a low weight signer on the issuing account. See [Multi-sig]() for more information. 
+You should make sure that this account is a low weight signer on the issuing account. See [Multi-sig](https://www.stellar.org/developers/learn/concepts/multi-sig.html) for more information. 
 
 #### Request Parameters
 
