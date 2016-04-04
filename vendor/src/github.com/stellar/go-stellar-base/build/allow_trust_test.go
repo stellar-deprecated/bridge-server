@@ -96,7 +96,7 @@ var _ = Describe("AllowTrustBuilder Mutators", func() {
 				It("failed", func() {
 					Expect(subject.Err).To(MatchError("Asset code length is invalid"))
 				})
-			});
+			})
 
 			Context("too long", func() {
 				BeforeEach(func() {
@@ -106,7 +106,7 @@ var _ = Describe("AllowTrustBuilder Mutators", func() {
 				It("failed", func() {
 					Expect(subject.Err).To(MatchError("Asset code length is invalid"))
 				})
-			});
+			})
 		})
 	})
 

@@ -25,6 +25,12 @@ var (
 	ErrCannotSign = errors.New("cannot sign")
 )
 
+const (
+	// DefaultSignerWeight represents the starting weight of the default signer
+	// for an account.
+	DefaultSignerWeight = 1
+)
+
 // KP is the main interface for this package
 type KP interface {
 	Address() string
@@ -94,6 +100,7 @@ func FromRawSeed(rawSeed [32]byte) (*Full, error) {
 	return &Full{seed}, nil
 }
 
+// MustParse is the panic-on-fail version of Parse
 func MustParse(addressOrSeed string) KP {
 	kp, err := Parse(addressOrSeed)
 	if err != nil {

@@ -12,7 +12,6 @@ import (
 
 	"github.com/stellar/gateway/crypto"
 	"github.com/stellar/gateway/protocols/compliance"
-	"github.com/stellar/gateway/protocols/federation"
 	"github.com/stellar/gateway/server"
 	"github.com/stellar/gateway/submitter"
 	b "github.com/stellar/go-stellar-base/build"
@@ -37,7 +36,7 @@ func (rh *RequestHandler) HandlerSend(c web.C, w http.ResponseWriter, r *http.Re
 
 	// TODO check the rest of params using SendRequest.Validate()
 
-	destinationObject, stellarToml, err := federation.Resolve(request.Destination)
+	destinationObject, stellarToml, err := rh.FederationResolver.Resolve(request.Destination)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"destination": request.Destination,

@@ -8,7 +8,14 @@ import (
 	"github.com/BurntSushi/toml"
 )
 
-func GetStellarToml(domain string) (stellarToml StellarToml, err error) {
+type ResolverInterface interface {
+	GetStellarToml(domain string) (stellarToml StellarToml, err error)
+	GetStellarTomlByAddress(address string) (stellarToml StellarToml, err error)
+}
+
+type Resolver struct{}
+
+func (r *Resolver) GetStellarToml(domain string) (stellarToml StellarToml, err error) {
 	var resp *http.Response
 	resp, err = http.Get("https://www." + domain + "/.well-known/stellar.toml")
 	if err != nil {
@@ -23,18 +30,18 @@ func GetStellarToml(domain string) (stellarToml StellarToml, err error) {
 	return
 }
 
-func GetStellarTomlByAddress(address string) (stellarToml StellarToml, err error) {
+func (r *Resolver) GetStellarTomlByAddress(address string) (stellarToml StellarToml, err error) {
 	// TESTING
-	authServer := "http://localhost:8001"
-	signingKey := "GCXR2UP4RIOADMJAVYXAFCFFLISC65CKY4HZBVTGD4TSGUHMCTFSXW5T"
-	return StellarToml{
-		AuthServer: &authServer,
-		SigningKey: &signingKey,
-	}, nil
+	// authServer := "http://localhost:8001"
+	// signingKey := "GCXR2UP4RIOADMJAVYXAFCFFLISC65CKY4HZBVTGD4TSGUHMCTFSXW5T"
+	// return StellarToml{
+	// 	AuthServer: &authServer,
+	// 	SigningKey: &signingKey,
+	// }, nil
 
 	tokens := strings.Split(address, "*")
 	if len(tokens) == 2 {
-		stellarToml, err = GetStellarToml(tokens[1])
+		stellarToml, err = r.GetStellarToml(tokens[1])
 	} else {
 		err = errors.New("Malformed Stellar address")
 	}

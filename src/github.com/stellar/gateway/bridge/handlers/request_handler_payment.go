@@ -11,7 +11,6 @@ import (
 
 	h "github.com/stellar/gateway/horizon"
 	"github.com/stellar/gateway/protocols/compliance"
-	"github.com/stellar/gateway/protocols/federation"
 	"github.com/stellar/gateway/server"
 	b "github.com/stellar/go-stellar-base/build"
 	"github.com/stellar/go-stellar-base/keypair"
@@ -102,7 +101,7 @@ func (rh *RequestHandler) Payment(w http.ResponseWriter, r *http.Request) {
 		server.Write(w, &submitResponse)
 	} else {
 		// Payment without compliance server
-		destinationObject, _, err := federation.Resolve(destination)
+		destinationObject, _, err := rh.FederationResolver.Resolve(destination)
 		if err != nil {
 			log.WithFields(log.Fields{"destination": destination}).Print("Cannot resolve address")
 			server.Write(w, h.NewErrorResponse(h.PaymentCannotResolveDestination))

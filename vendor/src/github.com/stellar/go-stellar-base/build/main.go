@@ -34,6 +34,13 @@ var (
 	DefaultNetwork = TestNetwork
 )
 
+// Asset is struct used in path_payment mutators
+type Asset struct {
+	Code   string
+	Issuer string
+	Native bool
+}
+
 // AllowTrustAsset is a mutator capable of setting the asset on
 // an operations that have one.
 type AllowTrustAsset struct {
@@ -45,10 +52,20 @@ type Authorize struct {
 	Value bool
 }
 
+// Helper method to create native Asset object
+func NativeAsset() Asset {
+	return Asset{Native: true}
+}
+
+// Helper method to create credit Asset object
+func CreditAsset(code, issuer string) Asset {
+	return Asset{code, issuer, false}
+}
+
 // CreditAmount is a mutator that configures a payment to be using credit
 // asset and have the amount provided.
 type CreditAmount struct {
-	Code string
+	Code   string
 	Issuer string
 	Amount string
 }
@@ -90,6 +107,25 @@ type MemoText struct {
 // currency and have the amount provided.
 type NativeAmount struct {
 	Amount string
+}
+
+// PathSend is a mutator that configures a path_payment's send asset and max amount
+type PayWithPath struct {
+	Asset
+	MaxAmount string
+	Path      []Asset
+}
+
+func (pathSend PayWithPath) Through(asset Asset) PayWithPath {
+	pathSend.Path = append(pathSend.Path, asset)
+	return pathSend
+}
+
+func PayWith(sendAsset Asset, maxAmount string) PayWithPath {
+	return PayWithPath{
+		Asset:     sendAsset,
+		MaxAmount: maxAmount,
+	}
 }
 
 // Sequence is a mutator that sets the sequence number on a transaction

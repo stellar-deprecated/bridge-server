@@ -1,59 +1,102 @@
 package xdr
 
 import (
-	"encoding/base64"
 	"errors"
-	"strings"
+	"fmt"
 )
 
 // This file contains implementations of the sql.Scanner interface for stellar xdr types
 
-func (this *AccountFlags) Scan(src interface{}) error {
+// Scan reads from src into an AccountFlags
+func (t *AccountFlags) Scan(src interface{}) error {
 	val, ok := src.(int64)
 	if !ok {
 		return errors.New("Invalid value for xdr.AccountFlags")
 	}
 
-	*this = AccountFlags(val)
+	*t = AccountFlags(val)
 	return nil
 }
 
-func (this *AssetType) Scan(src interface{}) error {
+// Scan reads from src into an AssetType
+func (t *AssetType) Scan(src interface{}) error {
 	val, ok := src.(int64)
 	if !ok {
 		return errors.New("Invalid value for xdr.AssetType")
 	}
 
-	*this = AssetType(val)
+	*t = AssetType(val)
 	return nil
 }
 
-func (this *Int64) Scan(src interface{}) error {
+// Scan reads from src into an Int64
+func (t *Int64) Scan(src interface{}) error {
 	val, ok := src.(int64)
 	if !ok {
 		return errors.New("Invalid value for xdr.Int64")
 	}
 
-	*this = Int64(val)
+	*t = Int64(val)
 	return nil
 }
 
-func (this *Thresholds) Scan(src interface{}) error {
-	var val string
+// Scan reads from src into an LedgerEntryChanges struct
+func (t *LedgerEntryChanges) Scan(src interface{}) error {
+	return safeBase64Scan(src, t)
+}
 
+// Scan reads from src into an LedgerHeader struct
+func (t *LedgerHeader) Scan(src interface{}) error {
+	return safeBase64Scan(src, t)
+}
+
+// Scan reads from src into an ScpEnvelope struct
+func (t *ScpEnvelope) Scan(src interface{}) error {
+	return safeBase64Scan(src, t)
+}
+
+// Scan reads from src into an ScpEnvelope struct
+func (t *ScpQuorumSet) Scan(src interface{}) error {
+	return safeBase64Scan(src, t)
+}
+
+// Scan reads from src into an Thresholds struct
+func (t *Thresholds) Scan(src interface{}) error {
+	return safeBase64Scan(src, t)
+}
+
+// Scan reads from src into an TransactionEnvelope struct
+func (t *TransactionEnvelope) Scan(src interface{}) error {
+	return safeBase64Scan(src, t)
+}
+
+// Scan reads from src into an TransactionMeta struct
+func (t *TransactionMeta) Scan(src interface{}) error {
+	return safeBase64Scan(src, t)
+}
+
+// Scan reads from src into an TransactionResult struct
+func (t *TransactionResult) Scan(src interface{}) error {
+	return safeBase64Scan(src, t)
+}
+
+// Scan reads from src into an TransactionResultPair struct
+func (t *TransactionResultPair) Scan(src interface{}) error {
+	return safeBase64Scan(src, t)
+}
+
+// safeBase64Scan scans from src (which should be either a []byte or string)
+// into dest by using `SafeUnmarshalBase64`.
+func safeBase64Scan(src, dest interface{}) error {
+	var val string
 	switch src := src.(type) {
 	case []byte:
 		val = string(src)
 	case string:
 		val = src
 	default:
-		return errors.New("Invalid value for xdr.Thresholds")
+		return fmt.Errorf("Invalid value for %T", dest)
 	}
 
-	reader := strings.NewReader(val)
-	b64r := base64.NewDecoder(base64.StdEncoding, reader)
-
-	_, err := Unmarshal(b64r, this)
-	return err
-
+	return SafeUnmarshalBase64(val, dest)
 }

@@ -11,20 +11,29 @@ import (
 	"github.com/stellar/gateway/protocols/stellartoml"
 )
 
-func Resolve(address string) (response Response, stellarToml stellartoml.StellarToml, err error) {
+type ResolverInterface interface {
+	Resolve(address string) (response Response, stellarToml stellartoml.StellarToml, err error)
+	GetDestination(federationUrl, address string) (response Response, err error)
+}
+
+type Resolver struct {
+	StellarTomlResolver *stellartoml.Resolver `inject:""`
+}
+
+func (r *Resolver) Resolve(address string) (response Response, stellarToml stellartoml.StellarToml, err error) {
 	//TESTING
-	authServer := "http://localhost:8001"
-	return Response{
-			AccountId: "GB4VCPO7R3AH3FNYCISJPZJCCVIRNGI4VNL6KU3OLIZIGOTDXMRQQZLD",
-		}, stellartoml.StellarToml{
-			AuthServer: &authServer,
-		}, nil
+	// authServer := "http://localhost:8001"
+	// return Response{
+	// 		AccountId: "GB4VCPO7R3AH3FNYCISJPZJCCVIRNGI4VNL6KU3OLIZIGOTDXMRQQZLD",
+	// 	}, stellartoml.StellarToml{
+	// 		AuthServer: &authServer,
+	// 	}, nil
 
 	tokens := strings.Split(address, "*")
 	if len(tokens) == 1 {
 		response.AccountId = address
 	} else if len(tokens) == 2 {
-		stellarToml, err = stellartoml.GetStellarToml(tokens[1])
+		stellarToml, err = r.StellarTomlResolver.GetStellarToml(tokens[1])
 		if err != nil {
 			return
 		}
@@ -34,7 +43,7 @@ func Resolve(address string) (response Response, stellarToml stellartoml.Stellar
 			return
 		}
 
-		response, err = GetDestination(*stellarToml.FederationServer, address)
+		response, err = r.GetDestination(*stellarToml.FederationServer, address)
 		return
 	} else {
 		err = errors.New("Malformed Stellar address")
@@ -43,7 +52,7 @@ func Resolve(address string) (response Response, stellarToml stellartoml.Stellar
 	return
 }
 
-func GetDestination(federationUrl, address string) (response Response, err error) {
+func (r *Resolver) GetDestination(federationUrl, address string) (response Response, err error) {
 	if !strings.HasPrefix(federationUrl, "https://") {
 		err = errors.New("Only HTTPS federation servers allowed")
 		return

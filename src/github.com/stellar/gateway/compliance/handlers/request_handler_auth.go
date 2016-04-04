@@ -12,7 +12,6 @@ import (
 	"github.com/stellar/gateway/crypto"
 	"github.com/stellar/gateway/db/entities"
 	"github.com/stellar/gateway/protocols/compliance"
-	"github.com/stellar/gateway/protocols/stellartoml"
 	"github.com/stellar/gateway/server"
 	"github.com/stellar/gateway/submitter"
 	"github.com/stellar/go-stellar-base/hash"
@@ -32,7 +31,7 @@ func (rh *RequestHandler) HandlerAuth(c web.C, w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	senderStellarToml, err := stellartoml.GetStellarTomlByAddress(authData.Sender)
+	senderStellarToml, err := rh.StellarTomlResolver.GetStellarTomlByAddress(authData.Sender)
 	if err != nil {
 		log.WithFields(log.Fields{"err": err, "sender": authData.Sender}).Warn("Cannot get stellar.toml of sender")
 		server.Write(w, compliance.InvalidParameterError)

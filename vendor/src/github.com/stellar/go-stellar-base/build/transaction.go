@@ -137,6 +137,19 @@ func (m Defaults) MutateTransaction(o *TransactionBuilder) error {
 	return nil
 }
 
+// MutateTransaction for ManageDataBuilder causes the underylying
+// ManageData to be added to the operation list for the provided
+// transaction
+func (m ManageDataBuilder) MutateTransaction(o *TransactionBuilder) error {
+	if m.Err != nil {
+		return m.Err
+	}
+
+	m.O.Body, m.Err = xdr.NewOperationBody(xdr.OperationTypeManageData, m.MD)
+	o.TX.Operations = append(o.TX.Operations, m.O)
+	return m.Err
+}
+
 // MutateTransaction for MemoHash sets the memo.
 func (m MemoHash) MutateTransaction(o *TransactionBuilder) (err error) {
 	o.TX.Memo, err = xdr.NewMemo(xdr.MemoTypeMemoHash, m.Value)
@@ -174,15 +187,21 @@ func (m Network) MutateTransaction(o *TransactionBuilder) error {
 }
 
 // MutateTransaction for PaymentBuilder causes the underylying PaymentOp
-// to be added to the operation list for the provided transaction
+// or PathPaymentOp to be added to the operation list for the provided transaction
 func (m PaymentBuilder) MutateTransaction(o *TransactionBuilder) error {
 	if m.Err != nil {
 		return m.Err
 	}
 
-	m.O.Body, m.Err = xdr.NewOperationBody(xdr.OperationTypePayment, m.P)
-	o.TX.Operations = append(o.TX.Operations, m.O)
-	return m.Err
+	if m.PathPayment {
+		m.O.Body, m.Err = xdr.NewOperationBody(xdr.OperationTypePathPayment, m.PP)
+		o.TX.Operations = append(o.TX.Operations, m.O)
+		return m.Err
+	} else {
+		m.O.Body, m.Err = xdr.NewOperationBody(xdr.OperationTypePayment, m.P)
+		o.TX.Operations = append(o.TX.Operations, m.O)
+		return m.Err
+	}
 }
 
 // MutateTransaction for Sequence sets the SeqNum on the transaction.

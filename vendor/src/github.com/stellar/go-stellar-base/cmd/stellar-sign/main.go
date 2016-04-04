@@ -66,7 +66,11 @@ func readLine(prompt string, private bool) (string, error) {
 	var err error
 
 	if private {
-		line = string(gopass.GetPasswdMasked())
+		str, err := gopass.GetPasswdMasked()
+		if err != nil {
+			return "", err
+		}
+		line = string(str)
 	} else {
 		line, err = in.ReadString('\n')
 		if err != nil {

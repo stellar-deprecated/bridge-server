@@ -70,6 +70,13 @@ var _ = Describe("Transaction Mutators:", func() {
 		})
 	})
 
+	Describe("AllowTrustBuilder", func() {
+		BeforeEach(func() { mut = AllowTrust() })
+		It("adds itself to the tx's operations", func() {
+			Expect(subject.TX.Operations).To(HaveLen(1))
+		})
+	})
+
 	Describe("PaymentBuilder", func() {
 		BeforeEach(func() { mut = Payment() })
 		It("adds itself to the tx's operations", func() {

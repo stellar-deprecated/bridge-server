@@ -14,7 +14,7 @@ func TestBuild(t *testing.T) {
 }
 
 // ExampleTransactionBuilder creates and signs a simple transaction, and then
-// encodes it into a hex string capable of being submitted to stellar-core.
+// encodes it into a base64 string capable of being submitted to stellar-core.
 //
 // It uses the transaction builder system
 func ExampleTransactionBuilder() {
@@ -33,4 +33,27 @@ func ExampleTransactionBuilder() {
 
 	fmt.Printf("tx base64: %s", txeB64)
 	// Output: tx base64: AAAAADZY/nWY0gx6beMpf4S8Ur0qHsjA8fbFtBzBx1cbQzHwAAAAZAAAAAAAAAABAAAAAAAAAAAAAAABAAAAAAAAAAEAAAAALSRpLtCLv2eboZlEiHDSGR6Hb+zZL92fbSdNpObeE0EAAAAAAAAAAB3NZQAAAAAAAAAAARtDMfAAAABA2oIeQxoJl53RMRWFeLB865zcky39f2gf2PmUubCuJYccEePRSrTC8QQrMOgGwD8a6oe8dgltvezdDsmmXBPyBw==
+}
+
+// ExamplePathPayment creates and signs a simple transaction with PathPayment operation, and then
+// encodes it into a base64 string capable of being submitted to stellar-core.
+func ExamplePathPayment() {
+	seed := "SDOTALIMPAM2IV65IOZA7KZL7XWZI5BODFXTRVLIHLQZQCKK57PH5F3H"
+	tx := Transaction(
+		SourceAccount{seed},
+		Sequence{1},
+		Payment(
+			Destination{"GBDT3K42LOPSHNAEHEJ6AVPADIJ4MAR64QEKKW2LQPBSKLYD22KUEH4P"},
+			CreditAmount{"USD", "GAWSI2JO2CF36Z43UGMUJCDQ2IMR5B3P5TMS7XM7NUTU3JHG3YJUDQXA", "50"},
+			PayWith(CreditAsset("EUR", "GCPZJ3MJQ3GUGJSBL6R3MLYZS6FKVHG67BPAINMXL3NWNXR5S6XG657P"), "100").
+				Through(Asset{Native: true}).
+				Through(CreditAsset("BTC", "GAHJZHVKFLATAATJH46C7OK2ZOVRD47GZBGQ7P6OCVF6RJDCEG5JMQBQ")),
+		),
+	)
+
+	txe := tx.Sign(seed)
+	txeB64, _ := txe.Base64()
+
+	fmt.Printf("tx base64: %s", txeB64)
+	// Output: tx base64: AAAAADZY/nWY0gx6beMpf4S8Ur0qHsjA8fbFtBzBx1cbQzHwAAAAZAAAAAAAAAABAAAAAAAAAAAAAAABAAAAAAAAAAIAAAABRVVSAAAAAACflO2Jhs1DJkFfo7YvGZeKqpze+F4ENZde22bePZeubwAAAAA7msoAAAAAAEc9q5pbnyO0BDkT4FXgGhPGAj7kCKVbS4PDJS8D1pVCAAAAAVVTRAAAAAAALSRpLtCLv2eboZlEiHDSGR6Hb+zZL92fbSdNpObeE0EAAAAAHc1lAAAAAAIAAAAAAAAAAUJUQwAAAAAADpyeqirBMAJpPzwvuVrLqxHz5shND7/OFUvopGIhupYAAAAAAAAAARtDMfAAAABA5xuIJu/KGKQRuDrdkzNsR4HjT6wX464SHZ/yvYwVb/AkAyyfeMLDNhgKbBxQMWc3Uo5fTst1UHldC+jYNeAhCQ==
 }

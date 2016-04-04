@@ -33,7 +33,7 @@ to the `/payment` endpoint.
        |<---------□                                    |                                    |
        |          |                                    |                                    |
 
-Receiving a payment AUTH_STATUS_OK
+Receiving a payment
 
 When you want to use compliance protocol when receiving payments...
 

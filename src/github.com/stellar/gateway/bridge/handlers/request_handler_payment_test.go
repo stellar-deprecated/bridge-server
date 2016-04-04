@@ -9,26 +9,45 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/facebookgo/inject"
 	. "github.com/smartystreets/goconvey/convey"
 	"github.com/stellar/gateway/bridge/config"
 	"github.com/stellar/gateway/horizon"
 	"github.com/stellar/gateway/mocks"
+	"github.com/stellar/gateway/protocols/federation"
+	"github.com/stellar/gateway/protocols/stellartoml"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
 
 func TestRequestHandlerPayment(t *testing.T) {
 	mockHorizon := new(mocks.MockHorizon)
-
-	mockAddressResolverHelper := new(MockAddressResolverHelper)
-	addressResolver := AddressResolver{mockAddressResolverHelper}
+	mockTransactionSubmitter := new(mocks.MockTransactionSubmitter)
+	mockFederationResolver := new(mocks.MockFederationResolver)
+	mockStellartomlResolver := new(mocks.MockStellartomlResolver)
 
 	requestHandler := RequestHandler{
 		Config: &config.Config{
 			NetworkPassphrase: "Test SDF Network ; September 2015",
 		},
-		Horizon:         mockHorizon,
-		AddressResolver: addressResolver,
+	}
+
+	// Inject mocks
+	var g inject.Graph
+
+	err := g.Provide(
+		&inject.Object{Value: &requestHandler},
+		&inject.Object{Value: mockHorizon},
+		&inject.Object{Value: mockTransactionSubmitter},
+		&inject.Object{Value: mockFederationResolver},
+		&inject.Object{Value: mockStellartomlResolver},
+	)
+	if err != nil {
+		panic(err)
+	}
+
+	if err := g.Populate(); err != nil {
+		panic(err)
 	}
 
 	testServer := httptest.NewServer(http.HandlerFunc(requestHandler.Payment))
@@ -42,7 +61,8 @@ func TestRequestHandlerPayment(t *testing.T) {
 				statusCode, response := getResponse(testServer, url.Values{"source": {source}})
 				responseString := strings.TrimSpace(string(response))
 				assert.Equal(t, 400, statusCode)
-				assert.Equal(t, getResponseString(horizon.PaymentInvalidSource), responseString)
+				expectedResponse := horizon.SubmitTransactionResponse{Error: horizon.PaymentInvalidSource}
+				assert.Equal(t, expectedResponse.Marshal(), []byte(responseString))
 			})
 		})
 
@@ -50,11 +70,21 @@ func TestRequestHandlerPayment(t *testing.T) {
 			source := "SDRAS7XIQNX25UDCCX725R4EYGBFYGJE4HJ2A3DFCWJIHMRSMS7CXX42"
 			destination := "GD3YBOYIUVLU"
 
+			mockFederationResolver.On(
+				"Resolve",
+				"GD3YBOYIUVLU",
+			).Return(
+				federation.Response{AccountId: "GD3YBOYIUVLU"},
+				stellartoml.StellarToml{},
+				nil,
+			).Once()
+
 			Convey("it should return error", func() {
 				statusCode, response := getResponse(testServer, url.Values{"destination": {destination}, "source": {source}})
 				responseString := strings.TrimSpace(string(response))
 				assert.Equal(t, 400, statusCode)
-				assert.Equal(t, getResponseString(horizon.PaymentInvalidDestination), responseString)
+				expectedResponse := horizon.SubmitTransactionResponse{Error: horizon.PaymentInvalidDestination}
+				assert.Equal(t, expectedResponse.Marshal(), []byte(responseString))
 			})
 		})
 
@@ -64,12 +94,13 @@ func TestRequestHandlerPayment(t *testing.T) {
 				"destination": {"bob*stellar.org"},
 			}
 
-			Convey("When stellar.toml does not exist", func() {
-				mockAddressResolverHelper.On(
-					"GetStellarToml",
-					"stellar.org",
+			Convey("When FederationResolver returns error", func() {
+				mockFederationResolver.On(
+					"Resolve",
+					"bob*stellar.org",
 				).Return(
-					StellarToml{},
+					federation.Response{},
+					stellartoml.StellarToml{},
 					errors.New("stellar.toml response status code indicates error"),
 				).Once()
 
@@ -77,51 +108,8 @@ func TestRequestHandlerPayment(t *testing.T) {
 					statusCode, response := getResponse(testServer, params)
 					responseString := strings.TrimSpace(string(response))
 					assert.Equal(t, 400, statusCode)
-					assert.Equal(t, getResponseString(horizon.PaymentCannotResolveDestination), responseString)
-				})
-			})
-
-			Convey("When stellar.toml does not contain FEDERATION_SERVER", func() {
-				mockAddressResolverHelper.On(
-					"GetStellarToml",
-					"stellar.org",
-				).Return(
-					StellarToml{},
-					nil,
-				).Once()
-
-				Convey("it should return error", func() {
-					statusCode, response := getResponse(testServer, params)
-					responseString := strings.TrimSpace(string(response))
-					assert.Equal(t, 400, statusCode)
-					assert.Equal(t, getResponseString(horizon.PaymentCannotResolveDestination), responseString)
-				})
-			})
-
-			Convey("When GetDestination() errors", func() {
-				federationServer := "http://api.example.com"
-				mockAddressResolverHelper.On(
-					"GetStellarToml",
-					"stellar.org",
-				).Return(
-					StellarToml{&federationServer},
-					nil,
-				).Once()
-
-				mockAddressResolverHelper.On(
-					"GetDestination",
-					"http://api.example.com",
-					"bob*stellar.org",
-				).Return(
-					StellarDestination{},
-					errors.New("Only HTTPS federation servers allowed"),
-				).Once()
-
-				Convey("it should return error", func() {
-					statusCode, response := getResponse(testServer, params)
-					responseString := strings.TrimSpace(string(response))
-					assert.Equal(t, 400, statusCode)
-					assert.Equal(t, getResponseString(horizon.PaymentCannotResolveDestination), responseString)
+					expectedResponse := horizon.SubmitTransactionResponse{Error: horizon.PaymentCannotResolveDestination}
+					assert.Equal(t, expectedResponse.Marshal(), []byte(responseString))
 				})
 			})
 
@@ -133,20 +121,14 @@ func TestRequestHandlerPayment(t *testing.T) {
 					"amount":      {"20"},
 				}
 
-				federationServer := "http://api.example.com"
-				mockAddressResolverHelper.On(
-					"GetStellarToml",
-					"stellar.org",
+				mockFederationResolver.On(
+					"Resolve",
+					"bob*stellar.org",
 				).Return(
-					StellarToml{&federationServer},
+					federation.Response{AccountId: "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632"},
+					stellartoml.StellarToml{},
 					nil,
 				).Once()
-
-				mockAddressResolverHelper.On(
-					"GetDestination",
-					"http://api.example.com",
-					"bob*stellar.org",
-				).Return(StellarDestination{AccountId: "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632"}, nil).Once()
 
 				// Checking if destination account exists
 				mockHorizon.On(
@@ -196,28 +178,19 @@ func TestRequestHandlerPayment(t *testing.T) {
 					"amount":      {"20"},
 				}
 
-				federationServer := "http://api.example.com"
-				mockAddressResolverHelper.On(
-					"GetStellarToml",
-					"stellar.org",
-				).Return(
-					StellarToml{&federationServer},
-					nil,
-				).Once()
-
 				memoType := "text"
 				memo := "125"
 
-				mockAddressResolverHelper.On(
-					"GetDestination",
-					"http://api.example.com",
+				mockFederationResolver.On(
+					"Resolve",
 					"bob*stellar.org",
 				).Return(
-					StellarDestination{
+					federation.Response{
 						AccountId: "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632",
 						MemoType:  &memoType,
 						Memo:      &memo,
 					},
+					stellartoml.StellarToml{},
 					nil,
 				).Once()
 
@@ -268,6 +241,15 @@ func TestRequestHandlerPayment(t *testing.T) {
 			assetCode := "USD"
 			assetIssuer := "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN631"
 
+			mockFederationResolver.On(
+				"Resolve",
+				"GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632",
+			).Return(
+				federation.Response{AccountId: "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632"},
+				stellartoml.StellarToml{},
+				nil,
+			).Once()
+
 			Convey("it should return error", func() {
 				statusCode, response := getResponse(
 					testServer,
@@ -280,7 +262,8 @@ func TestRequestHandlerPayment(t *testing.T) {
 				)
 				responseString := strings.TrimSpace(string(response))
 				assert.Equal(t, 400, statusCode)
-				assert.Equal(t, getResponseString(horizon.PaymentInvalidIssuer), responseString)
+				expectedResponse := horizon.SubmitTransactionResponse{Error: horizon.PaymentInvalidIssuer}
+				assert.Equal(t, expectedResponse.Marshal(), []byte(responseString))
 			})
 		})
 
@@ -291,6 +274,15 @@ func TestRequestHandlerPayment(t *testing.T) {
 			amount := "20"
 			assetCode := "1234567890123"
 			assetIssuer := "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632"
+
+			mockFederationResolver.On(
+				"Resolve",
+				"GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632",
+			).Return(
+				federation.Response{AccountId: "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632"},
+				stellartoml.StellarToml{},
+				nil,
+			).Once()
 
 			Convey("it should return error", func() {
 				mockHorizon.On(
@@ -315,7 +307,8 @@ func TestRequestHandlerPayment(t *testing.T) {
 				)
 				responseString := strings.TrimSpace(string(response))
 				assert.Equal(t, 400, statusCode)
-				assert.Equal(t, getResponseString(horizon.PaymentMalformedAssetCode), responseString)
+				expectedResponse := horizon.SubmitTransactionResponse{Error: horizon.PaymentMalformedAssetCode}
+				assert.Equal(t, expectedResponse.Marshal(), []byte(responseString))
 			})
 		})
 
@@ -326,6 +319,15 @@ func TestRequestHandlerPayment(t *testing.T) {
 			amount := "test"
 			assetCode := "USD"
 			assetIssuer := "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632"
+
+			mockFederationResolver.On(
+				"Resolve",
+				"GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632",
+			).Return(
+				federation.Response{AccountId: "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632"},
+				stellartoml.StellarToml{},
+				nil,
+			).Once()
 
 			mockHorizon.On(
 				"LoadAccount",
@@ -350,7 +352,8 @@ func TestRequestHandlerPayment(t *testing.T) {
 				)
 				responseString := strings.TrimSpace(string(response))
 				assert.Equal(t, 400, statusCode)
-				assert.Equal(t, getResponseString(horizon.PaymentInvalidAmount), responseString)
+				expectedResponse := horizon.SubmitTransactionResponse{Error: horizon.PaymentInvalidAmount}
+				assert.Equal(t, expectedResponse.Marshal(), []byte(responseString))
 			})
 		})
 
@@ -364,13 +367,23 @@ func TestRequestHandlerPayment(t *testing.T) {
 				"asset_issuer": {"GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632"},
 			}
 
+			mockFederationResolver.On(
+				"Resolve",
+				"GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632",
+			).Return(
+				federation.Response{AccountId: "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632"},
+				stellartoml.StellarToml{},
+				nil,
+			).Once()
+
 			Convey("When memo is set", func() {
 				Convey("only `memo` param is set", func() {
 					validParams.Add("memo", "test")
 					statusCode, response := getResponse(testServer, validParams)
 					responseString := strings.TrimSpace(string(response))
 					assert.Equal(t, 400, statusCode)
-					assert.Equal(t, getResponseString(horizon.PaymentMissingParamMemo), responseString)
+					expectedResponse := horizon.SubmitTransactionResponse{Error: horizon.PaymentMissingParamMemo}
+					assert.Equal(t, expectedResponse.Marshal(), []byte(responseString))
 				})
 
 				Convey("only `memo_type` param is set", func() {
@@ -378,7 +391,8 @@ func TestRequestHandlerPayment(t *testing.T) {
 					statusCode, response := getResponse(testServer, validParams)
 					responseString := strings.TrimSpace(string(response))
 					assert.Equal(t, 400, statusCode)
-					assert.Equal(t, getResponseString(horizon.PaymentMissingParamMemo), responseString)
+					expectedResponse := horizon.SubmitTransactionResponse{Error: horizon.PaymentMissingParamMemo}
+					assert.Equal(t, expectedResponse.Marshal(), []byte(responseString))
 				})
 
 				Convey("memo_type=hash to long", func() {
@@ -387,7 +401,8 @@ func TestRequestHandlerPayment(t *testing.T) {
 					statusCode, response := getResponse(testServer, validParams)
 					responseString := strings.TrimSpace(string(response))
 					assert.Equal(t, 400, statusCode)
-					assert.Equal(t, getResponseString(horizon.PaymentInvalidMemo), responseString)
+					expectedResponse := horizon.SubmitTransactionResponse{Error: horizon.PaymentInvalidMemo}
+					assert.Equal(t, expectedResponse.Marshal(), []byte(responseString))
 				})
 
 				Convey("unsupported memo_type", func() {
@@ -396,7 +411,8 @@ func TestRequestHandlerPayment(t *testing.T) {
 					statusCode, response := getResponse(testServer, validParams)
 					responseString := strings.TrimSpace(string(response))
 					assert.Equal(t, 400, statusCode)
-					assert.Equal(t, getResponseString(horizon.PaymentInvalidMemo), responseString)
+					expectedResponse := horizon.SubmitTransactionResponse{Error: horizon.PaymentInvalidMemo}
+					assert.Equal(t, expectedResponse.Marshal(), []byte(responseString))
 				})
 
 				Convey("memo is attached to the transaction", func() {
@@ -478,7 +494,8 @@ func TestRequestHandlerPayment(t *testing.T) {
 					statusCode, response := getResponse(testServer, validParams)
 					responseString := strings.TrimSpace(string(response))
 					assert.Equal(t, 400, statusCode)
-					assert.Equal(t, getResponseString(horizon.PaymentSourceNotExist), responseString)
+					expectedResponse := horizon.SubmitTransactionResponse{Error: horizon.PaymentSourceNotExist}
+					assert.Equal(t, expectedResponse.Marshal(), []byte(responseString))
 				})
 			})
 

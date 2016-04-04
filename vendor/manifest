@@ -52,6 +52,18 @@
 			"branch": "master"
 		},
 		{
+			"importpath": "github.com/facebookgo/inject",
+			"repository": "https://github.com/facebookgo/inject",
+			"revision": "d5029152fecb2a8e68f7f8eb3c6391fc8ee70496",
+			"branch": "master"
+		},
+		{
+			"importpath": "github.com/facebookgo/structtag",
+			"repository": "https://github.com/facebookgo/structtag",
+			"revision": "217e25fb96916cc60332e399c9aa63f5c422ceed",
+			"branch": "master"
+		},
+		{
 			"importpath": "github.com/go-sql-driver/mysql",
 			"repository": "https://github.com/go-sql-driver/mysql",
 			"revision": "c9c5955059ba2e3d6a25e8f1a555e59015d4abba",
@@ -242,7 +254,7 @@
 		{
 			"importpath": "github.com/stellar/go-stellar-base",
 			"repository": "https://github.com/stellar/go-stellar-base",
-			"revision": "1512dd0b506bfec825223359489525719190a83c",
+			"revision": "1b1fa3d84248a24a6fea8860636a62e626e3dfff",
 			"branch": "master"
 		},
 		{

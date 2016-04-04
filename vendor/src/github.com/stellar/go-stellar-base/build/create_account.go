@@ -2,7 +2,7 @@ package build
 
 import (
 	"errors"
-	
+
 	"github.com/stellar/go-stellar-base/amount"
 	"github.com/stellar/go-stellar-base/xdr"
 )

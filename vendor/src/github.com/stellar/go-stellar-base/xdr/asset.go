@@ -3,11 +3,53 @@ package xdr
 import (
 	"errors"
 	"fmt"
-	"github.com/stellar/go-stellar-base/strkey"
 	"strings"
+
+	"github.com/stellar/go-stellar-base/strkey"
 )
 
 // This file contains helpers for working with xdr.Asset structs
+
+// SetCredit overwrites `a` with a credit asset using `code` and `issuer`.  The
+// asset type (CreditAlphanum4 or CreditAlphanum12) is chosen automatically
+// based upon the length of `code`.
+func (a *Asset) SetCredit(code string, issuer AccountId) error {
+	length := len(code)
+	var typ AssetType
+	var body interface{}
+
+	switch {
+	case length >= 1 && length <= 4:
+		newbody := AssetAlphaNum4{Issuer: issuer}
+		copy(newbody.AssetCode[:], []byte(code)[:length])
+		typ = AssetTypeAssetTypeCreditAlphanum4
+		body = newbody
+	case length >= 5 && length <= 12:
+		newbody := AssetAlphaNum12{Issuer: issuer}
+		copy(newbody.AssetCode[:], []byte(code)[:length])
+		typ = AssetTypeAssetTypeCreditAlphanum4
+		body = newbody
+	default:
+		return errors.New("Asset code length is invalid")
+	}
+
+	newa, err := NewAsset(typ, body)
+	if err != nil {
+		return err
+	}
+	*a = newa
+	return nil
+}
+
+// SetNative overwrites `a` with the native asset type
+func (a *Asset) SetNative() error {
+	newa, err := NewAsset(AssetTypeAssetTypeNative, nil)
+	if err != nil {
+		return err
+	}
+	*a = newa
+	return nil
+}
 
 // String returns a display friendly form of the asset
 func (a Asset) String() string {
@@ -20,6 +62,27 @@ func (a Asset) String() string {
 	}
 
 	return fmt.Sprintf("%s/%s/%s", t, c, i)
+}
+
+// Equals returns true if `other` is equivalent to `a`
+func (a Asset) Equals(other Asset) bool {
+	if a.Type != other.Type {
+		return false
+	}
+	switch a.Type {
+	case AssetTypeAssetTypeNative:
+		return true
+	case AssetTypeAssetTypeCreditAlphanum4:
+		l := a.MustAlphaNum4()
+		r := other.MustAlphaNum4()
+		return l.AssetCode == r.AssetCode && l.Issuer.Equals(r.Issuer)
+	case AssetTypeAssetTypeCreditAlphanum12:
+		l := a.MustAlphaNum12()
+		r := other.MustAlphaNum12()
+		return l.AssetCode == r.AssetCode && l.Issuer.Equals(r.Issuer)
+	default:
+		panic(fmt.Errorf("Unknown asset type: %v", a.Type))
+	}
 }
 
 // Extract is a helper function to extract information from an xdr.Asset

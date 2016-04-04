@@ -10,6 +10,14 @@ import (
 	"strings"
 )
 
+// Keyer represents a type that can be converted into a LedgerKey
+type Keyer interface {
+	LedgerKey() LedgerKey
+}
+
+var _ = LedgerEntry{}
+var _ = LedgerKey{}
+
 // SafeUnmarshalBase64 first decodes the provided reader from base64 before decoding the xdr
 // into the provided destination.  Also ensures that the reader is fully consumed.
 func SafeUnmarshalBase64(data string, dest interface{}) error {

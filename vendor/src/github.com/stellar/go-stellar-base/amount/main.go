@@ -11,15 +11,28 @@ package amount
 
 import (
 	"fmt"
-	"github.com/stellar/go-stellar-base/xdr"
 	"math/big"
 	"strconv"
+
+	"github.com/stellar/go-stellar-base/xdr"
 )
 
 // One is the value of one whole unit of currency.  Stellar uses 7 fixed digits
 // for fractional values, thus One is 10 million (10^7)
 const One = 10000000
 
+// MustParse is the panicking version of Parse
+func MustParse(v string) xdr.Int64 {
+	ret, err := Parse(v)
+	if err != nil {
+		panic(err)
+	}
+	return ret
+}
+
+// Parse parses the provided as a stellar "amount", i.e. A 64-bit signed integer
+// that represents a decimal number with 7 digits of significance in the
+// fractional portion of the number.
 func Parse(v string) (xdr.Int64, error) {
 	var f, o, r big.Rat
 
@@ -39,6 +52,7 @@ func Parse(v string) (xdr.Int64, error) {
 	return xdr.Int64(i), nil
 }
 
+// String returns an "amount string" from the provided raw value `v`.
 func String(v xdr.Int64) string {
 	var f, o, r big.Rat
 
