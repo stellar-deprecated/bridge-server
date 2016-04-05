@@ -52,14 +52,48 @@ func (rh *RequestHandler) HandlerSend(c web.C, w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	operationMutator := b.Payment(
+	var payWithMutator *b.PayWithPath
+
+	if request.SendMax != "" {
+		// Path payment
+		var sendAsset b.Asset
+		if request.SendAssetCode != "" && request.SendAssetIssuer != "" {
+			sendAsset = b.CreditAsset(request.SendAssetCode, request.SendAssetIssuer)
+		} else if request.SendAssetCode == "" && request.SendAssetIssuer == "" {
+			sendAsset = b.NativeAsset()
+		} else {
+			log.Print("Missing send asset param.")
+			server.Write(w, compliance.MissingParameter)
+			return
+		}
+
+		payWith := b.PayWith(sendAsset, request.SendMax)
+
+		for _, asset := range(request.Path) {
+			if asset.Code == "" && asset.Issuer == "" {
+				payWith = payWith.Through(b.NativeAsset())
+			} else {
+				payWith = payWith.Through(b.CreditAsset(asset.Code, asset.Issuer))
+			}
+		}
+
+		payWithMutator = &payWith
+	}
+
+	mutators := []interface{}{
 		b.Destination{destinationObject.AccountId},
 		b.CreditAmount{
 			request.AssetCode,
 			request.AssetIssuer,
 			request.Amount,
 		},
-	)
+	}
+
+	if payWithMutator != nil {
+		mutators = append(mutators, *payWithMutator)
+	}
+
+	operationMutator := b.Payment(mutators...)
 	if operationMutator.Err != nil {
 		log.WithFields(log.Fields{
 			"err": operationMutator.Err,

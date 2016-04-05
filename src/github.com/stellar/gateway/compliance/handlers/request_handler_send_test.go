@@ -73,7 +73,7 @@ func TestRequestHandlerSend(t *testing.T) {
 				"extra_memo":   {"hello world"},
 			}
 
-			Convey("it returns SendResponse when success", func() {
+			Convey("it returns SendResponse when success (payment)", func() {
 				authServer := "https://acme.com/auth"
 
 				mockFederationResolver.On(
@@ -102,6 +102,48 @@ func TestRequestHandlerSend(t *testing.T) {
 				responseString := strings.TrimSpace(string(response))
 				assert.Equal(t, 200, statusCode)
 				assert.Equal(t, "{\n  \"transaction_xdr\": \"AAAAAC3/58Z9rycNLmF6voWX9VmDETFVGhFoWf66mcMuir/DAAAAZAAAAAAAAAAAAAAAAAAAAAO5TSe5k00+CKUuUtfafav6xITv43pTgO6QiPes4u/N6QAAAAEAAAAAAAAAAQAAAAAZUvzcMkXAfSwqbLoAiAlgPsZ7GIPRi7NIyKgEIBQ4nAAAAAFVU0QAAAAAABlS/NwyRcB9LCpsugCICWA+xnsYg9GLs0jIqAQgFDicAAAAAAvrwgAAAAAA\"\n}", responseString)
+			})
+
+			Convey("it returns SendResponse when success (path payment)", func() {
+				params["send_max"] = []string{"100"}
+				params["send_asset_code"] = []string{"USD"}
+				params["send_asset_issuer"] = []string{"GBDOSO3K4JTGSWJSIHXAOFIBMAABVM3YK3FI6VJPKIHHM56XAFIUCGD6"}
+
+				// Native
+				params["path[0][asset_code]"] = []string{""}
+				params["path[0][asset_issuer]"] = []string{""}
+				// Credit
+				params["path[1][asset_code]"] = []string{"EUR"}
+				params["path[1][asset_issuer]"] = []string{"GAF3PBFQLH57KPECN4GRGHU5NUZ3XXKYYWLOTBIRJMBYHPUBWANIUCZU"}
+
+				authServer := "https://acme.com/auth"
+
+				mockFederationResolver.On(
+					"Resolve",
+					"bob*stellar.org",
+				).Return(federation.Response{
+					AccountId: "GAMVF7G4GJC4A7JMFJWLUAEIBFQD5RT3DCB5DC5TJDEKQBBACQ4JZVEE",
+				}, stellartoml.StellarToml{
+					AuthServer: &authServer,
+				}, nil).Once()
+
+				transactionXdr := "AAAAAC3/58Z9rycNLmF6voWX9VmDETFVGhFoWf66mcMuir/DAAAAZAAAAAAAAAAAAAAAAAAAAAO5TSe5k00+CKUuUtfafav6xITv43pTgO6QiPes4u/N6QAAAAEAAAAAAAAAAgAAAAFVU0QAAAAAAEbpO2riZmlZMkHuBxUBYAAas3hWyo9VL1IOdnfXAVFBAAAAADuaygAAAAAAGVL83DJFwH0sKmy6AIgJYD7GexiD0YuzSMioBCAUOJwAAAABVVNEAAAAAAAZUvzcMkXAfSwqbLoAiAlgPsZ7GIPRi7NIyKgEIBQ4nAAAAAAL68IAAAAAAgAAAAAAAAABRVVSAAAAAAALt4SwWfv1PIJvDRMenW0zu91YxZbphRFLA4O+gbAaigAAAAA="
+				data := "{\"Sender\":\"alice*stellar.org\",\"NeedInfo\":true,\"Tx\":\"" + transactionXdr + "\",\"Memo\":\"hello world\"}"
+				sig := "XIh4u5TcdqUmpy/JLcsAIlD8c8fvJiRC+AwxekjBeOCbtRgE2kzN/8VRQjtKm+zNTt/nuvbM2cfYrs7uu4hnBg=="
+
+				mockHttpClient.On(
+					"PostForm",
+					authServer,
+					url.Values{"data": {data}, "sig": {sig}},
+				).Return(
+					net.BuildHttpResponse(200, "ok"),
+					nil,
+				).Once()
+
+				statusCode, response := net.GetResponse(testServer, params)
+				responseString := strings.TrimSpace(string(response))
+				assert.Equal(t, 200, statusCode)
+				assert.Equal(t, "{\n  \"transaction_xdr\": \"AAAAAC3/58Z9rycNLmF6voWX9VmDETFVGhFoWf66mcMuir/DAAAAZAAAAAAAAAAAAAAAAAAAAAO5TSe5k00+CKUuUtfafav6xITv43pTgO6QiPes4u/N6QAAAAEAAAAAAAAAAgAAAAFVU0QAAAAAAEbpO2riZmlZMkHuBxUBYAAas3hWyo9VL1IOdnfXAVFBAAAAADuaygAAAAAAGVL83DJFwH0sKmy6AIgJYD7GexiD0YuzSMioBCAUOJwAAAABVVNEAAAAAAAZUvzcMkXAfSwqbLoAiAlgPsZ7GIPRi7NIyKgEIBQ4nAAAAAAL68IAAAAAAgAAAAAAAAABRVVSAAAAAAALt4SwWfv1PIJvDRMenW0zu91YxZbphRFLA4O+gbAaigAAAAA=\"\n}", responseString)
 			})
 		})
 	})
