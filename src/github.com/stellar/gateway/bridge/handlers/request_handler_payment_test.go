@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -15,9 +16,10 @@ import (
 	"github.com/stellar/gateway/horizon"
 	"github.com/stellar/gateway/mocks"
 	"github.com/stellar/gateway/net"
-	// "github.com/stellar/gateway/protocols/compliance"
+	"github.com/stellar/gateway/protocols/compliance"
 	"github.com/stellar/gateway/protocols/federation"
 	"github.com/stellar/gateway/protocols/stellartoml"
+	"github.com/stellar/go-stellar-base/xdr"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -763,11 +765,11 @@ func TestRequestHandlerPayment(t *testing.T) {
 			params := url.Values{
 				// GAW77Z6GPWXSODJOMF5L5BMX6VMYGEJRKUNBC2CZ725JTQZORK74HQQD
 				"source":       {"SARMR3N465GTEHQLR3TSHDD7FHFC2I22ECFLYCHAZDEJWBVED66RW7FQ"},
-				"sender":       {"alice*stellar.org"},
-				"destination":  {"bob*stellar.org"},
+				"sender":       {"alice*stellar.org"}, // GAW77Z6GPWXSODJOMF5L5BMX6VMYGEJRKUNBC2CZ725JTQZORK74HQQD
+				"destination":  {"bob*stellar.org"}, // GAMVF7G4GJC4A7JMFJWLUAEIBFQD5RT3DCB5DC5TJDEKQBBACQ4JZVEE
 				"amount":       {"20"},
 				"asset_code":   {"USD"},
-				"asset_issuer": {"GCF3WVYTHF75PEG6622G5G6KU26GOSDQPDHSCJ3DQD7VONH4EYVDOGKJ"},
+				"asset_issuer": {"GAMVF7G4GJC4A7JMFJWLUAEIBFQD5RT3DCB5DC5TJDEKQBBACQ4JZVEE"},
 				"extra_memo":   {"hello world"},
 			}
 
@@ -795,32 +797,95 @@ func TestRequestHandlerPayment(t *testing.T) {
 				assert.Equal(t, expectedResponse.Marshal(), []byte(responseString))
 			})
 
-			// Convey("it should submit transaction when compliance server returns success", func() {
-			// 	complianceResponse := compliance.SendResponse{
-			// 		TransactionXdr: "AAAAALYGRy91n6qDiQbE2utm2q3y08aIcIMkXTk7mJJ+QsL3AAAAZAAihMUAAADEAAAAAAAAAAEAAAAYMSBhbW91bnQgPiA1NS0xMTk5MTE5OTEyAAAAAQAAAAEAAAAAtgZHL3WfqoOJBsTa62barfLTxohwgyRdOTuYkn5CwvcAAAABAAAAALYGRy91n6qDiQbE2utm2q3y08aIcIMkXTk7mJJ+QsL3AAAAAVVTRAAAAAAAbLWrwunL5+YfOqVjiuffegKXvZPJjDPhYM6naeifvQcAAAAAAJiWgAAAAAAAAAABfkLC9wAAAEBoDhM7OnYfhzhpL1NFEqJSThHKZW7GRRxLooTFSbIq9OaQmzX2TzGSnlCwxcHcdYT4+9UTA4iZw0HOBwhBZ6YL",
-			// 	}
+			Convey("it should submit transaction when compliance server returns success", func() {
+				memoBytes, _ := hex.DecodeString("b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9")
+				var hashXdr xdr.Hash
+				copy(hashXdr[:], memoBytes[:])
+				memo, _ := xdr.NewMemo(xdr.MemoTypeMemoHash, hashXdr)
 
-			// 	mockHttpClient.On(
-			// 		"PostForm",
-			// 		"http://compliance/send",
-			// 		mock.AnythingOfType("url.Values"),
-			// 	).Return(
-			// 		net.BuildHttpResponse(200, string(complianceResponse.Marshal())),
-			// 		nil,
-			// 	).Run(func(args mock.Arguments) {
-			// 		values := args.Get(1).(url.Values)
-			// 		assert.Equal(t, []string{"GAW77Z6GPWXSODJOMF5L5BMX6VMYGEJRKUNBC2CZ725JTQZORK74HQQD"}, values["source"])
-			// 		values.Del("source")
-			// 		params.Del("source")
-			// 		assert.Equal(t, values.Encode(), params.Encode())
-			// 	}).Once()
+				sourceBytes, _ := hex.DecodeString("2dffe7c67daf270d2e617abe8597f559831131551a116859feba99c32e8abfc3")
+				var sourceXdr xdr.Uint256
+				copy(sourceXdr[:], sourceBytes[:])
 
-			// 	statusCode, response := getResponse(testServer, params)
-			// 	responseString := strings.TrimSpace(string(response))
-			// 	assert.Equal(t, 200, statusCode)
-			// 	expectedResponse := horizon.SubmitTransactionResponse{Error: horizon.ServerError}
-			// 	assert.Equal(t, expectedResponse.Marshal(), []byte(responseString))
-			// })
+				destinationBytes, _ := hex.DecodeString("1952fcdc3245c07d2c2a6cba008809603ec67b1883d18bb348c8a8042014389c")
+				var destinationXdr xdr.Uint256
+				copy(destinationXdr[:], destinationBytes[:])
+
+				issuerBytes, _ := hex.DecodeString("1952fcdc3245c07d2c2a6cba008809603ec67b1883d18bb348c8a8042014389c")
+				var issuerXdr xdr.Uint256
+				copy(issuerXdr[:], issuerBytes[:])
+
+				expectedTx := &xdr.Transaction{
+					SourceAccount: xdr.AccountId{
+						Type: xdr.CryptoKeyTypeKeyTypeEd25519,
+						Ed25519: &sourceXdr,
+					},
+					Fee: 100,
+					SeqNum: 0,
+					Memo: memo,
+					Operations: []xdr.Operation{
+						xdr.Operation{
+							Body: xdr.OperationBody{
+								Type: xdr.OperationTypePayment,
+								PaymentOp: &xdr.PaymentOp{
+									Destination: xdr.AccountId{
+										Type: xdr.CryptoKeyTypeKeyTypeEd25519,
+										Ed25519: &destinationXdr,
+									},
+									Amount: 200000000,
+									Asset: xdr.Asset{
+										Type: xdr.AssetTypeAssetTypeCreditAlphanum4,
+										AlphaNum4: &xdr.AssetAlphaNum4{
+											AssetCode: [4]byte{'U', 'S', 'D', 0},
+											Issuer: xdr.AccountId{
+												Type: xdr.CryptoKeyTypeKeyTypeEd25519,
+												Ed25519: &issuerXdr,
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				}
+
+				complianceResponse := compliance.SendResponse{
+					TransactionXdr: "AAAAAC3/58Z9rycNLmF6voWX9VmDETFVGhFoWf66mcMuir/DAAAAZAAAAAAAAAAAAAAAAAAAAAO5TSe5k00+CKUuUtfafav6xITv43pTgO6QiPes4u/N6QAAAAEAAAAAAAAAAQAAAAAZUvzcMkXAfSwqbLoAiAlgPsZ7GIPRi7NIyKgEIBQ4nAAAAAFVU0QAAAAAABlS/NwyRcB9LCpsugCICWA+xnsYg9GLs0jIqAQgFDicAAAAAAvrwgAAAAAA",
+				}
+
+				mockHttpClient.On(
+					"PostForm",
+					"http://compliance/send",
+					mock.AnythingOfType("url.Values"),
+				).Return(
+					net.BuildHttpResponse(200, string(complianceResponse.Marshal())),
+					nil,
+				).Run(func(args mock.Arguments) {
+					values := args.Get(1).(url.Values)
+					assert.Equal(t, []string{"GAW77Z6GPWXSODJOMF5L5BMX6VMYGEJRKUNBC2CZ725JTQZORK74HQQD"}, values["source"])
+					values.Del("source")
+					params.Del("source")
+					assert.Equal(t, values.Encode(), params.Encode())
+				}).Once()
+
+				var ledger uint64
+				ledger = 1988727
+				horizonResponse := horizon.SubmitTransactionResponse{&ledger, nil, nil}
+
+				mockTransactionSubmitter.On(
+					"SignAndSubmitRawTransaction",
+					params.Get("source"),
+					mock.AnythingOfType("*xdr.Transaction"),
+				).Run(func(args mock.Arguments) {
+					tx := args.Get(1).(*xdr.Transaction)
+					assert.Equal(t, *tx, *expectedTx)
+				}).Return(horizonResponse, nil).Once()
+
+				statusCode, response := getResponse(testServer, params)
+				responseString := strings.TrimSpace(string(response))
+				assert.Equal(t, 200, statusCode)
+				assert.Equal(t, horizonResponse.Marshal(), []byte(responseString))
+			})
 		})
 	})
 }
