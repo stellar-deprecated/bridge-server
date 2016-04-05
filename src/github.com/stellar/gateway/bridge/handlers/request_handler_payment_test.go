@@ -65,7 +65,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 			source := "SDRAS7XIQNX25UDCCX725R4EYGBFYGJE4HJ2A3DFCWJIHMRSMS7CXX43"
 
 			Convey("it should return error", func() {
-				statusCode, response := getResponse(testServer, url.Values{"source": {source}})
+				statusCode, response := net.GetResponse(testServer, url.Values{"source": {source}})
 				responseString := strings.TrimSpace(string(response))
 				assert.Equal(t, 400, statusCode)
 				expectedResponse := horizon.SubmitTransactionResponse{Error: horizon.PaymentInvalidSource}
@@ -87,7 +87,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 			).Once()
 
 			Convey("it should return error", func() {
-				statusCode, response := getResponse(testServer, url.Values{"destination": {destination}, "source": {source}})
+				statusCode, response := net.GetResponse(testServer, url.Values{"destination": {destination}, "source": {source}})
 				responseString := strings.TrimSpace(string(response))
 				assert.Equal(t, 400, statusCode)
 				expectedResponse := horizon.SubmitTransactionResponse{Error: horizon.PaymentInvalidDestination}
@@ -112,7 +112,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 				).Once()
 
 				Convey("it should return error", func() {
-					statusCode, response := getResponse(testServer, params)
+					statusCode, response := net.GetResponse(testServer, params)
 					responseString := strings.TrimSpace(string(response))
 					assert.Equal(t, 400, statusCode)
 					expectedResponse := horizon.SubmitTransactionResponse{Error: horizon.PaymentCannotResolveDestination}
@@ -164,7 +164,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 				).Return(horizonResponse, nil).Once()
 
 				Convey("it should return success", func() {
-					statusCode, response := getResponse(testServer, validParams)
+					statusCode, response := net.GetResponse(testServer, validParams)
 					responseString := strings.TrimSpace(string(response))
 
 					expectedResponse, err := json.MarshalIndent(horizonResponse, "", "  ")
@@ -228,7 +228,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 				).Return(horizonResponse, nil).Once()
 
 				Convey("it should return success", func() {
-					statusCode, response := getResponse(testServer, validParams)
+					statusCode, response := net.GetResponse(testServer, validParams)
 					responseString := strings.TrimSpace(string(response))
 
 					expectedResponse, err := json.MarshalIndent(horizonResponse, "", "  ")
@@ -258,7 +258,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 			).Once()
 
 			Convey("it should return error", func() {
-				statusCode, response := getResponse(
+				statusCode, response := net.GetResponse(
 					testServer,
 					url.Values{
 						"source":       {source},
@@ -302,7 +302,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 					nil,
 				).Once()
 
-				statusCode, response := getResponse(
+				statusCode, response := net.GetResponse(
 					testServer,
 					url.Values{
 						"source":       {source},
@@ -347,7 +347,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 			).Once()
 
 			Convey("it should return error", func() {
-				statusCode, response := getResponse(
+				statusCode, response := net.GetResponse(
 					testServer,
 					url.Values{
 						"source":       {source},
@@ -386,7 +386,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 			Convey("When memo is set", func() {
 				Convey("only `memo` param is set", func() {
 					validParams.Add("memo", "test")
-					statusCode, response := getResponse(testServer, validParams)
+					statusCode, response := net.GetResponse(testServer, validParams)
 					responseString := strings.TrimSpace(string(response))
 					assert.Equal(t, 400, statusCode)
 					expectedResponse := horizon.SubmitTransactionResponse{Error: horizon.PaymentMissingParamMemo}
@@ -395,7 +395,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 
 				Convey("only `memo_type` param is set", func() {
 					validParams.Add("memo_type", "id")
-					statusCode, response := getResponse(testServer, validParams)
+					statusCode, response := net.GetResponse(testServer, validParams)
 					responseString := strings.TrimSpace(string(response))
 					assert.Equal(t, 400, statusCode)
 					expectedResponse := horizon.SubmitTransactionResponse{Error: horizon.PaymentMissingParamMemo}
@@ -405,7 +405,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 				Convey("memo_type=hash to long", func() {
 					validParams.Add("memo_type", "hash")
 					validParams.Add("memo", "012345678901234567890123456789012345678901234567890123456789012")
-					statusCode, response := getResponse(testServer, validParams)
+					statusCode, response := net.GetResponse(testServer, validParams)
 					responseString := strings.TrimSpace(string(response))
 					assert.Equal(t, 400, statusCode)
 					expectedResponse := horizon.SubmitTransactionResponse{Error: horizon.PaymentInvalidMemo}
@@ -415,7 +415,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 				Convey("unsupported memo_type", func() {
 					validParams.Add("memo_type", "return_hash")
 					validParams.Add("memo", "0123456789")
-					statusCode, response := getResponse(testServer, validParams)
+					statusCode, response := net.GetResponse(testServer, validParams)
 					responseString := strings.TrimSpace(string(response))
 					assert.Equal(t, 400, statusCode)
 					expectedResponse := horizon.SubmitTransactionResponse{Error: horizon.PaymentInvalidMemo}
@@ -444,7 +444,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 
 					validParams.Add("memo_type", "id")
 					validParams.Add("memo", "123")
-					statusCode, response := getResponse(testServer, validParams)
+					statusCode, response := net.GetResponse(testServer, validParams)
 					responseString := strings.TrimSpace(string(response))
 
 					expectedResponse, err := json.MarshalIndent(horizonResponse, "", "  ")
@@ -478,7 +478,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 
 					validParams.Add("memo_type", "hash")
 					validParams.Add("memo", "02003AD420744CDEB8E524DEB65F38CB5095D30D000000000000000000000000")
-					statusCode, response := getResponse(testServer, validParams)
+					statusCode, response := net.GetResponse(testServer, validParams)
 					responseString := strings.TrimSpace(string(response))
 
 					expectedResponse, err := json.MarshalIndent(horizonResponse, "", "  ")
@@ -498,7 +498,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 				).Return(horizon.AccountResponse{}, errors.New("Not found")).Once()
 
 				Convey("it should return error", func() {
-					statusCode, response := getResponse(testServer, validParams)
+					statusCode, response := net.GetResponse(testServer, validParams)
 					responseString := strings.TrimSpace(string(response))
 					assert.Equal(t, 400, statusCode)
 					expectedResponse := horizon.SubmitTransactionResponse{Error: horizon.PaymentSourceNotExist}
@@ -535,7 +535,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 				).Return(horizonResponse, nil).Once()
 
 				Convey("it should return error", func() {
-					statusCode, response := getResponse(testServer, validParams)
+					statusCode, response := net.GetResponse(testServer, validParams)
 					responseString := strings.TrimSpace(string(response))
 
 					expectedResponse, err := json.MarshalIndent(horizonResponse, "", "  ")
@@ -583,7 +583,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 				).Return(horizonResponse, nil).Once()
 
 				Convey("it should return success", func() {
-					statusCode, response := getResponse(testServer, validParams)
+					statusCode, response := net.GetResponse(testServer, validParams)
 					responseString := strings.TrimSpace(string(response))
 
 					expectedResponse, err := json.MarshalIndent(horizonResponse, "", "  ")
@@ -617,7 +617,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 				).Return(horizonResponse, nil).Once()
 
 				Convey("it should return success", func() {
-					statusCode, response := getResponse(testServer, validParams)
+					statusCode, response := net.GetResponse(testServer, validParams)
 					responseString := strings.TrimSpace(string(response))
 
 					expectedResponse, err := json.MarshalIndent(horizonResponse, "", "  ")
@@ -684,7 +684,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 				).Return(horizonResponse, nil).Once()
 
 				Convey("it should return success", func() {
-					statusCode, response := getResponse(testServer, validParams)
+					statusCode, response := net.GetResponse(testServer, validParams)
 					responseString := strings.TrimSpace(string(response))
 
 					expectedResponse, err := json.MarshalIndent(horizonResponse, "", "  ")
@@ -711,7 +711,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 				).Return(horizonResponse, nil).Once()
 
 				Convey("it should return success", func() {
-					statusCode, response := getResponse(testServer, validParams)
+					statusCode, response := net.GetResponse(testServer, validParams)
 					responseString := strings.TrimSpace(string(response))
 
 					expectedResponse, err := json.MarshalIndent(horizonResponse, "", "  ")
@@ -745,7 +745,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 				).Return(horizonResponse, nil).Once()
 
 				Convey("it should return success", func() {
-					statusCode, response := getResponse(testServer, validParams)
+					statusCode, response := net.GetResponse(testServer, validParams)
 					responseString := strings.TrimSpace(string(response))
 
 					expectedResponse, err := json.MarshalIndent(horizonResponse, "", "  ")
@@ -761,12 +761,12 @@ func TestRequestHandlerPayment(t *testing.T) {
 	})
 
 	Convey("Given payment compliance request", t, func() {
-		Convey("When params are correct", func() {
+		Convey("When params are valid", func() {
 			params := url.Values{
 				// GAW77Z6GPWXSODJOMF5L5BMX6VMYGEJRKUNBC2CZ725JTQZORK74HQQD
 				"source":       {"SARMR3N465GTEHQLR3TSHDD7FHFC2I22ECFLYCHAZDEJWBVED66RW7FQ"},
 				"sender":       {"alice*stellar.org"}, // GAW77Z6GPWXSODJOMF5L5BMX6VMYGEJRKUNBC2CZ725JTQZORK74HQQD
-				"destination":  {"bob*stellar.org"}, // GAMVF7G4GJC4A7JMFJWLUAEIBFQD5RT3DCB5DC5TJDEKQBBACQ4JZVEE
+				"destination":  {"bob*stellar.org"},   // GAMVF7G4GJC4A7JMFJWLUAEIBFQD5RT3DCB5DC5TJDEKQBBACQ4JZVEE
 				"amount":       {"20"},
 				"asset_code":   {"USD"},
 				"asset_issuer": {"GAMVF7G4GJC4A7JMFJWLUAEIBFQD5RT3DCB5DC5TJDEKQBBACQ4JZVEE"},
@@ -790,7 +790,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 					assert.Equal(t, values.Encode(), params.Encode())
 				}).Once()
 
-				statusCode, response := getResponse(testServer, params)
+				statusCode, response := net.GetResponse(testServer, params)
 				responseString := strings.TrimSpace(string(response))
 				assert.Equal(t, 500, statusCode)
 				expectedResponse := horizon.SubmitTransactionResponse{Error: horizon.ServerError}
@@ -817,19 +817,19 @@ func TestRequestHandlerPayment(t *testing.T) {
 
 				expectedTx := &xdr.Transaction{
 					SourceAccount: xdr.AccountId{
-						Type: xdr.CryptoKeyTypeKeyTypeEd25519,
+						Type:    xdr.CryptoKeyTypeKeyTypeEd25519,
 						Ed25519: &sourceXdr,
 					},
-					Fee: 100,
+					Fee:    100,
 					SeqNum: 0,
-					Memo: memo,
+					Memo:   memo,
 					Operations: []xdr.Operation{
 						xdr.Operation{
 							Body: xdr.OperationBody{
 								Type: xdr.OperationTypePayment,
 								PaymentOp: &xdr.PaymentOp{
 									Destination: xdr.AccountId{
-										Type: xdr.CryptoKeyTypeKeyTypeEd25519,
+										Type:    xdr.CryptoKeyTypeKeyTypeEd25519,
 										Ed25519: &destinationXdr,
 									},
 									Amount: 200000000,
@@ -838,7 +838,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 										AlphaNum4: &xdr.AssetAlphaNum4{
 											AssetCode: [4]byte{'U', 'S', 'D', 0},
 											Issuer: xdr.AccountId{
-												Type: xdr.CryptoKeyTypeKeyTypeEd25519,
+												Type:    xdr.CryptoKeyTypeKeyTypeEd25519,
 												Ed25519: &issuerXdr,
 											},
 										},
@@ -881,7 +881,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 					assert.Equal(t, *tx, *expectedTx)
 				}).Return(horizonResponse, nil).Once()
 
-				statusCode, response := getResponse(testServer, params)
+				statusCode, response := net.GetResponse(testServer, params)
 				responseString := strings.TrimSpace(string(response))
 				assert.Equal(t, 200, statusCode)
 				assert.Equal(t, horizonResponse.Marshal(), []byte(responseString))

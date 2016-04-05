@@ -14,11 +14,13 @@ type Config struct {
 		Type string
 		Url  string
 	}
-	Keys struct {
-		SigningSeed string `mapstructure:"signing_seed"`
-		Encryption  string `mapstructure:"encryption"`
-	}
+	Keys
 	Callbacks *Callbacks
+}
+
+type Keys struct {
+	SigningSeed string `mapstructure:"signing_seed"`
+	Encryption  string `mapstructure:"encryption"`
 }
 
 type Callbacks struct {

@@ -100,17 +100,19 @@ func (rh *RequestHandler) HandlerSend(c web.C, w http.ResponseWriter, r *http.Re
 
 	data, err := json.Marshal(authData)
 	if err != nil {
+		log.Error("Error mashaling authData")
 		server.Write(w, compliance.InternalServerError)
 		return
 	}
 
 	sig, err := crypto.Sign(rh.Config.Keys.SigningSeed, data)
 	if err != nil {
+		log.Error("Error signing authData")
 		server.Write(w, compliance.InternalServerError)
 		return
 	}
 
-	resp, err := http.PostForm(
+	resp, err := rh.Client.PostForm(
 		*stellarToml.AuthServer,
 		url.Values{
 			"data": {string(data)},
@@ -143,8 +145,6 @@ func (rh *RequestHandler) HandlerSend(c web.C, w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	response := compliance.SendResponse{
-		TransactionXdr: txBase64,
-	}
+	response := compliance.SendResponse{TransactionXdr: txBase64}
 	server.Write(w, &response)
 }

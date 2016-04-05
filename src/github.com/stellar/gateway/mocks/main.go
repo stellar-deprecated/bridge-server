@@ -85,7 +85,11 @@ func (m *MockRepository) GetLastCursorValue() (cursor *string, err error) {
 
 func (m *MockRepository) GetAuthorizedTransactionByMemo(memo string) (*entities.AuthorizedTransaction, error) {
 	a := m.Called(memo)
-	return a.Get(0).(*entities.AuthorizedTransaction), a.Error(1)
+	if a.Get(0) == nil {
+		return nil, a.Error(1)
+	} else {
+		return a.Get(0).(*entities.AuthorizedTransaction), a.Error(1)
+	}
 }
 
 func (m *MockRepository) GetAllowedFiByDomain(domain string) (*entities.AllowedFi, error) {

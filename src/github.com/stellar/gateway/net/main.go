@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"io/ioutil"
 	"net/http"
+	"net/http/httptest"
 	"net/url"
 )
 
@@ -18,4 +19,18 @@ func BuildHttpResponse(statusCode int, body string) *http.Response {
 		StatusCode: statusCode,
 		Body:       ioutil.NopCloser(bytes.NewBufferString(body)),
 	}
+}
+
+// Used in tests
+func GetResponse(testServer *httptest.Server, values url.Values) (int, []byte) {
+	res, err := http.PostForm(testServer.URL, values)
+	if err != nil {
+		panic(err)
+	}
+	response, err := ioutil.ReadAll(res.Body)
+	res.Body.Close()
+	if err != nil {
+		panic(err)
+	}
+	return res.StatusCode, response
 }

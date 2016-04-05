@@ -13,6 +13,7 @@ import (
 	"github.com/stellar/gateway/bridge/config"
 	"github.com/stellar/gateway/horizon"
 	"github.com/stellar/gateway/mocks"
+	"github.com/stellar/gateway/net"
 	b "github.com/stellar/go-stellar-base/build"
 	"github.com/stretchr/testify/assert"
 )
@@ -45,7 +46,7 @@ func TestRequestHandlerAuthorize(t *testing.T) {
 			assetCode := "USD"
 
 			Convey("it should return error", func() {
-				statusCode, response := getResponse(testServer, url.Values{"account_id": {accountId}, "asset_code": {assetCode}})
+				statusCode, response := net.GetResponse(testServer, url.Values{"account_id": {accountId}, "asset_code": {assetCode}})
 				responseString := strings.TrimSpace(string(response))
 				assert.Equal(t, 400, statusCode)
 				expectedResponse := horizon.SubmitTransactionResponse{Error: horizon.AllowTrustInvalidAccountId}
@@ -58,7 +59,7 @@ func TestRequestHandlerAuthorize(t *testing.T) {
 			assetCode := "GBP"
 
 			Convey("it should return error", func() {
-				statusCode, response := getResponse(testServer, url.Values{"account_id": {accountId}, "asset_code": {assetCode}})
+				statusCode, response := net.GetResponse(testServer, url.Values{"account_id": {accountId}, "asset_code": {assetCode}})
 				responseString := strings.TrimSpace(string(response))
 				assert.Equal(t, 400, statusCode)
 				expectedResponse := horizon.SubmitTransactionResponse{Error: horizon.AllowTrustAssetCodeNotAllowed}
@@ -88,7 +89,7 @@ func TestRequestHandlerAuthorize(t *testing.T) {
 				).Once()
 
 				Convey("it should return server error", func() {
-					statusCode, response := getResponse(testServer, url.Values{"account_id": {accountId}, "asset_code": {assetCode}})
+					statusCode, response := net.GetResponse(testServer, url.Values{"account_id": {accountId}, "asset_code": {assetCode}})
 					responseString := strings.TrimSpace(string(response))
 					assert.Equal(t, 500, statusCode)
 					expectedResponse := horizon.SubmitTransactionResponse{Error: horizon.ServerError}
@@ -113,7 +114,7 @@ func TestRequestHandlerAuthorize(t *testing.T) {
 				).Return(expectedSubmitResponse, nil).Once()
 
 				Convey("it should succeed", func() {
-					statusCode, response := getResponse(testServer, url.Values{"account_id": {accountId}, "asset_code": {assetCode}})
+					statusCode, response := net.GetResponse(testServer, url.Values{"account_id": {accountId}, "asset_code": {assetCode}})
 					var actualSubmitTransactionResponse horizon.SubmitTransactionResponse
 					json.Unmarshal(response, &actualSubmitTransactionResponse)
 					assert.Equal(t, 200, statusCode)
