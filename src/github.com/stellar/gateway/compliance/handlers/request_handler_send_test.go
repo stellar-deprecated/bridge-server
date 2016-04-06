@@ -62,6 +62,30 @@ func TestRequestHandlerSend(t *testing.T) {
 	defer testServer.Close()
 
 	Convey("Given send request", t, func() {
+		Convey("When source param is missing", func() {
+			statusCode, response := net.GetResponse(testServer, url.Values{})
+			responseString := strings.TrimSpace(string(response))
+			assert.Equal(t, 400, statusCode)
+			assert.Equal(t, "{\n  \"code\": \"missing_parameter\",\n  \"message\": \"Required parameter is missing.\",\n  \"data\": {\n    \"name\": \"source\"\n  }\n}", responseString)
+		})
+
+		Convey("When source param is invalid", func() {
+			params := url.Values{
+				"source":       {"bad"},
+				"sender":       {"alice*stellar.org"}, // GAW77Z6GPWXSODJOMF5L5BMX6VMYGEJRKUNBC2CZ725JTQZORK74HQQD
+				"destination":  {"bob*stellar.org"},   // GAMVF7G4GJC4A7JMFJWLUAEIBFQD5RT3DCB5DC5TJDEKQBBACQ4JZVEE
+				"amount":       {"20"},
+				"asset_code":   {"USD"},
+				"asset_issuer": {"GAMVF7G4GJC4A7JMFJWLUAEIBFQD5RT3DCB5DC5TJDEKQBBACQ4JZVEE"},
+				"extra_memo":   {"hello world"},
+			}
+
+			statusCode, response := net.GetResponse(testServer, params)
+			responseString := strings.TrimSpace(string(response))
+			assert.Equal(t, 400, statusCode)
+			assert.Equal(t, "{\n  \"code\": \"invalid_parameter\",\n  \"message\": \"Invalid parameter.\",\n  \"data\": {\n    \"name\": \"source\"\n  }\n}", responseString)
+		})
+
 		Convey("When params are valid", func() {
 			params := url.Values{
 				"source":       {"GAW77Z6GPWXSODJOMF5L5BMX6VMYGEJRKUNBC2CZ725JTQZORK74HQQD"},

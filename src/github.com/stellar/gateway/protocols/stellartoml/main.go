@@ -31,14 +31,6 @@ func (r *Resolver) GetStellarToml(domain string) (stellarToml StellarToml, err e
 }
 
 func (r *Resolver) GetStellarTomlByAddress(address string) (stellarToml StellarToml, err error) {
-	// TESTING
-	// authServer := "http://localhost:8001"
-	// signingKey := "GCXR2UP4RIOADMJAVYXAFCFFLISC65CKY4HZBVTGD4TSGUHMCTFSXW5T"
-	// return StellarToml{
-	// 	AuthServer: &authServer,
-	// 	SigningKey: &signingKey,
-	// }, nil
-
 	tokens := strings.Split(address, "*")
 	if len(tokens) == 2 {
 		stellarToml, err = r.GetStellarToml(tokens[1])

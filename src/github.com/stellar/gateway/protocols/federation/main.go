@@ -21,14 +21,6 @@ type Resolver struct {
 }
 
 func (r *Resolver) Resolve(address string) (response Response, stellarToml stellartoml.StellarToml, err error) {
-	//TESTING
-	// authServer := "http://localhost:8001"
-	// return Response{
-	// 		AccountId: "GB4VCPO7R3AH3FNYCISJPZJCCVIRNGI4VNL6KU3OLIZIGOTDXMRQQZLD",
-	// 	}, stellartoml.StellarToml{
-	// 		AuthServer: &authServer,
-	// 	}, nil
-
 	tokens := strings.Split(address, "*")
 	if len(tokens) == 1 {
 		response.AccountId = address

@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/stellar/gateway/db/entities"
-	"github.com/stellar/gateway/protocols/compliance"
+	"github.com/stellar/gateway/protocols"
 	"github.com/stellar/gateway/server"
 	"github.com/zenazn/goji/web"
 )
@@ -42,7 +42,7 @@ func (rh *RequestHandler) HandlerAllowAccess(c web.C, w http.ResponseWriter, r *
 
 	if err != nil {
 		log.WithFields(log.Fields{"err": err}).Warn("Error persisting /allow entity")
-		server.Write(w, compliance.InternalServerError)
+		server.Write(w, protocols.InternalServerError)
 		return
 	}
 
