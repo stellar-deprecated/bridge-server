@@ -25,10 +25,9 @@ import (
 )
 
 func TestRequestHandlerPayment(t *testing.T) {
-	complianceUrl := "http://compliance"
 	c := &config.Config{
 		NetworkPassphrase: "Test SDF Network ; September 2015",
-		Compliance:        &complianceUrl,
+		Compliance:        "http://compliance",
 	}
 	mockHorizon := new(mocks.MockHorizon)
 	mockHttpClient := new(mocks.MockHttpClient)
@@ -185,17 +184,14 @@ func TestRequestHandlerPayment(t *testing.T) {
 					"amount":      {"20"},
 				}
 
-				memoType := "text"
-				memo := "125"
-
 				mockFederationResolver.On(
 					"Resolve",
 					"bob*stellar.org",
 				).Return(
 					federation.Response{
 						AccountId: "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632",
-						MemoType:  &memoType,
-						Memo:      &memo,
+						MemoType:  "text",
+						Memo:      "125",
 					},
 					stellartoml.StellarToml{},
 					nil,

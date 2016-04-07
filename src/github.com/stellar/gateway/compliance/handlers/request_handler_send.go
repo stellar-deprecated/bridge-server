@@ -42,7 +42,7 @@ func (rh *RequestHandler) HandlerSend(c web.C, w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	if stellarToml.AuthServer == nil {
+	if stellarToml.AuthServer == "" {
 		log.Print("No AUTH_SERVER in stellar.toml")
 		server.Write(w, compliance.AuthServerNotDefined)
 		return
@@ -123,7 +123,7 @@ func (rh *RequestHandler) HandlerSend(c web.C, w http.ResponseWriter, r *http.Re
 
 	authData := compliance.AuthData{
 		Sender:   request.Sender,
-		NeedInfo: true,
+		NeedInfo: false,
 		Tx:       txBase64,
 		Memo:     request.ExtraMemo,
 	}
@@ -143,7 +143,7 @@ func (rh *RequestHandler) HandlerSend(c web.C, w http.ResponseWriter, r *http.Re
 	}
 
 	resp, err := rh.Client.PostForm(
-		*stellarToml.AuthServer,
+		stellarToml.AuthServer,
 		url.Values{
 			"data": {string(data)},
 			"sig":  {sig},

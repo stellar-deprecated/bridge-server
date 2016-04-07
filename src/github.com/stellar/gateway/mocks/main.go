@@ -94,12 +94,20 @@ func (m *MockRepository) GetAuthorizedTransactionByMemo(memo string) (*entities.
 
 func (m *MockRepository) GetAllowedFiByDomain(domain string) (*entities.AllowedFi, error) {
 	a := m.Called(domain)
-	return a.Get(0).(*entities.AllowedFi), a.Error(1)
+	if a.Get(0) == nil {
+		return nil, a.Error(1)
+	} else {
+		return a.Get(0).(*entities.AllowedFi), a.Error(1)
+	}
 }
 
 func (m *MockRepository) GetAllowedUserByDomainAndUserId(domain, userId string) (*entities.AllowedUser, error) {
 	a := m.Called(domain, userId)
-	return a.Get(0).(*entities.AllowedUser), a.Error(1)
+	if a.Get(0) == nil {
+		return nil, a.Error(1)
+	} else {
+		return a.Get(0).(*entities.AllowedUser), a.Error(1)
+	}
 }
 
 type MockStellartomlResolver struct {

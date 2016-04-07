@@ -5,7 +5,9 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	log "github.com/Sirupsen/logrus"
+	"io/ioutil"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -48,7 +50,7 @@ func (rh *RequestHandler) HandlerAuth(c web.C, w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	if senderStellarToml.SigningKey == nil {
+	if senderStellarToml.SigningKey == "" {
 		errorResponse := protocols.NewInvalidParameterError("data.sender", authData.Sender)
 		log.WithFields(errorResponse.LogData).Warn("No SIGNING_KEY in stellar.toml of sender")
 		server.Write(w, errorResponse)
@@ -63,10 +65,10 @@ func (rh *RequestHandler) HandlerAuth(c web.C, w http.ResponseWriter, r *http.Re
 		server.Write(w, errorResponse)
 		return
 	}
-	err = crypto.Verify(*senderStellarToml.SigningKey, []byte(request.Data), signatureBytes)
+	err = crypto.Verify(senderStellarToml.SigningKey, []byte(request.Data), signatureBytes)
 	if err != nil {
 		log.WithFields(log.Fields{
-			"signing_key": *senderStellarToml.SigningKey,
+			"signing_key": senderStellarToml.SigningKey,
 			"data":        request.Data,
 			"sig":         request.Signature,
 		}).Warn("Invalid signature")
@@ -102,23 +104,184 @@ func (rh *RequestHandler) HandlerAuth(c web.C, w http.ResponseWriter, r *http.Re
 
 	transactionHash := hash.Hash(transactionHashBytes[:])
 
-	authorizedTransaction := &entities.AuthorizedTransaction{
-		TransactionId:  hex.EncodeToString(transactionHash[:]),
-		Memo:           memo,
-		TransactionXdr: authData.Tx,
-		AuthorizedAt:   time.Now(),
-		Data:           request.Data,
-	}
-	err = rh.EntityManager.Persist(authorizedTransaction)
-	if err != nil {
-		log.WithFields(log.Fields{"err": err}).Warn("Error persisting AuthorizedTransaction")
-		server.Write(w, protocols.InternalServerError)
-		return
+	response := compliance.AuthResponse{}
+
+	// Sanctions check
+	if rh.Config.Callbacks.Sanctions == "" {
+		response.TxStatus = compliance.AuthStatusOk
+	} else {
+		resp, err := rh.Client.PostForm(
+			rh.Config.Callbacks.Sanctions,
+			url.Values{"data": {string(request.Data)}},
+		)
+		if err != nil {
+			log.WithFields(log.Fields{
+				"sanctions": rh.Config.Callbacks.Sanctions,
+				"err":       err,
+			}).Error("Error sending request to sanctions server")
+			server.Write(w, protocols.InternalServerError)
+			return
+		}
+
+		defer resp.Body.Close()
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			log.Error("Error reading sanctions server response")
+			server.Write(w, protocols.InternalServerError)
+			return
+		}
+
+		switch resp.StatusCode {
+		case http.StatusOK: // AuthStatusOk
+			response.TxStatus = compliance.AuthStatusOk
+		case http.StatusAccepted: // AuthStatusPending
+			response.TxStatus = compliance.AuthStatusPending
+			// TODO read from the response
+			response.Pending = 600
+		case http.StatusForbidden: // AuthStatusDenied
+			response.TxStatus = compliance.AuthStatusDenied
+		default:
+			log.WithFields(log.Fields{
+				"status": resp.StatusCode,
+				"body":   string(body),
+			}).Error("Error response from sanctions server")
+			server.Write(w, protocols.InternalServerError)
+			return
+		}
 	}
 
-	response := compliance.AuthResponse{
-		InfoStatus: compliance.AuthStatusDenied,
-		TxStatus:   compliance.AuthStatusOk,
+	// User info
+	if authData.NeedInfo {
+		if rh.Config.Callbacks.AskUser == "" {
+			response.InfoStatus = compliance.AuthStatusDenied
+
+			// Check AllowedFi
+			tokens := strings.Split(authData.Sender, "*")
+			if len(tokens) != 2 {
+				log.WithFields(log.Fields{
+					"sender": authData.Sender,
+				}).Warn("Invalid stellar address")
+				server.Write(w, protocols.InternalServerError)
+				return
+			}
+
+			allowedFi, err := rh.Repository.GetAllowedFiByDomain(tokens[1])
+			if err != nil {
+				log.WithFields(log.Fields{"err": err}).Error("Error getting AllowedFi from DB")
+				server.Write(w, protocols.InternalServerError)
+				return
+			}
+
+			if allowedFi == nil {
+				// FI not found check AllowedUser
+				allowedUser, err := rh.Repository.GetAllowedUserByDomainAndUserId(tokens[1], tokens[0])
+				if err != nil {
+					log.WithFields(log.Fields{"err": err}).Error("Error getting AllowedUser from DB")
+					server.Write(w, protocols.InternalServerError)
+					return
+				}
+
+				if allowedUser != nil {
+					response.InfoStatus = compliance.AuthStatusOk
+				}
+			} else {
+				response.InfoStatus = compliance.AuthStatusOk
+			}
+		} else {
+			// Ask user
+			resp, err := rh.Client.PostForm(
+				rh.Config.Callbacks.AskUser,
+				url.Values{"data": {string(request.Data)}},
+			)
+			if err != nil {
+				log.WithFields(log.Fields{
+					"ask_user": rh.Config.Callbacks.AskUser,
+					"err":      err,
+				}).Error("Error sending request to ask_user server")
+				server.Write(w, protocols.InternalServerError)
+				return
+			}
+
+			defer resp.Body.Close()
+			body, err := ioutil.ReadAll(resp.Body)
+			if err != nil {
+				log.Error("Error reading ask_user server response")
+				server.Write(w, protocols.InternalServerError)
+				return
+			}
+
+			switch resp.StatusCode {
+			case http.StatusOK: // AuthStatusOk
+				response.InfoStatus = compliance.AuthStatusOk
+			case http.StatusAccepted: // AuthStatusPending
+				response.InfoStatus = compliance.AuthStatusPending
+				// TODO read from the response
+				response.Pending = 600
+			case http.StatusForbidden: // AuthStatusDenied
+				response.InfoStatus = compliance.AuthStatusDenied
+			default:
+				log.WithFields(log.Fields{
+					"status": resp.StatusCode,
+					"body":   string(body),
+				}).Error("Error response from ask_user server")
+				server.Write(w, protocols.InternalServerError)
+				return
+			}
+		}
+
+		if response.InfoStatus == compliance.AuthStatusOk {
+			// Fetch Info
+			resp, err := rh.Client.PostForm(
+				rh.Config.Callbacks.FetchInfo,
+				url.Values{"data": {string(request.Data)}},
+			)
+			if err != nil {
+				log.WithFields(log.Fields{
+					"ask_user": rh.Config.Callbacks.FetchInfo,
+					"err":      err,
+				}).Error("Error sending request to fetch_info server")
+				server.Write(w, protocols.InternalServerError)
+				return
+			}
+
+			defer resp.Body.Close()
+			body, err := ioutil.ReadAll(resp.Body)
+			if err != nil {
+				log.Error("Error reading fetch_info server response")
+				server.Write(w, protocols.InternalServerError)
+				return
+			}
+
+			if resp.StatusCode != http.StatusOK {
+				log.WithFields(log.Fields{
+					"status": resp.StatusCode,
+					"body":   string(body),
+				}).Error("Error response from fetch_info server")
+				server.Write(w, protocols.InternalServerError)
+				return
+			}
+
+			response.DestInfo = string(body)
+		}
+	} else {
+		response.InfoStatus = compliance.AuthStatusOk
 	}
+
+	if response.TxStatus == compliance.AuthStatusOk && response.InfoStatus == compliance.AuthStatusOk {
+		authorizedTransaction := &entities.AuthorizedTransaction{
+			TransactionId:  hex.EncodeToString(transactionHash[:]),
+			Memo:           memo,
+			TransactionXdr: authData.Tx,
+			AuthorizedAt:   time.Now(),
+			Data:           request.Data,
+		}
+		err = rh.EntityManager.Persist(authorizedTransaction)
+		if err != nil {
+			log.WithFields(log.Fields{"err": err}).Warn("Error persisting AuthorizedTransaction")
+			server.Write(w, protocols.InternalServerError)
+			return
+		}
+	}
+
 	server.Write(w, &response)
 }

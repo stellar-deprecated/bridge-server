@@ -77,7 +77,7 @@ func NewApp(config config.Config, migrateFlag bool) (app *App, err error) {
 		return
 	}
 
-	h := horizon.New(*config.Horizon)
+	h := horizon.New(config.Horizon)
 
 	log.Print("Creating and initializing TransactionSubmitter")
 	ts := submitter.NewTransactionSubmitter(&h, entityManager, config.NetworkPassphrase, time.Now)
@@ -87,20 +87,20 @@ func NewApp(config config.Config, migrateFlag bool) (app *App, err error) {
 
 	log.Print("Initializing Authorizing account")
 
-	if !(config.Accounts != nil && config.Accounts.AuthorizingSeed != nil) {
+	if config.Accounts.AuthorizingSeed == "" {
 		log.Warning("No accounts.authorizing_seed param. Skipping...")
 	} else {
-		err = ts.InitAccount(*config.Accounts.AuthorizingSeed)
+		err = ts.InitAccount(config.Accounts.AuthorizingSeed)
 		if err != nil {
 			return
 		}
 	}
 
-	if !(config.Accounts != nil && config.Accounts.BaseSeed != nil) {
+	if config.Accounts.BaseSeed == "" {
 		log.Warning("No accounts.base_seed param. Skipping...")
 	} else {
 		log.Print("Initializing Base account")
-		err = ts.InitAccount(*config.Accounts.BaseSeed)
+		err = ts.InitAccount(config.Accounts.BaseSeed)
 		if err != nil {
 			return
 		}
@@ -112,9 +112,9 @@ func NewApp(config config.Config, migrateFlag bool) (app *App, err error) {
 
 	var paymentListener listener.PaymentListener
 
-	if !(config.Accounts != nil && config.Accounts.ReceivingAccountId != nil) {
+	if config.Accounts.ReceivingAccountId == "" {
 		log.Warning("No accounts.receiving_account_id param. Skipping...")
-	} else if !(config.Hooks != nil && config.Hooks.Receive != nil) {
+	} else if config.Hooks.Receive == "" {
 		log.Warning("No hooks.receive param. Skipping...")
 	} else {
 		paymentListener, err = listener.NewPaymentListener(&config, entityManager, &h, repository, time.Now)
@@ -173,7 +173,7 @@ func (a *App) Serve() {
 		goji.Use(server.ApiKeyMiddleware(a.config.ApiKey))
 	}
 
-	if a.config.Accounts != nil && a.config.Accounts.AuthorizingSeed != nil {
+	if a.config.Accounts.AuthorizingSeed != "" {
 		goji.Post("/authorize", a.requestHandler.Authorize)
 	} else {
 		log.Warning("accounts.authorizing_seed not provided. /authorize endpoint will not be available.")

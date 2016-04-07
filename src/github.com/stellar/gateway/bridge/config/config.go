@@ -9,8 +9,8 @@ import (
 
 type Config struct {
 	Port              *int
-	Horizon           *string
-	Compliance        *string
+	Horizon           string
+	Compliance        string
 	ApiKey            string `mapstructure:"api_key"`
 	NetworkPassphrase string `mapstructure:"network_passphrase"`
 	Assets            []Asset
@@ -18,8 +18,8 @@ type Config struct {
 		Type string
 		Url  string
 	}
-	Accounts *Accounts
-	Hooks    *Hooks
+	Accounts
+	Hooks
 }
 
 type Asset struct {
@@ -28,15 +28,15 @@ type Asset struct {
 }
 
 type Accounts struct {
-	AuthorizingSeed    *string `mapstructure:"authorizing_seed"`
-	BaseSeed           *string `mapstructure:"base_seed"`
-	IssuingAccountId   *string `mapstructure:"issuing_account_id"`
-	ReceivingAccountId *string `mapstructure:"receiving_account_id"`
+	AuthorizingSeed    string `mapstructure:"authorizing_seed"`
+	BaseSeed           string `mapstructure:"base_seed"`
+	IssuingAccountId   string `mapstructure:"issuing_account_id"`
+	ReceivingAccountId string `mapstructure:"receiving_account_id"`
 }
 
 type Hooks struct {
-	Receive *string
-	Error   *string
+	Receive string
+	Error   string
 }
 
 func (c *Config) Validate() (err error) {
@@ -45,11 +45,11 @@ func (c *Config) Validate() (err error) {
 		return
 	}
 
-	if c.Horizon == nil {
+	if c.Horizon == "" {
 		err = errors.New("horizon param is required")
 		return
 	} else {
-		_, err = url.Parse(*c.Horizon)
+		_, err = url.Parse(c.Horizon)
 		if err != nil {
 			err = errors.New("Cannot parse horizon param")
 			return
@@ -85,55 +85,51 @@ func (c *Config) Validate() (err error) {
 		return
 	}
 
-	if c.Accounts != nil {
-		if c.Accounts.AuthorizingSeed != nil {
-			_, err = keypair.Parse(*c.Accounts.AuthorizingSeed)
-			if err != nil {
-				err = errors.New("accounts.authorizing_seed is invalid")
-				return
-			}
-		}
-
-		if c.Accounts.BaseSeed != nil {
-			_, err = keypair.Parse(*c.Accounts.BaseSeed)
-			if err != nil {
-				err = errors.New("accounts.base_seed is invalid")
-				return
-			}
-		}
-
-		if c.Accounts.IssuingAccountId != nil {
-			_, err = keypair.Parse(*c.Accounts.IssuingAccountId)
-			if err != nil {
-				err = errors.New("accounts.issuing_account_id is invalid")
-				return
-			}
-		}
-
-		if c.Accounts.ReceivingAccountId != nil {
-			_, err = keypair.Parse(*c.Accounts.ReceivingAccountId)
-			if err != nil {
-				err = errors.New("accounts.receiving_account_id is invalid")
-				return
-			}
+	if c.Accounts.AuthorizingSeed != "" {
+		_, err = keypair.Parse(c.Accounts.AuthorizingSeed)
+		if err != nil {
+			err = errors.New("accounts.authorizing_seed is invalid")
+			return
 		}
 	}
 
-	if c.Hooks != nil {
-		if c.Hooks.Receive != nil {
-			_, err = url.Parse(*c.Hooks.Receive)
-			if err != nil {
-				err = errors.New("Cannot parse hooks.receive param")
-				return
-			}
+	if c.Accounts.BaseSeed != "" {
+		_, err = keypair.Parse(c.Accounts.BaseSeed)
+		if err != nil {
+			err = errors.New("accounts.base_seed is invalid")
+			return
 		}
+	}
 
-		if c.Hooks.Error != nil {
-			_, err = url.Parse(*c.Hooks.Error)
-			if err != nil {
-				err = errors.New("Cannot parse hooks.error param")
-				return
-			}
+	if c.Accounts.IssuingAccountId != "" {
+		_, err = keypair.Parse(c.Accounts.IssuingAccountId)
+		if err != nil {
+			err = errors.New("accounts.issuing_account_id is invalid")
+			return
+		}
+	}
+
+	if c.Accounts.ReceivingAccountId != "" {
+		_, err = keypair.Parse(c.Accounts.ReceivingAccountId)
+		if err != nil {
+			err = errors.New("accounts.receiving_account_id is invalid")
+			return
+		}
+	}
+
+	if c.Hooks.Receive != "" {
+		_, err = url.Parse(c.Hooks.Receive)
+		if err != nil {
+			err = errors.New("Cannot parse hooks.receive param")
+			return
+		}
+	}
+
+	if c.Hooks.Error != "" {
+		_, err = url.Parse(c.Hooks.Error)
+		if err != nil {
+			err = errors.New("Cannot parse hooks.error param")
+			return
 		}
 	}
 

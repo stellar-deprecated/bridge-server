@@ -21,18 +21,15 @@ import (
 func TestRequestHandlerAuthorize(t *testing.T) {
 	mockTransactionSubmitter := new(mocks.MockTransactionSubmitter)
 
-	IssuingAccountId := "GD4I7AFSLZGTDL34TQLWJOM2NHLIIOEKD5RHHZUW54HERBLSIRKUOXRR"
-	AuthorizingSeed := "SC37TBSIAYKIDQ6GTGLT2HSORLIHZQHBXVFI5P5K4Q5TSHRTRBK3UNWG"
-
 	config := config.Config{
 		Assets: []config.Asset{
 			config.Asset{"USD", "GD4I7AFSLZGTDL34TQLWJOM2NHLIIOEKD5RHHZUW54HERBLSIRKUOXRR"},
 			config.Asset{"EUR", "GD4I7AFSLZGTDL34TQLWJOM2NHLIIOEKD5RHHZUW54HERBLSIRKUOXRR"},
 		},
-		Accounts: &config.Accounts{
-			IssuingAccountId: &IssuingAccountId,
+		Accounts: config.Accounts{
+			IssuingAccountId: "GD4I7AFSLZGTDL34TQLWJOM2NHLIIOEKD5RHHZUW54HERBLSIRKUOXRR",
 			// GBQXA3ABGQGTCLEVZIUTDRWWJOQD5LSAEDZAG7GMOGD2HBLWONGUVO4I
-			AuthorizingSeed: &AuthorizingSeed,
+			AuthorizingSeed: "SC37TBSIAYKIDQ6GTGLT2HSORLIHZQHBXVFI5P5K4Q5TSHRTRBK3UNWG",
 		},
 	}
 
@@ -80,7 +77,7 @@ func TestRequestHandlerAuthorize(t *testing.T) {
 			Convey("transaction fails", func() {
 				mockTransactionSubmitter.On(
 					"SubmitTransaction",
-					*config.Accounts.AuthorizingSeed,
+					config.Accounts.AuthorizingSeed,
 					operation,
 					nil,
 				).Return(
@@ -108,7 +105,7 @@ func TestRequestHandlerAuthorize(t *testing.T) {
 
 				mockTransactionSubmitter.On(
 					"SubmitTransaction",
-					*config.Accounts.AuthorizingSeed,
+					config.Accounts.AuthorizingSeed,
 					operation,
 					nil,
 				).Return(expectedSubmitResponse, nil).Once()

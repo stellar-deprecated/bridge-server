@@ -40,7 +40,7 @@ func (rh *RequestHandler) Payment(w http.ResponseWriter, r *http.Request) {
 	sendAssetIssuer := r.PostFormValue("send_asset_issuer")
 	extraMemo := r.PostFormValue("extra_memo")
 
-	if extraMemo != "" && rh.Config.Compliance != nil {
+	if extraMemo != "" && rh.Config.Compliance != "" {
 		// Compliance server part
 		request := &compliance.SendRequest{
 			Source:      sourceKeypair.Address(),
@@ -53,7 +53,7 @@ func (rh *RequestHandler) Payment(w http.ResponseWriter, r *http.Request) {
 		}
 
 		resp, err := rh.Client.PostForm(
-			*rh.Config.Compliance+"/send",
+			rh.Config.Compliance+"/send",
 			request.ToValues(),
 		)
 		if err != nil {
@@ -208,15 +208,15 @@ func (rh *RequestHandler) Payment(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		if destinationObject.MemoType != nil {
+		if destinationObject.MemoType != "" {
 			if memoType != "" {
 				log.Print("Memo given in request but federation returned memo fields.")
 				server.Write(w, h.NewErrorResponse(h.PaymentCannotUseMemo))
 				return
 			}
 
-			memoType = *destinationObject.MemoType
-			memo = *destinationObject.Memo
+			memoType = destinationObject.MemoType
+			memo = destinationObject.Memo
 		}
 
 		var memoMutator interface{}

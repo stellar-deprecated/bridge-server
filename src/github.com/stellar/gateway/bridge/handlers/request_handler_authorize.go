@@ -21,7 +21,7 @@ func (rh *RequestHandler) Authorize(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !rh.isAssetAllowed(assetCode, *rh.Config.Accounts.IssuingAccountId) {
+	if !rh.isAssetAllowed(assetCode, rh.Config.Accounts.IssuingAccountId) {
 		log.WithFields(log.Fields{"asset_code": assetCode}).Warn("Asset code not allowed")
 		server.Write(w, h.NewErrorResponse(h.AllowTrustAssetCodeNotAllowed))
 		return
@@ -34,7 +34,7 @@ func (rh *RequestHandler) Authorize(w http.ResponseWriter, r *http.Request) {
 	)
 
 	submitResponse, err := rh.TransactionSubmitter.SubmitTransaction(
-		*rh.Config.Accounts.AuthorizingSeed,
+		rh.Config.Accounts.AuthorizingSeed,
 		operationMutator,
 		nil,
 	)

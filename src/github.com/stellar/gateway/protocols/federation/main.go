@@ -30,12 +30,12 @@ func (r *Resolver) Resolve(address string) (response Response, stellarToml stell
 			return
 		}
 
-		if stellarToml.FederationServer == nil {
+		if stellarToml.FederationServer == "" {
 			err = errors.New("stellar.toml does not contain FEDERATION_SERVER value")
 			return
 		}
 
-		response, err = r.GetDestination(*stellarToml.FederationServer, address)
+		response, err = r.GetDestination(stellarToml.FederationServer, address)
 		return
 	} else {
 		err = errors.New("Malformed Stellar address")
@@ -66,7 +66,7 @@ func (r *Resolver) GetDestination(federationUrl, address string) (response Respo
 		return
 	}
 
-	if (response.MemoType != nil) && (response.Memo == nil) {
+	if (response.MemoType != "") && (response.Memo == "") {
 		err = errors.New("Invalid federation response (memo).")
 	}
 	return

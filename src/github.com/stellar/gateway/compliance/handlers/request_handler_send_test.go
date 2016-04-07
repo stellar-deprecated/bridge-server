@@ -106,12 +106,12 @@ func TestRequestHandlerSend(t *testing.T) {
 				).Return(federation.Response{
 					AccountId: "GAMVF7G4GJC4A7JMFJWLUAEIBFQD5RT3DCB5DC5TJDEKQBBACQ4JZVEE",
 				}, stellartoml.StellarToml{
-					AuthServer: &authServer,
+					AuthServer: authServer,
 				}, nil).Once()
 
 				transactionXdr := "AAAAAC3/58Z9rycNLmF6voWX9VmDETFVGhFoWf66mcMuir/DAAAAZAAAAAAAAAAAAAAAAAAAAAO5TSe5k00+CKUuUtfafav6xITv43pTgO6QiPes4u/N6QAAAAEAAAAAAAAAAQAAAAAZUvzcMkXAfSwqbLoAiAlgPsZ7GIPRi7NIyKgEIBQ4nAAAAAFVU0QAAAAAABlS/NwyRcB9LCpsugCICWA+xnsYg9GLs0jIqAQgFDicAAAAAAvrwgAAAAAA"
-				data := "{\"Sender\":\"alice*stellar.org\",\"NeedInfo\":true,\"Tx\":\"" + transactionXdr + "\",\"Memo\":\"hello world\"}"
-				sig := "uRR7sFFJwpY586h5fS3PPDGawDog3XYwywCdT37cS7jgX5XPg5C/1UZPKj2cK6emIR0ccuayv/AknjYqYfhnAQ=="
+				data := "{\"Sender\":\"alice*stellar.org\",\"NeedInfo\":false,\"Tx\":\"" + transactionXdr + "\",\"Memo\":\"hello world\"}"
+				sig := "XG5RkV+Cd+cdzBo/tKoylJmmwaP+YbL0DBdCH0ulL+nJot1QEy+EFm/bQ3ZGagU8sURMKCQunX3UHAak2h4ACQ=="
 
 				mockHttpClient.On(
 					"PostForm",
@@ -148,12 +148,12 @@ func TestRequestHandlerSend(t *testing.T) {
 				).Return(federation.Response{
 					AccountId: "GAMVF7G4GJC4A7JMFJWLUAEIBFQD5RT3DCB5DC5TJDEKQBBACQ4JZVEE",
 				}, stellartoml.StellarToml{
-					AuthServer: &authServer,
+					AuthServer: authServer,
 				}, nil).Once()
 
 				transactionXdr := "AAAAAC3/58Z9rycNLmF6voWX9VmDETFVGhFoWf66mcMuir/DAAAAZAAAAAAAAAAAAAAAAAAAAAO5TSe5k00+CKUuUtfafav6xITv43pTgO6QiPes4u/N6QAAAAEAAAAAAAAAAgAAAAFVU0QAAAAAAEbpO2riZmlZMkHuBxUBYAAas3hWyo9VL1IOdnfXAVFBAAAAADuaygAAAAAAGVL83DJFwH0sKmy6AIgJYD7GexiD0YuzSMioBCAUOJwAAAABVVNEAAAAAAAZUvzcMkXAfSwqbLoAiAlgPsZ7GIPRi7NIyKgEIBQ4nAAAAAAL68IAAAAAAgAAAAAAAAABRVVSAAAAAAALt4SwWfv1PIJvDRMenW0zu91YxZbphRFLA4O+gbAaigAAAAA="
-				data := "{\"Sender\":\"alice*stellar.org\",\"NeedInfo\":true,\"Tx\":\"" + transactionXdr + "\",\"Memo\":\"hello world\"}"
-				sig := "XIh4u5TcdqUmpy/JLcsAIlD8c8fvJiRC+AwxekjBeOCbtRgE2kzN/8VRQjtKm+zNTt/nuvbM2cfYrs7uu4hnBg=="
+				data := "{\"Sender\":\"alice*stellar.org\",\"NeedInfo\":false,\"Tx\":\"" + transactionXdr + "\",\"Memo\":\"hello world\"}"
+				sig := "oxfLEvW3dasnYYbVIi98nlXNJZ50yoiS4RAY15g06UhHOENcS2MUzKwLyeKfUtN6r8AFMuX5qXz8LuXgPsZwAg=="
 
 				mockHttpClient.On(
 					"PostForm",

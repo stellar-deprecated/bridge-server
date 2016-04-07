@@ -46,7 +46,7 @@ func NewPaymentListener(
 }
 
 func (pl PaymentListener) Listen() (err error) {
-	accountId := *pl.config.Accounts.ReceivingAccountId
+	accountId := pl.config.Accounts.ReceivingAccountId
 
 	_, err = pl.horizon.LoadAccount(accountId)
 	if err != nil {
@@ -112,7 +112,7 @@ func (pl PaymentListener) onPayment(payment horizon.PaymentResponse) (err error)
 		return
 	}
 
-	if payment.To != *pl.config.Accounts.ReceivingAccountId {
+	if payment.To != pl.config.Accounts.ReceivingAccountId {
 		dbPayment.Status = "Operation sent not received"
 		savePayment(&dbPayment)
 		return nil
@@ -139,9 +139,9 @@ func (pl PaymentListener) onPayment(payment horizon.PaymentResponse) (err error)
 	var receiveResponse compliance.ReceiveResponse
 
 	// Request extra_memo from compliance server
-	if pl.config.Compliance != nil && payment.Memo.Type == "hash" {
+	if pl.config.Compliance != "" && payment.Memo.Type == "hash" {
 		resp, err := http.PostForm(
-			*pl.config.Compliance+"/receive",
+			pl.config.Compliance+"/receive",
 			url.Values{"memo": {string(payment.Memo.Value)}},
 		)
 		if err != nil {
@@ -175,7 +175,7 @@ func (pl PaymentListener) onPayment(payment horizon.PaymentResponse) (err error)
 		Timeout: HOOK_TIMEOUT,
 	}
 	resp, err := client.PostForm(
-		*pl.config.Hooks.Receive,
+		pl.config.Hooks.Receive,
 		url.Values{
 			"id":         {payment.Id},
 			"from":       {payment.From},
