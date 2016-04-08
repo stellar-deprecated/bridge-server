@@ -17,10 +17,23 @@ const (
 )
 
 type AuthRequest struct {
-	Data      string `name:"data" required:""`
+	// Stringified AuthData JSON object
+	Data string `name:"data" required:""`
+	// Signature of sending FI
 	Signature string `name:"sig" required:""`
 
 	formRequest protocols.FormRequest
+}
+
+type AuthData struct {
+	// The stellar address of the customer that is initiating the send.
+	Sender string `name:"sender" required:""`
+	// If the caller needs the recipient's AML info in order to send the payment.
+	NeedInfo bool `name:"need_info" required:""`
+	// The transaction that the sender would like to send in XDR format. This transaction is unsigned.
+	Tx string `name:"tx" required:""`
+	// The full text of the memo the hash of this memo is included in the transaction.
+	Memo string `name:"memo" required:""`
 }
 
 // Will populate request fields using http.Request.
@@ -41,17 +54,6 @@ func (request *AuthRequest) Validate() error {
 	}
 
 	return nil
-}
-
-type AuthData struct {
-	// The stellar address of the customer that is initiating the send.
-	Sender string `name:"sender" required:""`
-	// If the caller needs the recipient's AML info in order to send the payment.
-	NeedInfo bool `name:"need_info" required:""`
-	// The transaction that the sender would like to send in XDR format. This transaction is unsigned.
-	Tx string `name:"tx" required:""`
-	// The full text of the memo the hash of this memo is included in the transaction.
-	Memo string `name:"memo" required:""`
 }
 
 type AuthResponse struct {
