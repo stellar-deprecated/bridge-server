@@ -2,6 +2,7 @@ package submitter
 
 import (
 	"bytes"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"strconv"
@@ -126,11 +127,18 @@ func (ts *TransactionSubmitter) SignAndSubmitRawTransaction(seed string, tx *xdr
 		return
 	}
 
+	transactionHashBytes, err := TransactionHash(tx, ts.Network.Passphrase)
+	if err != nil {
+		ts.log.WithFields(logrus.Fields{"err": err}).Warn("Error calculating tx hash")
+		return
+	}
+
 	sentTransaction := &entities.SentTransaction{
-		Status:      entities.SENT_TRANSACTION_STATUS_SENDING,
-		Source:      account.Keypair.Address(),
-		SubmittedAt: ts.now(),
-		EnvelopeXdr: txeB64,
+		TransactionId: hex.EncodeToString(transactionHashBytes[:]),
+		Status:        entities.SentTransactionStatusSending,
+		Source:        account.Keypair.Address(),
+		SubmittedAt:   ts.now(),
+		EnvelopeXdr:   txeB64,
 	}
 	err = ts.EntityManager.Persist(sentTransaction)
 	if err != nil {

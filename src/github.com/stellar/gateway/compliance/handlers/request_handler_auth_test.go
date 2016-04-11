@@ -136,7 +136,7 @@ func TestRequestHandlerAuth(t *testing.T) {
 				memo := "uU0nuZNNPgilLlLX2n2r+sSE7+N6U4DukIj3rOLvzek="
 
 				authorizedTransaction := &entities.AuthorizedTransaction{
-					TransactionId:  "c18abd4c69315ee7ebbbfd5ee118fb9bd785f9e5f90f7bc06b4583c862333bcd",
+					TransactionId:  "e9db3b52fc31b2d72fc2131ff879a20a8ee45d47c4e7fd3bb872b99a66d3124a",
 					Memo:           &memo,
 					TransactionXdr: "AAAAAC3/58Z9rycNLmF6voWX9VmDETFVGhFoWf66mcMuir/DAAAAZAAAAAAAAAAAAAAAAAAAAAO5TSe5k00+CKUuUtfafav6xITv43pTgO6QiPes4u/N6QAAAAEAAAAAAAAAAgAAAAFVU0QAAAAAAEbpO2riZmlZMkHuBxUBYAAas3hWyo9VL1IOdnfXAVFBAAAAADuaygAAAAAAGVL83DJFwH0sKmy6AIgJYD7GexiD0YuzSMioBCAUOJwAAAABVVNEAAAAAAAZUvzcMkXAfSwqbLoAiAlgPsZ7GIPRi7NIyKgEIBQ4nAAAAAAL68IAAAAAAgAAAAAAAAABRVVSAAAAAAALt4SwWfv1PIJvDRMenW0zu91YxZbphRFLA4O+gbAaigAAAAA=",
 					Data:           params["data"][0],
@@ -227,7 +227,7 @@ func TestRequestHandlerAuth(t *testing.T) {
 				memo := "uU0nuZNNPgilLlLX2n2r+sSE7+N6U4DukIj3rOLvzek="
 
 				authorizedTransaction := &entities.AuthorizedTransaction{
-					TransactionId:  "c18abd4c69315ee7ebbbfd5ee118fb9bd785f9e5f90f7bc06b4583c862333bcd",
+					TransactionId:  "e9db3b52fc31b2d72fc2131ff879a20a8ee45d47c4e7fd3bb872b99a66d3124a",
 					Memo:           &memo,
 					TransactionXdr: "AAAAAC3/58Z9rycNLmF6voWX9VmDETFVGhFoWf66mcMuir/DAAAAZAAAAAAAAAAAAAAAAAAAAAO5TSe5k00+CKUuUtfafav6xITv43pTgO6QiPes4u/N6QAAAAEAAAAAAAAAAgAAAAFVU0QAAAAAAEbpO2riZmlZMkHuBxUBYAAas3hWyo9VL1IOdnfXAVFBAAAAADuaygAAAAAAGVL83DJFwH0sKmy6AIgJYD7GexiD0YuzSMioBCAUOJwAAAABVVNEAAAAAAAZUvzcMkXAfSwqbLoAiAlgPsZ7GIPRi7NIyKgEIBQ4nAAAAAAL68IAAAAAAgAAAAAAAAABRVVSAAAAAAALt4SwWfv1PIJvDRMenW0zu91YxZbphRFLA4O+gbAaigAAAAA=",
 					Data:           params["data"][0],
@@ -329,7 +329,7 @@ func TestRequestHandlerAuth(t *testing.T) {
 				memo := "uU0nuZNNPgilLlLX2n2r+sSE7+N6U4DukIj3rOLvzek="
 
 				authorizedTransaction := &entities.AuthorizedTransaction{
-					TransactionId:  "c18abd4c69315ee7ebbbfd5ee118fb9bd785f9e5f90f7bc06b4583c862333bcd",
+					TransactionId:  "e9db3b52fc31b2d72fc2131ff879a20a8ee45d47c4e7fd3bb872b99a66d3124a",
 					Memo:           &memo,
 					TransactionXdr: "AAAAAC3/58Z9rycNLmF6voWX9VmDETFVGhFoWf66mcMuir/DAAAAZAAAAAAAAAAAAAAAAAAAAAO5TSe5k00+CKUuUtfafav6xITv43pTgO6QiPes4u/N6QAAAAEAAAAAAAAAAgAAAAFVU0QAAAAAAEbpO2riZmlZMkHuBxUBYAAas3hWyo9VL1IOdnfXAVFBAAAAADuaygAAAAAAGVL83DJFwH0sKmy6AIgJYD7GexiD0YuzSMioBCAUOJwAAAABVVNEAAAAAAAZUvzcMkXAfSwqbLoAiAlgPsZ7GIPRi7NIyKgEIBQ4nAAAAAAL68IAAAAAAgAAAAAAAAABRVVSAAAAAAALt4SwWfv1PIJvDRMenW0zu91YxZbphRFLA4O+gbAaigAAAAA=",
 					Data:           params["data"][0],
@@ -377,7 +377,7 @@ func TestRequestHandlerAuth(t *testing.T) {
 					memo := "uU0nuZNNPgilLlLX2n2r+sSE7+N6U4DukIj3rOLvzek="
 
 					authorizedTransaction := &entities.AuthorizedTransaction{
-						TransactionId:  "c18abd4c69315ee7ebbbfd5ee118fb9bd785f9e5f90f7bc06b4583c862333bcd",
+						TransactionId:  "e9db3b52fc31b2d72fc2131ff879a20a8ee45d47c4e7fd3bb872b99a66d3124a",
 						Memo:           &memo,
 						TransactionXdr: "AAAAAC3/58Z9rycNLmF6voWX9VmDETFVGhFoWf66mcMuir/DAAAAZAAAAAAAAAAAAAAAAAAAAAO5TSe5k00+CKUuUtfafav6xITv43pTgO6QiPes4u/N6QAAAAEAAAAAAAAAAgAAAAFVU0QAAAAAAEbpO2riZmlZMkHuBxUBYAAas3hWyo9VL1IOdnfXAVFBAAAAADuaygAAAAAAGVL83DJFwH0sKmy6AIgJYD7GexiD0YuzSMioBCAUOJwAAAABVVNEAAAAAAAZUvzcMkXAfSwqbLoAiAlgPsZ7GIPRi7NIyKgEIBQ4nAAAAAAL68IAAAAAAgAAAAAAAAABRVVSAAAAAAALt4SwWfv1PIJvDRMenW0zu91YxZbphRFLA4O+gbAaigAAAAA=",
 						Data:           params["data"][0],
@@ -431,7 +431,7 @@ func TestRequestHandlerAuth(t *testing.T) {
 					memo := "uU0nuZNNPgilLlLX2n2r+sSE7+N6U4DukIj3rOLvzek="
 
 					authorizedTransaction := &entities.AuthorizedTransaction{
-						TransactionId:  "c18abd4c69315ee7ebbbfd5ee118fb9bd785f9e5f90f7bc06b4583c862333bcd",
+						TransactionId:  "e9db3b52fc31b2d72fc2131ff879a20a8ee45d47c4e7fd3bb872b99a66d3124a",
 						Memo:           &memo,
 						TransactionXdr: "AAAAAC3/58Z9rycNLmF6voWX9VmDETFVGhFoWf66mcMuir/DAAAAZAAAAAAAAAAAAAAAAAAAAAO5TSe5k00+CKUuUtfafav6xITv43pTgO6QiPes4u/N6QAAAAEAAAAAAAAAAgAAAAFVU0QAAAAAAEbpO2riZmlZMkHuBxUBYAAas3hWyo9VL1IOdnfXAVFBAAAAADuaygAAAAAAGVL83DJFwH0sKmy6AIgJYD7GexiD0YuzSMioBCAUOJwAAAABVVNEAAAAAAAZUvzcMkXAfSwqbLoAiAlgPsZ7GIPRi7NIyKgEIBQ4nAAAAAAL68IAAAAAAgAAAAAAAAABRVVSAAAAAAALt4SwWfv1PIJvDRMenW0zu91YxZbphRFLA4O+gbAaigAAAAA=",
 						Data:           params["data"][0],

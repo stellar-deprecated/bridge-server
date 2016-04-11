@@ -108,7 +108,8 @@ func TestTransactionSubmitter(t *testing.T) {
 						mock.AnythingOfType("*entities.SentTransaction"),
 					).Return(nil).Once().Run(func(args mock.Arguments) {
 						transaction := args.Get(0).(*entities.SentTransaction)
-						assert.Equal(t, "sending", transaction.Status)
+						assert.Equal(t, "4f885999be6ea7891052a53e496bcfb5c5a1a5bfb31923f649b028fdc74dd050", transaction.TransactionId)
+						assert.Equal(t, "sending", string(transaction.Status))
 						assert.Equal(t, "GCLOMB72ODBFUGK4E2BK7VMR3RNZ5WSTMEOGNA2YUVHFR3WMH2XBAB6H", transaction.Source)
 						assert.Equal(t, mocks.PredefinedTime, transaction.SubmittedAt)
 						assert.Equal(t, txB64, transaction.EnvelopeXdr)
@@ -120,7 +121,8 @@ func TestTransactionSubmitter(t *testing.T) {
 						mock.AnythingOfType("*entities.SentTransaction"),
 					).Return(nil).Once().Run(func(args mock.Arguments) {
 						transaction := args.Get(0).(*entities.SentTransaction)
-						assert.Equal(t, "failure", transaction.Status)
+						assert.Equal(t, "4f885999be6ea7891052a53e496bcfb5c5a1a5bfb31923f649b028fdc74dd050", transaction.TransactionId)
+						assert.Equal(t, "failure", string(transaction.Status))
 						assert.Equal(t, "GCLOMB72ODBFUGK4E2BK7VMR3RNZ5WSTMEOGNA2YUVHFR3WMH2XBAB6H", transaction.Source)
 						assert.Equal(t, mocks.PredefinedTime, transaction.SubmittedAt)
 						assert.Equal(t, txB64, transaction.EnvelopeXdr)
@@ -169,7 +171,8 @@ func TestTransactionSubmitter(t *testing.T) {
 						mock.AnythingOfType("*entities.SentTransaction"),
 					).Return(nil).Once().Run(func(args mock.Arguments) {
 						transaction := args.Get(0).(*entities.SentTransaction)
-						assert.Equal(t, "sending", transaction.Status)
+						assert.Equal(t, "4f885999be6ea7891052a53e496bcfb5c5a1a5bfb31923f649b028fdc74dd050", transaction.TransactionId)
+						assert.Equal(t, "sending", string(transaction.Status))
 						assert.Equal(t, "GCLOMB72ODBFUGK4E2BK7VMR3RNZ5WSTMEOGNA2YUVHFR3WMH2XBAB6H", transaction.Source)
 						assert.Equal(t, mocks.PredefinedTime, transaction.SubmittedAt)
 						assert.Equal(t, txB64, transaction.EnvelopeXdr)
@@ -181,7 +184,8 @@ func TestTransactionSubmitter(t *testing.T) {
 						mock.AnythingOfType("*entities.SentTransaction"),
 					).Return(nil).Once().Run(func(args mock.Arguments) {
 						transaction := args.Get(0).(*entities.SentTransaction)
-						assert.Equal(t, "failure", transaction.Status)
+						assert.Equal(t, "4f885999be6ea7891052a53e496bcfb5c5a1a5bfb31923f649b028fdc74dd050", transaction.TransactionId)
+						assert.Equal(t, "failure", string(transaction.Status))
 						assert.Equal(t, "GCLOMB72ODBFUGK4E2BK7VMR3RNZ5WSTMEOGNA2YUVHFR3WMH2XBAB6H", transaction.Source)
 						assert.Equal(t, mocks.PredefinedTime, transaction.SubmittedAt)
 						assert.Equal(t, txB64, transaction.EnvelopeXdr)
@@ -243,7 +247,8 @@ func TestTransactionSubmitter(t *testing.T) {
 						mock.AnythingOfType("*entities.SentTransaction"),
 					).Return(nil).Once().Run(func(args mock.Arguments) {
 						transaction := args.Get(0).(*entities.SentTransaction)
-						assert.Equal(t, "sending", transaction.Status)
+						assert.Equal(t, "4f885999be6ea7891052a53e496bcfb5c5a1a5bfb31923f649b028fdc74dd050", transaction.TransactionId)
+						assert.Equal(t, "sending", string(transaction.Status))
 						assert.Equal(t, "GCLOMB72ODBFUGK4E2BK7VMR3RNZ5WSTMEOGNA2YUVHFR3WMH2XBAB6H", transaction.Source)
 						assert.Equal(t, mocks.PredefinedTime, transaction.SubmittedAt)
 						assert.Equal(t, txB64, transaction.EnvelopeXdr)
@@ -255,7 +260,8 @@ func TestTransactionSubmitter(t *testing.T) {
 						mock.AnythingOfType("*entities.SentTransaction"),
 					).Return(nil).Once().Run(func(args mock.Arguments) {
 						transaction := args.Get(0).(*entities.SentTransaction)
-						assert.Equal(t, "success", transaction.Status)
+						assert.Equal(t, "4f885999be6ea7891052a53e496bcfb5c5a1a5bfb31923f649b028fdc74dd050", transaction.TransactionId)
+						assert.Equal(t, "success", string(transaction.Status))
 						assert.Equal(t, "GCLOMB72ODBFUGK4E2BK7VMR3RNZ5WSTMEOGNA2YUVHFR3WMH2XBAB6H", transaction.Source)
 						assert.Equal(t, mocks.PredefinedTime, transaction.SubmittedAt)
 						assert.Equal(t, txB64, transaction.EnvelopeXdr)
@@ -313,7 +319,8 @@ func TestTransactionSubmitter(t *testing.T) {
 						mock.AnythingOfType("*entities.SentTransaction"),
 					).Return(nil).Once().Run(func(args mock.Arguments) {
 						transaction := args.Get(0).(*entities.SentTransaction)
-						assert.Equal(t, "sending", transaction.Status)
+						assert.Equal(t, "60cb3c020b0c97352cbabdf68a822b04baea61927b0f1ac31260a9f8d0150316", transaction.TransactionId)
+						assert.Equal(t, "sending", string(transaction.Status))
 						assert.Equal(t, "GCLOMB72ODBFUGK4E2BK7VMR3RNZ5WSTMEOGNA2YUVHFR3WMH2XBAB6H", transaction.Source)
 						assert.Equal(t, mocks.PredefinedTime, transaction.SubmittedAt)
 						assert.Equal(t, txB64, transaction.EnvelopeXdr)
@@ -325,7 +332,8 @@ func TestTransactionSubmitter(t *testing.T) {
 						mock.AnythingOfType("*entities.SentTransaction"),
 					).Return(nil).Once().Run(func(args mock.Arguments) {
 						transaction := args.Get(0).(*entities.SentTransaction)
-						assert.Equal(t, "success", transaction.Status)
+						assert.Equal(t, "60cb3c020b0c97352cbabdf68a822b04baea61927b0f1ac31260a9f8d0150316", transaction.TransactionId)
+						assert.Equal(t, "success", string(transaction.Status))
 						assert.Equal(t, "GCLOMB72ODBFUGK4E2BK7VMR3RNZ5WSTMEOGNA2YUVHFR3WMH2XBAB6H", transaction.Source)
 						assert.Equal(t, mocks.PredefinedTime, transaction.SubmittedAt)
 						assert.Equal(t, txB64, transaction.EnvelopeXdr)

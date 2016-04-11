@@ -4,22 +4,25 @@ import (
 	"time"
 )
 
+type SentTransactionStatus string
+
 const (
-	SENT_TRANSACTION_STATUS_SENDING = "sending"
-	SENT_TRANSACTION_STATUS_SUCCESS = "success"
-	SENT_TRANSACTION_STATUS_FAILURE = "failure"
+	SentTransactionStatusSending SentTransactionStatus = "sending"
+	SentTransactionStatusSuccess SentTransactionStatus = "success"
+	SentTransactionStatusFailure SentTransactionStatus = "failure"
 )
 
 type SentTransaction struct {
-	exists      bool
-	Id          *int64     `db:"id"`
-	Status      string     `db:"status"` // sending/success/failure
-	Source      string     `db:"source"`
-	SubmittedAt time.Time  `db:"submitted_at"`
-	SucceededAt *time.Time `db:"succeeded_at"`
-	Ledger      *uint64    `db:"ledger"`
-	EnvelopeXdr string     `db:"envelope_xdr"`
-	ResultXdr   *string    `db:"result_xdr"`
+	exists        bool
+	Id            *int64                `db:"id"`
+	TransactionId string                `db:"transaction_id"`
+	Status        SentTransactionStatus `db:"status"` // sending/success/failure
+	Source        string                `db:"source"`
+	SubmittedAt   time.Time             `db:"submitted_at"`
+	SucceededAt   *time.Time            `db:"succeeded_at"`
+	Ledger        *uint64               `db:"ledger"`
+	EnvelopeXdr   string                `db:"envelope_xdr"`
+	ResultXdr     *string               `db:"result_xdr"`
 }
 
 func (e *SentTransaction) GetId() *int64 {
@@ -43,13 +46,13 @@ func (e *SentTransaction) SetExists() {
 }
 
 func (e *SentTransaction) MarkSucceeded(ledger uint64) {
-	e.Status = SENT_TRANSACTION_STATUS_SUCCESS
+	e.Status = SentTransactionStatusSuccess
 	e.Ledger = &ledger
 	now := time.Now()
 	e.SucceededAt = &now
 }
 
 func (e *SentTransaction) MarkFailed(resultXdr string) {
-	e.Status = SENT_TRANSACTION_STATUS_FAILURE
+	e.Status = SentTransactionStatusFailure
 	e.ResultXdr = &resultXdr
 }

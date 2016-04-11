@@ -11,6 +11,7 @@ CREATE TABLE `ReceivedPayment` (
 
 CREATE TABLE `SentTransaction` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
+  `transaction_id` varchar(64) NOT NULL,
   `status` varchar(10) NOT NULL,
   `source` varchar(56) NOT NULL,
   `submitted_at` datetime NOT NULL,

@@ -17,7 +17,6 @@ import (
 	"github.com/stellar/gateway/protocols/compliance"
 	"github.com/stellar/gateway/server"
 	"github.com/stellar/gateway/submitter"
-	"github.com/stellar/go-stellar-base/hash"
 	"github.com/stellar/go-stellar-base/xdr"
 	"github.com/zenazn/goji/web"
 )
@@ -95,14 +94,12 @@ func (rh *RequestHandler) HandlerAuth(c web.C, w http.ResponseWriter, r *http.Re
 		memo = &memoBase64
 	}
 
-	transactionHashBytes, err := submitter.TransactionHash(&tx, rh.Config.NetworkPassphrase)
+	transactionHash, err := submitter.TransactionHash(&tx, rh.Config.NetworkPassphrase)
 	if err != nil {
 		log.WithFields(log.Fields{"err": err}).Warn("Error calculating tx hash")
 		server.Write(w, protocols.InternalServerError)
 		return
 	}
-
-	transactionHash := hash.Hash(transactionHashBytes[:])
 
 	response := compliance.AuthResponse{}
 
