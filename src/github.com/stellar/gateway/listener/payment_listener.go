@@ -130,12 +130,6 @@ func (pl PaymentListener) onPayment(payment horizon.PaymentResponse) (err error)
 		return err
 	}
 
-	if payment.Memo.Type == "" || payment.Memo.Value == "" {
-		dbPayment.Status = "Transaction does not have memo"
-		savePayment(&dbPayment)
-		return nil
-	}
-
 	var receiveResponse compliance.ReceiveResponse
 
 	// Request extra_memo from compliance server
