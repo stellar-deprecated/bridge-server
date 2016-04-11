@@ -39,7 +39,7 @@ func TestMemo(t *testing.T) {
 		Convey("Unmarshal envelope block", func() {
 			// GCC7ZATN5OXH6XGEFM5WPTMA5NEJ4LT335FCKHW6GYCMKM3ZVZ5BJGGA
 			// SCLJ7EDOWQGU7LQZC6KED25ZLTOLU36KRJLBSHRUT7Q7SOU26O3JVZYV
-			
+
 			preimage := `{
     "note" : "Note.",
     "blocks": [{

@@ -84,7 +84,7 @@ func (b *Block) UnmarshalJSON(bytes []byte) error {
 			}
 
 			*b = Block{
-				Type: BlockTypeEnvelope,
+				Type:     BlockTypeEnvelope,
 				Envelope: &envelope,
 			}
 		default:
