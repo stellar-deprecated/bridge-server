@@ -44,6 +44,10 @@ var (
 	PaymentMalformedAssetCode       = &SubmitTransactionResponseError{Code: "malformed_asset_code", Message: "asset_code parameter is malformed.", Status: http.StatusBadRequest}
 	PaymentAssetCodeNotAllowed      = &SubmitTransactionResponseError{Code: "asset_code_not_allowed", Message: "Given asset_code not allowed.", Status: http.StatusBadRequest}
 
+	// compliance
+	PaymentPending = &SubmitTransactionResponseError{Code: "pending", Message: "Transaction pending. Repeat your request after given time.", Status: http.StatusAccepted}
+	PaymentDenied  = &SubmitTransactionResponseError{Code: "denied", Message: "Transaction denied by destination.", Status: http.StatusForbidden}
+
 	// payment op errors
 	PaymentMalformed        = &SubmitTransactionResponseError{Code: "payment_malformed", Message: "Operation is malformed.", Status: http.StatusBadRequest}
 	PaymentUnderfunded      = &SubmitTransactionResponseError{Code: "payment_underfunded", Message: "Not enough funds to send this transaction.", Status: http.StatusBadRequest}
@@ -62,21 +66,6 @@ type SubmitTransactionResponse struct {
 	Extras *SubmitTransactionResponseExtras `json:"extras"`
 }
 
-type SubmitTransactionResponseError struct {
-	Status  int    `json:"-"`
-	Code    string `json:"code"`
-	Message string `json:"message"`
-}
-
-type SubmitTransactionResponseExtras struct {
-	EnvelopeXdr string `json:"envelope_xdr"`
-	ResultXdr   string `json:"result_xdr"`
-}
-
-func NewErrorResponse(error *SubmitTransactionResponseError) *SubmitTransactionResponse {
-	return &SubmitTransactionResponse{Error: error}
-}
-
 func (response *SubmitTransactionResponse) HTTPStatus() int {
 	if response.Error == nil {
 		return 200
@@ -88,6 +77,31 @@ func (response *SubmitTransactionResponse) HTTPStatus() int {
 func (response *SubmitTransactionResponse) Marshal() []byte {
 	json, _ := json.MarshalIndent(response, "", "  ")
 	return json
+}
+
+type SubmitTransactionResponseError struct {
+	Status  int                    `json:"-"`
+	Code    string                 `json:"code"`
+	Message string                 `json:"message"`
+	Data    map[string]interface{} `json:"data,omitempty"`
+}
+
+type SubmitTransactionResponseExtras struct {
+	EnvelopeXdr string `json:"envelope_xdr"`
+	ResultXdr   string `json:"result_xdr"`
+}
+
+func NewErrorResponse(error *SubmitTransactionResponseError) *SubmitTransactionResponse {
+	return &SubmitTransactionResponse{Error: error}
+}
+
+func NewPaymentPendingError(seconds int) *SubmitTransactionResponseError {
+	return &SubmitTransactionResponseError{
+		Status:  PaymentPending.Status,
+		Code:    PaymentPending.Code,
+		Message: PaymentPending.Message,
+		Data:    map[string]interface{}{"pending": seconds},
+	}
 }
 
 func (error *SubmitTransactionResponseError) Equals(otherError *SubmitTransactionResponseError) bool {

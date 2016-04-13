@@ -87,6 +87,21 @@ func (rh *RequestHandler) Payment(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		if complianceSendResponse.AuthResponse.InfoStatus == compliance.AuthStatusPending ||
+			complianceSendResponse.AuthResponse.TxStatus == compliance.AuthStatusPending {
+			log.WithFields(log.Fields{"response": complianceSendResponse}).Info("Compliance response pending")
+			error := h.NewPaymentPendingError(complianceSendResponse.AuthResponse.Pending)
+			server.Write(w, h.NewErrorResponse(error))
+			return
+		}
+
+		if complianceSendResponse.AuthResponse.InfoStatus == compliance.AuthStatusDenied ||
+			complianceSendResponse.AuthResponse.TxStatus == compliance.AuthStatusDenied {
+			log.WithFields(log.Fields{"response": complianceSendResponse}).Info("Compliance response denied")
+			server.Write(w, h.NewErrorResponse(h.PaymentDenied))
+			return
+		}
+
 		var tx xdr.Transaction
 		err = xdr.SafeUnmarshalBase64(complianceSendResponse.TransactionXdr, &tx)
 		if err != nil {

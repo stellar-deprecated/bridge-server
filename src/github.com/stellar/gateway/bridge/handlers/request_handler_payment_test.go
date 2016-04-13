@@ -793,6 +793,56 @@ func TestRequestHandlerPayment(t *testing.T) {
 				assert.Equal(t, expectedResponse.Marshal(), []byte(responseString))
 			})
 
+			Convey("it should return denied when compliance server returns denied", func() {
+				mockHttpClient.On(
+					"PostForm",
+					"http://compliance/send",
+					mock.AnythingOfType("url.Values"),
+				).Return(
+					net.BuildHttpResponse(200, "{\"auth_response\": {\"tx_status\": \"denied\"}}"),
+					nil,
+				).Run(func(args mock.Arguments) {
+					values := args.Get(1).(url.Values)
+					// bridge server does not send source seed to compliance
+					assert.Equal(t, []string{"GAW77Z6GPWXSODJOMF5L5BMX6VMYGEJRKUNBC2CZ725JTQZORK74HQQD"}, values["source"])
+					values.Del("source")
+					params.Del("source")
+					assert.Equal(t, values.Encode(), params.Encode())
+				}).Once()
+
+				statusCode, response := net.GetResponse(testServer, params)
+				responseString := strings.TrimSpace(string(response))
+				assert.Equal(t, 403, statusCode)
+				expectedResponse := horizon.NewErrorResponse(horizon.PaymentDenied)
+				assert.Equal(t, expectedResponse.Marshal(), []byte(responseString))
+			})
+
+			Convey("it should return pending when compliance server returns pending", func() {
+				mockHttpClient.On(
+					"PostForm",
+					"http://compliance/send",
+					mock.AnythingOfType("url.Values"),
+				).Return(
+					net.BuildHttpResponse(200, "{\"auth_response\": {\"info_status\": \"pending\", \"pending\": 3600}}"),
+					nil,
+				).Run(func(args mock.Arguments) {
+					values := args.Get(1).(url.Values)
+					// bridge server does not send source seed to compliance
+					assert.Equal(t, []string{"GAW77Z6GPWXSODJOMF5L5BMX6VMYGEJRKUNBC2CZ725JTQZORK74HQQD"}, values["source"])
+					values.Del("source")
+					params.Del("source")
+					assert.Equal(t, values.Encode(), params.Encode())
+				}).Once()
+
+				statusCode, response := net.GetResponse(testServer, params)
+				responseString := strings.TrimSpace(string(response))
+				assert.Equal(t, 202, statusCode)
+				expectedResponse := horizon.NewErrorResponse(
+					horizon.NewPaymentPendingError(3600),
+				)
+				assert.Equal(t, expectedResponse.Marshal(), []byte(responseString))
+			})
+
 			Convey("it should submit transaction when compliance server returns success", func() {
 				memoBytes, _ := hex.DecodeString("b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9")
 				var hashXdr xdr.Hash
