@@ -82,8 +82,9 @@ func validateStellarAddress(address string) bool {
 
 type SendResponse struct {
 	protocols.SuccessResponse
+	AuthResponse `json:"auth_response"`
 	// xdr.Transaction base64-encoded. Sequence number of this transaction will be equal 0.
-	TransactionXdr string `json:"transaction_xdr"`
+	TransactionXdr string `json:"transaction_xdr,omitempty"`
 }
 
 func (response *SendResponse) Marshal() []byte {

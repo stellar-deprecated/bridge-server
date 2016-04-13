@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -14,6 +15,8 @@ import (
 	"github.com/stellar/gateway/db/entities"
 	"github.com/stellar/gateway/mocks"
 	"github.com/stellar/gateway/net"
+	"github.com/stellar/gateway/protocols/compliance"
+	"github.com/stellar/gateway/protocols/memo"
 	"github.com/stellar/gateway/protocols/stellartoml"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -33,6 +36,7 @@ func TestRequestHandlerAuth(t *testing.T) {
 	mockEntityManager := new(mocks.MockEntityManager)
 	mockRepository := new(mocks.MockRepository)
 	mockFederationResolver := new(mocks.MockFederationResolver)
+	mockSignatureSignerVerifier := new(mocks.MockSignatureSignerVerifier)
 	mockStellartomlResolver := new(mocks.MockStellartomlResolver)
 	requestHandler := RequestHandler{}
 
@@ -46,6 +50,7 @@ func TestRequestHandlerAuth(t *testing.T) {
 		&inject.Object{Value: mockEntityManager},
 		&inject.Object{Value: mockRepository},
 		&inject.Object{Value: mockFederationResolver},
+		&inject.Object{Value: mockSignatureSignerVerifier},
 		&inject.Object{Value: mockStellartomlResolver},
 	)
 	if err != nil {
@@ -90,7 +95,7 @@ func TestRequestHandlerAuth(t *testing.T) {
 			).Return(stellartoml.StellarToml{}, nil).Once()
 
 			params := url.Values{
-				"data": {"{\"Sender\":\"alice*stellar.org\",\"NeedInfo\":false,\"Tx\":\"AAAAAC3/58Z9rycNLmF6voWX9VmDETFVGhFoWf66mcMuir/DAAAAZAAAAAAAAAAAAAAAAAAAAAO5TSe5k00+CKUuUtfafav6xITv43pTgO6QiPes4u/N6QAAAAEAAAAAAAAAAgAAAAFVU0QAAAAAAEbpO2riZmlZMkHuBxUBYAAas3hWyo9VL1IOdnfXAVFBAAAAADuaygAAAAAAGVL83DJFwH0sKmy6AIgJYD7GexiD0YuzSMioBCAUOJwAAAABVVNEAAAAAAAZUvzcMkXAfSwqbLoAiAlgPsZ7GIPRi7NIyKgEIBQ4nAAAAAAL68IAAAAAAgAAAAAAAAABRVVSAAAAAAALt4SwWfv1PIJvDRMenW0zu91YxZbphRFLA4O+gbAaigAAAAA=\",\"Memo\":\"hello world\"}"},
+				"data": {"{\"sender\":\"alice*stellar.org\",\"need_info\":false,\"tx\":\"AAAAAC3/58Z9rycNLmF6voWX9VmDETFVGhFoWf66mcMuir/DAAAAZAAAAAAAAAAAAAAAAAAAAAO5TSe5k00+CKUuUtfafav6xITv43pTgO6QiPes4u/N6QAAAAEAAAAAAAAAAgAAAAFVU0QAAAAAAEbpO2riZmlZMkHuBxUBYAAas3hWyo9VL1IOdnfXAVFBAAAAADuaygAAAAAAGVL83DJFwH0sKmy6AIgJYD7GexiD0YuzSMioBCAUOJwAAAABVVNEAAAAAAAZUvzcMkXAfSwqbLoAiAlgPsZ7GIPRi7NIyKgEIBQ4nAAAAAAL68IAAAAAAgAAAAAAAAABRVVSAAAAAAALt4SwWfv1PIJvDRMenW0zu91YxZbphRFLA4O+gbAaigAAAAA=\",\"memo\":\"hello world\"}"},
 				"sig":  {"bad sig"},
 			}
 
@@ -109,9 +114,16 @@ func TestRequestHandlerAuth(t *testing.T) {
 			}, nil).Once()
 
 			params := url.Values{
-				"data": {"{\"Sender\":\"alice*stellar.org\",\"NeedInfo\":false,\"Tx\":\"AAAAAC3/58Z9rycNLmF6voWX9VmDETFVGhFoWf66mcMuir/DAAAAZAAAAAAAAAAAAAAAAAAAAAO5TSe5k00+CKUuUtfafav6xITv43pTgO6QiPes4u/N6QAAAAEAAAAAAAAAAgAAAAFVU0QAAAAAAEbpO2riZmlZMkHuBxUBYAAas3hWyo9VL1IOdnfXAVFBAAAAADuaygAAAAAAGVL83DJFwH0sKmy6AIgJYD7GexiD0YuzSMioBCAUOJwAAAABVVNEAAAAAAAZUvzcMkXAfSwqbLoAiAlgPsZ7GIPRi7NIyKgEIBQ4nAAAAAAL68IAAAAAAgAAAAAAAAABRVVSAAAAAAALt4SwWfv1PIJvDRMenW0zu91YxZbphRFLA4O+gbAaigAAAAA=\",\"Memo\":\"hello world\"}"},
-				"sig":  {"XIh4u5TcdqUmpy/JLcsTIlD8c7fvJiRC+AwxekjBeOCbtRgE2kzN/8VRQjtKm+zNTt/nuvbM2cfYrs7uu4hnBg=="},
+				"data": {"{\"sender\":\"alice*stellar.org\",\"need_info\":false,\"tx\":\"AAAAAC3/58Z9rycNLmF6voWX9VmDETFVGhFoWf66mcMuir/DAAAAZAAAAAAAAAAAAAAAAAAAAAO5TSe5k00+CKUuUtfafav6xITv43pTgO6QiPes4u/N6QAAAAEAAAAAAAAAAgAAAAFVU0QAAAAAAEbpO2riZmlZMkHuBxUBYAAas3hWyo9VL1IOdnfXAVFBAAAAADuaygAAAAAAGVL83DJFwH0sKmy6AIgJYD7GexiD0YuzSMioBCAUOJwAAAABVVNEAAAAAAAZUvzcMkXAfSwqbLoAiAlgPsZ7GIPRi7NIyKgEIBQ4nAAAAAAL68IAAAAAAgAAAAAAAAABRVVSAAAAAAALt4SwWfv1PIJvDRMenW0zu91YxZbphRFLA4O+gbAaigAAAAA=\",\"memo\":\"hello world\"}"},
+				"sig":  {"ACamNqa0dF8gf97URhFVKWSD7fmvZKc5At+8dCLM5ySR0HsHySF3G2WuwYP2nKjeqjKmu3U9Z3+u1P10w1KBCA=="},
 			}
+
+			mockSignatureSignerVerifier.On(
+				"Verify",
+				"GBYJZW5XFAI6XV73H5SAIUYK6XZI4CGGVBUBO3ANA2SV7KKDAXTV6AEB",
+				mock.AnythingOfType("[]uint8"),
+				mock.AnythingOfType("[]uint8"),
+			).Return(errors.New("Verify error")).Once()
 
 			statusCode, response := net.GetResponse(testServer, params)
 			responseString := strings.TrimSpace(string(response))
@@ -121,8 +133,8 @@ func TestRequestHandlerAuth(t *testing.T) {
 
 		Convey("When all params are valid", func() {
 			params := url.Values{
-				"data": {"{\"Sender\":\"alice*stellar.org\",\"NeedInfo\":false,\"Tx\":\"AAAAAC3/58Z9rycNLmF6voWX9VmDETFVGhFoWf66mcMuir/DAAAAZAAAAAAAAAAAAAAAAAAAAAO5TSe5k00+CKUuUtfafav6xITv43pTgO6QiPes4u/N6QAAAAEAAAAAAAAAAgAAAAFVU0QAAAAAAEbpO2riZmlZMkHuBxUBYAAas3hWyo9VL1IOdnfXAVFBAAAAADuaygAAAAAAGVL83DJFwH0sKmy6AIgJYD7GexiD0YuzSMioBCAUOJwAAAABVVNEAAAAAAAZUvzcMkXAfSwqbLoAiAlgPsZ7GIPRi7NIyKgEIBQ4nAAAAAAL68IAAAAAAgAAAAAAAAABRVVSAAAAAAALt4SwWfv1PIJvDRMenW0zu91YxZbphRFLA4O+gbAaigAAAAA=\",\"Memo\":\"hello world\"}"},
-				"sig":  {"oxfLEvW3dasnYYbVIi98nlXNJZ50yoiS4RAY15g06UhHOENcS2MUzKwLyeKfUtN6r8AFMuX5qXz8LuXgPsZwAg=="},
+				"data": {"{\"sender\":\"alice*stellar.org\",\"need_info\":false,\"tx\":\"AAAAAC3/58Z9rycNLmF6voWX9VmDETFVGhFoWf66mcMuir/DAAAAZAAAAAAAAAAAAAAAAAAAAANEE2+jVbNnihFGrRb36GSelPtPwh/nfoMQwGD2HKr/igAAAAEAAAAAAAAAAgAAAAFVU0QAAAAAAEbpO2riZmlZMkHuBxUBYAAas3hWyo9VL1IOdnfXAVFBAAAAADuaygAAAAAAGVL83DJFwH0sKmy6AIgJYD7GexiD0YuzSMioBCAUOJwAAAABVVNEAAAAAAAZUvzcMkXAfSwqbLoAiAlgPsZ7GIPRi7NIyKgEIBQ4nAAAAAAL68IAAAAAAgAAAAAAAAABRVVSAAAAAAALt4SwWfv1PIJvDRMenW0zu91YxZbphRFLA4O+gbAaigAAAAA=\",\"memo\":\"{}\"}"},
+				"sig":  {"ACamNqa0dF8gf97URhFVKWSD7fmvZKc5At+8dCLM5ySR0HsHySF3G2WuwYP2nKjeqjKmu3U9Z3+u1P10w1KBCA=="},
 			}
 
 			mockStellartomlResolver.On(
@@ -132,13 +144,18 @@ func TestRequestHandlerAuth(t *testing.T) {
 				SigningKey: "GBYJZW5XFAI6XV73H5SAIUYK6XZI4CGGVBUBO3ANA2SV7KKDAXTV6AEB",
 			}, nil).Once()
 
-			Convey("it returns AuthResponse", func() {
-				memo := "uU0nuZNNPgilLlLX2n2r+sSE7+N6U4DukIj3rOLvzek="
+			mockSignatureSignerVerifier.On(
+				"Verify",
+				"GBYJZW5XFAI6XV73H5SAIUYK6XZI4CGGVBUBO3ANA2SV7KKDAXTV6AEB",
+				mock.AnythingOfType("[]uint8"),
+				mock.AnythingOfType("[]uint8"),
+			).Return(nil).Once()
 
+			Convey("it returns AuthResponse", func() {
 				authorizedTransaction := &entities.AuthorizedTransaction{
-					TransactionId:  "e9db3b52fc31b2d72fc2131ff879a20a8ee45d47c4e7fd3bb872b99a66d3124a",
-					Memo:           &memo,
-					TransactionXdr: "AAAAAC3/58Z9rycNLmF6voWX9VmDETFVGhFoWf66mcMuir/DAAAAZAAAAAAAAAAAAAAAAAAAAAO5TSe5k00+CKUuUtfafav6xITv43pTgO6QiPes4u/N6QAAAAEAAAAAAAAAAgAAAAFVU0QAAAAAAEbpO2riZmlZMkHuBxUBYAAas3hWyo9VL1IOdnfXAVFBAAAAADuaygAAAAAAGVL83DJFwH0sKmy6AIgJYD7GexiD0YuzSMioBCAUOJwAAAABVVNEAAAAAAAZUvzcMkXAfSwqbLoAiAlgPsZ7GIPRi7NIyKgEIBQ4nAAAAAAL68IAAAAAAgAAAAAAAAABRVVSAAAAAAALt4SwWfv1PIJvDRMenW0zu91YxZbphRFLA4O+gbAaigAAAAA=",
+					TransactionId:  "29ec92f95b00dd8e8bbb0d2a2fc90db8ed5b26c396c44ac978bb13ccd8d25524",
+					Memo:           "RBNvo1WzZ4oRRq0W9+hknpT7T8If536DEMBg9hyq/4o=",
+					TransactionXdr: "AAAAAC3/58Z9rycNLmF6voWX9VmDETFVGhFoWf66mcMuir/DAAAAZAAAAAAAAAAAAAAAAAAAAANEE2+jVbNnihFGrRb36GSelPtPwh/nfoMQwGD2HKr/igAAAAEAAAAAAAAAAgAAAAFVU0QAAAAAAEbpO2riZmlZMkHuBxUBYAAas3hWyo9VL1IOdnfXAVFBAAAAADuaygAAAAAAGVL83DJFwH0sKmy6AIgJYD7GexiD0YuzSMioBCAUOJwAAAABVVNEAAAAAAAZUvzcMkXAfSwqbLoAiAlgPsZ7GIPRi7NIyKgEIBQ4nAAAAAAL68IAAAAAAgAAAAAAAAABRVVSAAAAAAALt4SwWfv1PIJvDRMenW0zu91YxZbphRFLA4O+gbAaigAAAAA=",
 					Data:           params["data"][0],
 				}
 
@@ -171,8 +188,8 @@ func TestRequestHandlerAuth(t *testing.T) {
 
 		Convey("When all params are valid (NeedInfo = `false`)", func() {
 			params := url.Values{
-				"data": {"{\"Sender\":\"alice*stellar.org\",\"NeedInfo\":false,\"Tx\":\"AAAAAC3/58Z9rycNLmF6voWX9VmDETFVGhFoWf66mcMuir/DAAAAZAAAAAAAAAAAAAAAAAAAAAO5TSe5k00+CKUuUtfafav6xITv43pTgO6QiPes4u/N6QAAAAEAAAAAAAAAAgAAAAFVU0QAAAAAAEbpO2riZmlZMkHuBxUBYAAas3hWyo9VL1IOdnfXAVFBAAAAADuaygAAAAAAGVL83DJFwH0sKmy6AIgJYD7GexiD0YuzSMioBCAUOJwAAAABVVNEAAAAAAAZUvzcMkXAfSwqbLoAiAlgPsZ7GIPRi7NIyKgEIBQ4nAAAAAAL68IAAAAAAgAAAAAAAAABRVVSAAAAAAALt4SwWfv1PIJvDRMenW0zu91YxZbphRFLA4O+gbAaigAAAAA=\",\"Memo\":\"hello world\"}"},
-				"sig":  {"oxfLEvW3dasnYYbVIi98nlXNJZ50yoiS4RAY15g06UhHOENcS2MUzKwLyeKfUtN6r8AFMuX5qXz8LuXgPsZwAg=="},
+				"data": {"{\"sender\":\"alice*stellar.org\",\"need_info\":false,\"tx\":\"AAAAAC3/58Z9rycNLmF6voWX9VmDETFVGhFoWf66mcMuir/DAAAAZAAAAAAAAAAAAAAAAAAAAANEE2+jVbNnihFGrRb36GSelPtPwh/nfoMQwGD2HKr/igAAAAEAAAAAAAAAAgAAAAFVU0QAAAAAAEbpO2riZmlZMkHuBxUBYAAas3hWyo9VL1IOdnfXAVFBAAAAADuaygAAAAAAGVL83DJFwH0sKmy6AIgJYD7GexiD0YuzSMioBCAUOJwAAAABVVNEAAAAAAAZUvzcMkXAfSwqbLoAiAlgPsZ7GIPRi7NIyKgEIBQ4nAAAAAAL68IAAAAAAgAAAAAAAAABRVVSAAAAAAALt4SwWfv1PIJvDRMenW0zu91YxZbphRFLA4O+gbAaigAAAAA=\",\"memo\":\"{}\"}"},
+				"sig":  {"ACamNqa0dF8gf97URhFVKWSD7fmvZKc5At+8dCLM5ySR0HsHySF3G2WuwYP2nKjeqjKmu3U9Z3+u1P10w1KBCA=="},
 			}
 
 			mockStellartomlResolver.On(
@@ -181,6 +198,13 @@ func TestRequestHandlerAuth(t *testing.T) {
 			).Return(stellartoml.StellarToml{
 				SigningKey: "GBYJZW5XFAI6XV73H5SAIUYK6XZI4CGGVBUBO3ANA2SV7KKDAXTV6AEB",
 			}, nil).Once()
+
+			mockSignatureSignerVerifier.On(
+				"Verify",
+				"GBYJZW5XFAI6XV73H5SAIUYK6XZI4CGGVBUBO3ANA2SV7KKDAXTV6AEB",
+				mock.AnythingOfType("[]uint8"),
+				mock.AnythingOfType("[]uint8"),
+			).Return(nil).Once()
 
 			Convey("when sanctions server returns forbidden it returns tx_status `denied`", func() {
 				mockHttpClient.On(
@@ -224,12 +248,10 @@ func TestRequestHandlerAuth(t *testing.T) {
 					nil,
 				).Once()
 
-				memo := "uU0nuZNNPgilLlLX2n2r+sSE7+N6U4DukIj3rOLvzek="
-
 				authorizedTransaction := &entities.AuthorizedTransaction{
-					TransactionId:  "e9db3b52fc31b2d72fc2131ff879a20a8ee45d47c4e7fd3bb872b99a66d3124a",
-					Memo:           &memo,
-					TransactionXdr: "AAAAAC3/58Z9rycNLmF6voWX9VmDETFVGhFoWf66mcMuir/DAAAAZAAAAAAAAAAAAAAAAAAAAAO5TSe5k00+CKUuUtfafav6xITv43pTgO6QiPes4u/N6QAAAAEAAAAAAAAAAgAAAAFVU0QAAAAAAEbpO2riZmlZMkHuBxUBYAAas3hWyo9VL1IOdnfXAVFBAAAAADuaygAAAAAAGVL83DJFwH0sKmy6AIgJYD7GexiD0YuzSMioBCAUOJwAAAABVVNEAAAAAAAZUvzcMkXAfSwqbLoAiAlgPsZ7GIPRi7NIyKgEIBQ4nAAAAAAL68IAAAAAAgAAAAAAAAABRVVSAAAAAAALt4SwWfv1PIJvDRMenW0zu91YxZbphRFLA4O+gbAaigAAAAA=",
+					TransactionId:  "29ec92f95b00dd8e8bbb0d2a2fc90db8ed5b26c396c44ac978bb13ccd8d25524",
+					Memo:           "RBNvo1WzZ4oRRq0W9+hknpT7T8If536DEMBg9hyq/4o=",
+					TransactionXdr: "AAAAAC3/58Z9rycNLmF6voWX9VmDETFVGhFoWf66mcMuir/DAAAAZAAAAAAAAAAAAAAAAAAAAANEE2+jVbNnihFGrRb36GSelPtPwh/nfoMQwGD2HKr/igAAAAEAAAAAAAAAAgAAAAFVU0QAAAAAAEbpO2riZmlZMkHuBxUBYAAas3hWyo9VL1IOdnfXAVFBAAAAADuaygAAAAAAGVL83DJFwH0sKmy6AIgJYD7GexiD0YuzSMioBCAUOJwAAAABVVNEAAAAAAAZUvzcMkXAfSwqbLoAiAlgPsZ7GIPRi7NIyKgEIBQ4nAAAAAAL68IAAAAAAgAAAAAAAAABRVVSAAAAAAALt4SwWfv1PIJvDRMenW0zu91YxZbphRFLA4O+gbAaigAAAAA=",
 					Data:           params["data"][0],
 				}
 
@@ -253,9 +275,22 @@ func TestRequestHandlerAuth(t *testing.T) {
 		})
 
 		Convey("When all params are valid (NeedInfo = `true`)", func() {
+			memoPreimage := memo.Memo{
+				Transaction: memo.Transaction{
+					Route: "bob*acme.com",
+				},
+			}
+
+			authData := compliance.AuthData{
+				Sender: "alice*stellar.org",
+				NeedInfo: true,
+				Tx: "AAAAAC3/58Z9rycNLmF6voWX9VmDETFVGhFoWf66mcMuir/DAAAAZAAAAAAAAAAAAAAAAAAAAAOSmd0xMyU3Or8ITID/nfZxYLwhySbceUpNTURuZBydVQAAAAEAAAAAAAAAAgAAAAFVU0QAAAAAAEbpO2riZmlZMkHuBxUBYAAas3hWyo9VL1IOdnfXAVFBAAAAADuaygAAAAAAGVL83DJFwH0sKmy6AIgJYD7GexiD0YuzSMioBCAUOJwAAAABVVNEAAAAAAAZUvzcMkXAfSwqbLoAiAlgPsZ7GIPRi7NIyKgEIBQ4nAAAAAAL68IAAAAAAgAAAAAAAAABRVVSAAAAAAALt4SwWfv1PIJvDRMenW0zu91YxZbphRFLA4O+gbAaigAAAAA=",
+				Memo: string(memoPreimage.Marshal()),
+			}
+
 			params := url.Values{
-				"data": {"{\"Sender\":\"alice*stellar.org\",\"NeedInfo\":true,\"Tx\":\"AAAAAC3/58Z9rycNLmF6voWX9VmDETFVGhFoWf66mcMuir/DAAAAZAAAAAAAAAAAAAAAAAAAAAO5TSe5k00+CKUuUtfafav6xITv43pTgO6QiPes4u/N6QAAAAEAAAAAAAAAAgAAAAFVU0QAAAAAAEbpO2riZmlZMkHuBxUBYAAas3hWyo9VL1IOdnfXAVFBAAAAADuaygAAAAAAGVL83DJFwH0sKmy6AIgJYD7GexiD0YuzSMioBCAUOJwAAAABVVNEAAAAAAAZUvzcMkXAfSwqbLoAiAlgPsZ7GIPRi7NIyKgEIBQ4nAAAAAAL68IAAAAAAgAAAAAAAAABRVVSAAAAAAALt4SwWfv1PIJvDRMenW0zu91YxZbphRFLA4O+gbAaigAAAAA=\",\"Memo\":\"hello world\"}"},
-				"sig":  {"XIh4u5TcdqUmpy/JLcsAIlD8c8fvJiRC+AwxekjBeOCbtRgE2kzN/8VRQjtKm+zNTt/nuvbM2cfYrs7uu4hnBg=="},
+				"data": {string(authData.Marshal())},
+				"sig":  {"Q2cQVOn/A+aOxrLLeUPwHmBm3LMvlfXN8tDHo4Oi6SxWWueMTDfRkC4XvRX4emLij+Npo7/GfrZ82CnT5yB5Dg=="},
 			}
 
 			mockStellartomlResolver.On(
@@ -264,6 +299,13 @@ func TestRequestHandlerAuth(t *testing.T) {
 			).Return(stellartoml.StellarToml{
 				SigningKey: "GBYJZW5XFAI6XV73H5SAIUYK6XZI4CGGVBUBO3ANA2SV7KKDAXTV6AEB",
 			}, nil).Once()
+
+			mockSignatureSignerVerifier.On(
+				"Verify",
+				"GBYJZW5XFAI6XV73H5SAIUYK6XZI4CGGVBUBO3ANA2SV7KKDAXTV6AEB",
+				mock.AnythingOfType("[]uint8"),
+				mock.AnythingOfType("[]uint8"),
+			).Return(nil).Once()
 
 			// Make sanctions checks successful (tested previously)
 			mockHttpClient.On(
@@ -297,6 +339,22 @@ func TestRequestHandlerAuth(t *testing.T) {
 					"http://ask_user",
 					url.Values{"data": params["data"]},
 				).Return(
+					net.BuildHttpResponse(202, "{\"pending\": 300}"),
+					nil,
+				).Once()
+
+				statusCode, response := net.GetResponse(testServer, params)
+				responseString := strings.TrimSpace(string(response))
+				assert.Equal(t, 200, statusCode)
+				assert.Equal(t, "{\n  \"info_status\": \"pending\",\n  \"tx_status\": \"ok\",\n  \"pending\": 300\n}", responseString)
+			})
+
+			Convey("when ask_user server returns pending but invalid response body it returns info_status `pending` (600 seconds)", func() {
+				mockHttpClient.On(
+					"PostForm",
+					"http://ask_user",
+					url.Values{"data": params["data"]},
+				).Return(
 					net.BuildHttpResponse(202, "pending"),
 					nil,
 				).Once()
@@ -320,18 +378,16 @@ func TestRequestHandlerAuth(t *testing.T) {
 				mockHttpClient.On(
 					"PostForm",
 					"http://fetch_info",
-					url.Values{"data": params["data"]},
+					url.Values{"address": {"bob*acme.com"}},
 				).Return(
 					net.BuildHttpResponse(200, "user data"),
 					nil,
 				).Once()
 
-				memo := "uU0nuZNNPgilLlLX2n2r+sSE7+N6U4DukIj3rOLvzek="
-
 				authorizedTransaction := &entities.AuthorizedTransaction{
-					TransactionId:  "e9db3b52fc31b2d72fc2131ff879a20a8ee45d47c4e7fd3bb872b99a66d3124a",
-					Memo:           &memo,
-					TransactionXdr: "AAAAAC3/58Z9rycNLmF6voWX9VmDETFVGhFoWf66mcMuir/DAAAAZAAAAAAAAAAAAAAAAAAAAAO5TSe5k00+CKUuUtfafav6xITv43pTgO6QiPes4u/N6QAAAAEAAAAAAAAAAgAAAAFVU0QAAAAAAEbpO2riZmlZMkHuBxUBYAAas3hWyo9VL1IOdnfXAVFBAAAAADuaygAAAAAAGVL83DJFwH0sKmy6AIgJYD7GexiD0YuzSMioBCAUOJwAAAABVVNEAAAAAAAZUvzcMkXAfSwqbLoAiAlgPsZ7GIPRi7NIyKgEIBQ4nAAAAAAL68IAAAAAAgAAAAAAAAABRVVSAAAAAAALt4SwWfv1PIJvDRMenW0zu91YxZbphRFLA4O+gbAaigAAAAA=",
+					TransactionId:  "b9c3a075b4c20663a26779202fdd2a25a6816114b46ef7553076af68ce1986f5",
+					Memo:           "kpndMTMlNzq/CEyA/532cWC8Ickm3HlKTU1EbmQcnVU=",
+					TransactionXdr: "AAAAAC3/58Z9rycNLmF6voWX9VmDETFVGhFoWf66mcMuir/DAAAAZAAAAAAAAAAAAAAAAAAAAAOSmd0xMyU3Or8ITID/nfZxYLwhySbceUpNTURuZBydVQAAAAEAAAAAAAAAAgAAAAFVU0QAAAAAAEbpO2riZmlZMkHuBxUBYAAas3hWyo9VL1IOdnfXAVFBAAAAADuaygAAAAAAGVL83DJFwH0sKmy6AIgJYD7GexiD0YuzSMioBCAUOJwAAAABVVNEAAAAAAAZUvzcMkXAfSwqbLoAiAlgPsZ7GIPRi7NIyKgEIBQ4nAAAAAAL68IAAAAAAgAAAAAAAAABRVVSAAAAAAALt4SwWfv1PIJvDRMenW0zu91YxZbphRFLA4O+gbAaigAAAAA=",
 					Data:           params["data"][0],
 				}
 
@@ -368,18 +424,16 @@ func TestRequestHandlerAuth(t *testing.T) {
 					mockHttpClient.On(
 						"PostForm",
 						"http://fetch_info",
-						url.Values{"data": params["data"]},
+						url.Values{"address": {"bob*acme.com"}},
 					).Return(
 						net.BuildHttpResponse(200, "user data"),
 						nil,
 					).Once()
 
-					memo := "uU0nuZNNPgilLlLX2n2r+sSE7+N6U4DukIj3rOLvzek="
-
 					authorizedTransaction := &entities.AuthorizedTransaction{
-						TransactionId:  "e9db3b52fc31b2d72fc2131ff879a20a8ee45d47c4e7fd3bb872b99a66d3124a",
-						Memo:           &memo,
-						TransactionXdr: "AAAAAC3/58Z9rycNLmF6voWX9VmDETFVGhFoWf66mcMuir/DAAAAZAAAAAAAAAAAAAAAAAAAAAO5TSe5k00+CKUuUtfafav6xITv43pTgO6QiPes4u/N6QAAAAEAAAAAAAAAAgAAAAFVU0QAAAAAAEbpO2riZmlZMkHuBxUBYAAas3hWyo9VL1IOdnfXAVFBAAAAADuaygAAAAAAGVL83DJFwH0sKmy6AIgJYD7GexiD0YuzSMioBCAUOJwAAAABVVNEAAAAAAAZUvzcMkXAfSwqbLoAiAlgPsZ7GIPRi7NIyKgEIBQ4nAAAAAAL68IAAAAAAgAAAAAAAAABRVVSAAAAAAALt4SwWfv1PIJvDRMenW0zu91YxZbphRFLA4O+gbAaigAAAAA=",
+						TransactionId:  "b9c3a075b4c20663a26779202fdd2a25a6816114b46ef7553076af68ce1986f5",
+						Memo:           "kpndMTMlNzq/CEyA/532cWC8Ickm3HlKTU1EbmQcnVU=",
+						TransactionXdr: "AAAAAC3/58Z9rycNLmF6voWX9VmDETFVGhFoWf66mcMuir/DAAAAZAAAAAAAAAAAAAAAAAAAAAOSmd0xMyU3Or8ITID/nfZxYLwhySbceUpNTURuZBydVQAAAAEAAAAAAAAAAgAAAAFVU0QAAAAAAEbpO2riZmlZMkHuBxUBYAAas3hWyo9VL1IOdnfXAVFBAAAAADuaygAAAAAAGVL83DJFwH0sKmy6AIgJYD7GexiD0YuzSMioBCAUOJwAAAABVVNEAAAAAAAZUvzcMkXAfSwqbLoAiAlgPsZ7GIPRi7NIyKgEIBQ4nAAAAAAL68IAAAAAAgAAAAAAAAABRVVSAAAAAAALt4SwWfv1PIJvDRMenW0zu91YxZbphRFLA4O+gbAaigAAAAA=",
 						Data:           params["data"][0],
 					}
 
@@ -422,18 +476,16 @@ func TestRequestHandlerAuth(t *testing.T) {
 					mockHttpClient.On(
 						"PostForm",
 						"http://fetch_info",
-						url.Values{"data": params["data"]},
+						url.Values{"address": {"bob*acme.com"}},
 					).Return(
 						net.BuildHttpResponse(200, "user data"),
 						nil,
 					).Once()
 
-					memo := "uU0nuZNNPgilLlLX2n2r+sSE7+N6U4DukIj3rOLvzek="
-
 					authorizedTransaction := &entities.AuthorizedTransaction{
-						TransactionId:  "e9db3b52fc31b2d72fc2131ff879a20a8ee45d47c4e7fd3bb872b99a66d3124a",
-						Memo:           &memo,
-						TransactionXdr: "AAAAAC3/58Z9rycNLmF6voWX9VmDETFVGhFoWf66mcMuir/DAAAAZAAAAAAAAAAAAAAAAAAAAAO5TSe5k00+CKUuUtfafav6xITv43pTgO6QiPes4u/N6QAAAAEAAAAAAAAAAgAAAAFVU0QAAAAAAEbpO2riZmlZMkHuBxUBYAAas3hWyo9VL1IOdnfXAVFBAAAAADuaygAAAAAAGVL83DJFwH0sKmy6AIgJYD7GexiD0YuzSMioBCAUOJwAAAABVVNEAAAAAAAZUvzcMkXAfSwqbLoAiAlgPsZ7GIPRi7NIyKgEIBQ4nAAAAAAL68IAAAAAAgAAAAAAAAABRVVSAAAAAAALt4SwWfv1PIJvDRMenW0zu91YxZbphRFLA4O+gbAaigAAAAA=",
+						TransactionId:  "b9c3a075b4c20663a26779202fdd2a25a6816114b46ef7553076af68ce1986f5",
+						Memo:           "kpndMTMlNzq/CEyA/532cWC8Ickm3HlKTU1EbmQcnVU=",
+						TransactionXdr: "AAAAAC3/58Z9rycNLmF6voWX9VmDETFVGhFoWf66mcMuir/DAAAAZAAAAAAAAAAAAAAAAAAAAAOSmd0xMyU3Or8ITID/nfZxYLwhySbceUpNTURuZBydVQAAAAEAAAAAAAAAAgAAAAFVU0QAAAAAAEbpO2riZmlZMkHuBxUBYAAas3hWyo9VL1IOdnfXAVFBAAAAADuaygAAAAAAGVL83DJFwH0sKmy6AIgJYD7GexiD0YuzSMioBCAUOJwAAAABVVNEAAAAAAAZUvzcMkXAfSwqbLoAiAlgPsZ7GIPRi7NIyKgEIBQ4nAAAAAAL68IAAAAAAgAAAAAAAAABRVVSAAAAAAALt4SwWfv1PIJvDRMenW0zu91YxZbphRFLA4O+gbAaigAAAAA=",
 						Data:           params["data"][0],
 					}
 

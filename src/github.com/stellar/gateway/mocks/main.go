@@ -110,6 +110,20 @@ func (m *MockRepository) GetAllowedUserByDomainAndUserId(domain, userId string) 
 	}
 }
 
+type MockSignatureSignerVerifier struct {
+	mock.Mock
+}
+
+func (m *MockSignatureSignerVerifier) Sign(secretSeed string, message []byte) (string, error) {
+	a := m.Called(secretSeed, message)
+	return a.String(0), a.Error(1)
+}
+
+func (m *MockSignatureSignerVerifier) Verify(publicKey string, message, signature []byte) error {
+	a := m.Called(publicKey, message, signature)
+	return a.Error(0)
+}
+
 type MockStellartomlResolver struct {
 	mock.Mock
 }

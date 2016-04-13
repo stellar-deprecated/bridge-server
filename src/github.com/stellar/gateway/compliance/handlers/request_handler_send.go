@@ -8,11 +8,10 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"io/ioutil"
 	"net/http"
-	"net/url"
 
-	"github.com/stellar/gateway/crypto"
 	"github.com/stellar/gateway/protocols"
 	"github.com/stellar/gateway/protocols/compliance"
+	"github.com/stellar/gateway/protocols/memo"
 	"github.com/stellar/gateway/server"
 	"github.com/stellar/gateway/submitter"
 	b "github.com/stellar/go-stellar-base/build"
@@ -98,11 +97,53 @@ func (rh *RequestHandler) HandlerSend(c web.C, w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	memoBytes := sha256.Sum256([]byte(request.ExtraMemo))
-	var b32 [32]byte
-	copy(b32[:], memoBytes[0:32])
-	hash := xdr.Hash(b32)
-	memoMutator := &b.MemoHash{hash}
+	// Fetch Sender Info
+	fetchInfoRequest := compliance.FetchInfoRequest{Address: request.Sender}
+	resp, err := rh.Client.PostForm(
+		rh.Config.Callbacks.FetchInfo,
+		fetchInfoRequest.ToValues(),
+	)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"fetch_info": rh.Config.Callbacks.FetchInfo,
+			"err":        err,
+		}).Error("Error sending request to fetch_info server")
+		server.Write(w, protocols.InternalServerError)
+		return
+	}
+
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"fetch_info": rh.Config.Callbacks.FetchInfo,
+			"err":        err,
+		}).Error("Error reading fetch_info server response")
+		server.Write(w, protocols.InternalServerError)
+		return
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		log.WithFields(log.Fields{
+			"fetch_info": rh.Config.Callbacks.FetchInfo,
+			"status":     resp.StatusCode,
+			"body":       string(body),
+		}).Error("Error response from fetch_info server")
+		server.Write(w, protocols.InternalServerError)
+		return
+	}
+
+	memoPreimage := &memo.Memo{
+		Transaction: memo.Transaction{
+			SenderInfo: string(body),
+			Route:      request.Destination,
+			Extra:      request.ExtraMemo,
+		},
+	}
+
+	memoJson := memoPreimage.Marshal()
+	memoHashBytes := sha256.Sum256(memoJson)
+	memoMutator := &b.MemoHash{xdr.Hash(memoHashBytes)}
 
 	transaction, err := submitter.BuildTransaction(
 		request.Source,
@@ -123,9 +164,9 @@ func (rh *RequestHandler) HandlerSend(c web.C, w http.ResponseWriter, r *http.Re
 
 	authData := compliance.AuthData{
 		Sender:   request.Sender,
-		NeedInfo: false,
+		NeedInfo: false, // TODO
 		Tx:       txBase64,
-		Memo:     request.ExtraMemo,
+		Memo:     string(memoJson),
 	}
 
 	data, err := json.Marshal(authData)
@@ -135,19 +176,20 @@ func (rh *RequestHandler) HandlerSend(c web.C, w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	sig, err := crypto.Sign(rh.Config.Keys.SigningSeed, data)
+	sig, err := rh.SignatureSignerVerifier.Sign(rh.Config.Keys.SigningSeed, data)
 	if err != nil {
 		log.Error("Error signing authData")
 		server.Write(w, protocols.InternalServerError)
 		return
 	}
 
-	resp, err := rh.Client.PostForm(
+	authRequest := compliance.AuthRequest{
+		Data:      string(data),
+		Signature: sig,
+	}
+	resp, err = rh.Client.PostForm(
 		stellarToml.AuthServer,
-		url.Values{
-			"data": {string(data)},
-			"sig":  {sig},
-		},
+		authRequest.ToValues(),
 	)
 	if err != nil {
 		log.WithFields(log.Fields{
@@ -159,7 +201,7 @@ func (rh *RequestHandler) HandlerSend(c web.C, w http.ResponseWriter, r *http.Re
 	}
 
 	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err = ioutil.ReadAll(resp.Body)
 	if err != nil {
 		log.Error("Error reading auth server response")
 		server.Write(w, protocols.InternalServerError)
@@ -175,6 +217,20 @@ func (rh *RequestHandler) HandlerSend(c web.C, w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	response := compliance.SendResponse{TransactionXdr: txBase64}
+	var authResponse compliance.AuthResponse
+	err = json.Unmarshal(body, &authResponse)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"status": resp.StatusCode,
+			"body":   string(body),
+		}).Error("Error unmarshalling auth response")
+		server.Write(w, protocols.InternalServerError)
+		return
+	}
+
+	response := compliance.SendResponse{
+		AuthResponse:   authResponse,
+		TransactionXdr: txBase64,
+	}
 	server.Write(w, &response)
 }

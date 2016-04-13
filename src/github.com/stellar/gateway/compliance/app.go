@@ -9,6 +9,7 @@ import (
 	"github.com/facebookgo/inject"
 	"github.com/stellar/gateway/compliance/config"
 	"github.com/stellar/gateway/compliance/handlers"
+	"github.com/stellar/gateway/crypto"
 	"github.com/stellar/gateway/db"
 	"github.com/stellar/gateway/db/drivers/mysql"
 	"github.com/stellar/gateway/db/drivers/postgres"
@@ -65,6 +66,7 @@ func NewApp(config config.Config, migrateFlag bool) (app *App, err error) {
 		&inject.Object{Value: &config},
 		&inject.Object{Value: &entityManager},
 		&inject.Object{Value: &repository},
+		&inject.Object{Value: &crypto.SignatureSignerVerifier{}},
 		&inject.Object{Value: &stellartoml.Resolver{}},
 		&inject.Object{Value: &federation.Resolver{}},
 		&inject.Object{Value: &http.Client{}},

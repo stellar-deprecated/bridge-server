@@ -27,13 +27,18 @@ type AuthRequest struct {
 
 type AuthData struct {
 	// The stellar address of the customer that is initiating the send.
-	Sender string `name:"sender" required:""`
+	Sender string `json:"sender"`
 	// If the caller needs the recipient's AML info in order to send the payment.
-	NeedInfo bool `name:"need_info" required:""`
+	NeedInfo bool `json:"need_info"`
 	// The transaction that the sender would like to send in XDR format. This transaction is unsigned.
-	Tx string `name:"tx" required:""`
+	Tx string `json:"tx"`
 	// The full text of the memo the hash of this memo is included in the transaction.
-	Memo string `name:"memo" required:""`
+	Memo string `json:"memo"`
+}
+
+func (authData *AuthData) Marshal() []byte {
+	json, _ := json.Marshal(authData)
+	return json
 }
 
 // Will populate request fields using http.Request.

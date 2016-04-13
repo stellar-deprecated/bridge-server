@@ -12,6 +12,7 @@ import (
 	"github.com/stellar/gateway/compliance/config"
 	"github.com/stellar/gateway/mocks"
 	"github.com/stellar/gateway/net"
+	"github.com/stellar/gateway/protocols/compliance"
 	"github.com/stellar/gateway/protocols/federation"
 	"github.com/stellar/gateway/protocols/stellartoml"
 	"github.com/stretchr/testify/assert"
@@ -25,12 +26,16 @@ func TestRequestHandlerSend(t *testing.T) {
 			// GBYJZW5XFAI6XV73H5SAIUYK6XZI4CGGVBUBO3ANA2SV7KKDAXTV6AEB
 			SigningSeed: "SDWTLFPALQSP225BSMX7HPZ7ZEAYSUYNDLJ5QI3YGVBNRUIIELWH3XUV",
 		},
+		Callbacks: config.Callbacks{
+			FetchInfo: "http://fetch_info",
+		},
 	}
 
 	mockHttpClient := new(mocks.MockHttpClient)
 	mockEntityManager := new(mocks.MockEntityManager)
 	mockRepository := new(mocks.MockRepository)
 	mockFederationResolver := new(mocks.MockFederationResolver)
+	mockSignatureSignerVerifier := new(mocks.MockSignatureSignerVerifier)
 	mockStellartomlResolver := new(mocks.MockStellartomlResolver)
 	requestHandler := RequestHandler{}
 
@@ -44,6 +49,7 @@ func TestRequestHandlerSend(t *testing.T) {
 		&inject.Object{Value: mockEntityManager},
 		&inject.Object{Value: mockRepository},
 		&inject.Object{Value: mockFederationResolver},
+		&inject.Object{Value: mockSignatureSignerVerifier},
 		&inject.Object{Value: mockStellartomlResolver},
 	)
 	if err != nil {
@@ -109,23 +115,43 @@ func TestRequestHandlerSend(t *testing.T) {
 					AuthServer: authServer,
 				}, nil).Once()
 
-				transactionXdr := "AAAAAC3/58Z9rycNLmF6voWX9VmDETFVGhFoWf66mcMuir/DAAAAZAAAAAAAAAAAAAAAAAAAAAO5TSe5k00+CKUuUtfafav6xITv43pTgO6QiPes4u/N6QAAAAEAAAAAAAAAAQAAAAAZUvzcMkXAfSwqbLoAiAlgPsZ7GIPRi7NIyKgEIBQ4nAAAAAFVU0QAAAAAABlS/NwyRcB9LCpsugCICWA+xnsYg9GLs0jIqAQgFDicAAAAAAvrwgAAAAAA"
-				data := "{\"Sender\":\"alice*stellar.org\",\"NeedInfo\":false,\"Tx\":\"" + transactionXdr + "\",\"Memo\":\"hello world\"}"
-				sig := "XG5RkV+Cd+cdzBo/tKoylJmmwaP+YbL0DBdCH0ulL+nJot1QEy+EFm/bQ3ZGagU8sURMKCQunX3UHAak2h4ACQ=="
+				transactionXdr := "AAAAAC3/58Z9rycNLmF6voWX9VmDETFVGhFoWf66mcMuir/DAAAAZAAAAAAAAAAAAAAAAAAAAANGzcuG2Z4WMLeEJJfEHFImaPhGJrZklOKsbdZFw+6kIwAAAAEAAAAAAAAAAQAAAAAZUvzcMkXAfSwqbLoAiAlgPsZ7GIPRi7NIyKgEIBQ4nAAAAAFVU0QAAAAAABlS/NwyRcB9LCpsugCICWA+xnsYg9GLs0jIqAQgFDicAAAAAAvrwgAAAAAA"
+				data := "{\"sender\":\"alice*stellar.org\",\"need_info\":false,\"tx\":\"" + transactionXdr + "\",\"memo\":\"{\\n  \\\"transaction\\\": {\\n    \\\"sender_info\\\": \\\"{\\\\\\\"name\\\\\\\": \\\\\\\"Alice Doe\\\\\\\"}\\\",\\n    \\\"route\\\": \\\"bob*stellar.org\\\",\\n    \\\"extra\\\": \\\"hello world\\\",\\n    \\\"note\\\": \\\"\\\"\\n  },\\n  \\\"operations\\\": null\\n}\"}"
+				sig := "YeMlOYWNysyGBfsAe40z9dGgpRsKSQrqFIGAEsyJQ8osnXlLPynvJ2WQDGcBq2n5AA96YZdABhQz5ymqvxfQDw=="
+
+				authResponse := compliance.AuthResponse{
+					InfoStatus: compliance.AuthStatusOk,
+					TxStatus:   compliance.AuthStatusOk,
+				}
+
+				mockHttpClient.On(
+					"PostForm",
+					c.Callbacks.FetchInfo,
+					url.Values{"address": {"alice*stellar.org"}},
+				).Return(
+					net.BuildHttpResponse(200, "{\"name\": \"Alice Doe\"}"),
+					nil,
+				).Once()
 
 				mockHttpClient.On(
 					"PostForm",
 					authServer,
 					url.Values{"data": {data}, "sig": {sig}},
 				).Return(
-					net.BuildHttpResponse(200, "ok"),
+					net.BuildHttpResponse(200, string(authResponse.Marshal())),
 					nil,
 				).Once()
+
+				mockSignatureSignerVerifier.On(
+					"Sign",
+					c.Keys.SigningSeed,
+					[]byte(data),
+				).Return(sig, nil).Once()
 
 				statusCode, response := net.GetResponse(testServer, params)
 				responseString := strings.TrimSpace(string(response))
 				assert.Equal(t, 200, statusCode)
-				assert.Equal(t, "{\n  \"transaction_xdr\": \"AAAAAC3/58Z9rycNLmF6voWX9VmDETFVGhFoWf66mcMuir/DAAAAZAAAAAAAAAAAAAAAAAAAAAO5TSe5k00+CKUuUtfafav6xITv43pTgO6QiPes4u/N6QAAAAEAAAAAAAAAAQAAAAAZUvzcMkXAfSwqbLoAiAlgPsZ7GIPRi7NIyKgEIBQ4nAAAAAFVU0QAAAAAABlS/NwyRcB9LCpsugCICWA+xnsYg9GLs0jIqAQgFDicAAAAAAvrwgAAAAAA\"\n}", responseString)
+				assert.Equal(t, "{\n  \"auth_response\": {\n    \"info_status\": \"ok\",\n    \"tx_status\": \"ok\"\n  },\n  \"transaction_xdr\": \"AAAAAC3/58Z9rycNLmF6voWX9VmDETFVGhFoWf66mcMuir/DAAAAZAAAAAAAAAAAAAAAAAAAAANGzcuG2Z4WMLeEJJfEHFImaPhGJrZklOKsbdZFw+6kIwAAAAEAAAAAAAAAAQAAAAAZUvzcMkXAfSwqbLoAiAlgPsZ7GIPRi7NIyKgEIBQ4nAAAAAFVU0QAAAAAABlS/NwyRcB9LCpsugCICWA+xnsYg9GLs0jIqAQgFDicAAAAAAvrwgAAAAAA\"\n}", responseString)
 			})
 
 			Convey("it returns SendResponse when success (path payment)", func() {
@@ -151,23 +177,43 @@ func TestRequestHandlerSend(t *testing.T) {
 					AuthServer: authServer,
 				}, nil).Once()
 
-				transactionXdr := "AAAAAC3/58Z9rycNLmF6voWX9VmDETFVGhFoWf66mcMuir/DAAAAZAAAAAAAAAAAAAAAAAAAAAO5TSe5k00+CKUuUtfafav6xITv43pTgO6QiPes4u/N6QAAAAEAAAAAAAAAAgAAAAFVU0QAAAAAAEbpO2riZmlZMkHuBxUBYAAas3hWyo9VL1IOdnfXAVFBAAAAADuaygAAAAAAGVL83DJFwH0sKmy6AIgJYD7GexiD0YuzSMioBCAUOJwAAAABVVNEAAAAAAAZUvzcMkXAfSwqbLoAiAlgPsZ7GIPRi7NIyKgEIBQ4nAAAAAAL68IAAAAAAgAAAAAAAAABRVVSAAAAAAALt4SwWfv1PIJvDRMenW0zu91YxZbphRFLA4O+gbAaigAAAAA="
-				data := "{\"Sender\":\"alice*stellar.org\",\"NeedInfo\":false,\"Tx\":\"" + transactionXdr + "\",\"Memo\":\"hello world\"}"
-				sig := "oxfLEvW3dasnYYbVIi98nlXNJZ50yoiS4RAY15g06UhHOENcS2MUzKwLyeKfUtN6r8AFMuX5qXz8LuXgPsZwAg=="
+				transactionXdr := "AAAAAC3/58Z9rycNLmF6voWX9VmDETFVGhFoWf66mcMuir/DAAAAZAAAAAAAAAAAAAAAAAAAAANGzcuG2Z4WMLeEJJfEHFImaPhGJrZklOKsbdZFw+6kIwAAAAEAAAAAAAAAAgAAAAFVU0QAAAAAAEbpO2riZmlZMkHuBxUBYAAas3hWyo9VL1IOdnfXAVFBAAAAADuaygAAAAAAGVL83DJFwH0sKmy6AIgJYD7GexiD0YuzSMioBCAUOJwAAAABVVNEAAAAAAAZUvzcMkXAfSwqbLoAiAlgPsZ7GIPRi7NIyKgEIBQ4nAAAAAAL68IAAAAAAgAAAAAAAAABRVVSAAAAAAALt4SwWfv1PIJvDRMenW0zu91YxZbphRFLA4O+gbAaigAAAAA="
+				data := "{\"sender\":\"alice*stellar.org\",\"need_info\":false,\"tx\":\"" + transactionXdr + "\",\"memo\":\"{\\n  \\\"transaction\\\": {\\n    \\\"sender_info\\\": \\\"{\\\\\\\"name\\\\\\\": \\\\\\\"Alice Doe\\\\\\\"}\\\",\\n    \\\"route\\\": \\\"bob*stellar.org\\\",\\n    \\\"extra\\\": \\\"hello world\\\",\\n    \\\"note\\\": \\\"\\\"\\n  },\\n  \\\"operations\\\": null\\n}\"}"
+				sig := "ACamNqa0dF8gf97URhFVKWSD7fmvZKc5At+8dCLM5ySR0HsHySF3G2WuwYP2nKjeqjKmu3U9Z3+u1P10w1KBCA=="
+
+				authResponse := compliance.AuthResponse{
+					InfoStatus: compliance.AuthStatusOk,
+					TxStatus:   compliance.AuthStatusOk,
+				}
+
+				mockHttpClient.On(
+					"PostForm",
+					c.Callbacks.FetchInfo,
+					url.Values{"address": {"alice*stellar.org"}},
+				).Return(
+					net.BuildHttpResponse(200, "{\"name\": \"Alice Doe\"}"),
+					nil,
+				).Once()
 
 				mockHttpClient.On(
 					"PostForm",
 					authServer,
 					url.Values{"data": {data}, "sig": {sig}},
 				).Return(
-					net.BuildHttpResponse(200, "ok"),
+					net.BuildHttpResponse(200, string(authResponse.Marshal())),
 					nil,
 				).Once()
+
+				mockSignatureSignerVerifier.On(
+					"Sign",
+					c.Keys.SigningSeed,
+					[]byte(data),
+				).Return(sig, nil).Once()
 
 				statusCode, response := net.GetResponse(testServer, params)
 				responseString := strings.TrimSpace(string(response))
 				assert.Equal(t, 200, statusCode)
-				assert.Equal(t, "{\n  \"transaction_xdr\": \"AAAAAC3/58Z9rycNLmF6voWX9VmDETFVGhFoWf66mcMuir/DAAAAZAAAAAAAAAAAAAAAAAAAAAO5TSe5k00+CKUuUtfafav6xITv43pTgO6QiPes4u/N6QAAAAEAAAAAAAAAAgAAAAFVU0QAAAAAAEbpO2riZmlZMkHuBxUBYAAas3hWyo9VL1IOdnfXAVFBAAAAADuaygAAAAAAGVL83DJFwH0sKmy6AIgJYD7GexiD0YuzSMioBCAUOJwAAAABVVNEAAAAAAAZUvzcMkXAfSwqbLoAiAlgPsZ7GIPRi7NIyKgEIBQ4nAAAAAAL68IAAAAAAgAAAAAAAAABRVVSAAAAAAALt4SwWfv1PIJvDRMenW0zu91YxZbphRFLA4O+gbAaigAAAAA=\"\n}", responseString)
+				assert.Equal(t, "{\n  \"auth_response\": {\n    \"info_status\": \"ok\",\n    \"tx_status\": \"ok\"\n  },\n  \"transaction_xdr\": \"AAAAAC3/58Z9rycNLmF6voWX9VmDETFVGhFoWf66mcMuir/DAAAAZAAAAAAAAAAAAAAAAAAAAANGzcuG2Z4WMLeEJJfEHFImaPhGJrZklOKsbdZFw+6kIwAAAAEAAAAAAAAAAgAAAAFVU0QAAAAAAEbpO2riZmlZMkHuBxUBYAAas3hWyo9VL1IOdnfXAVFBAAAAADuaygAAAAAAGVL83DJFwH0sKmy6AIgJYD7GexiD0YuzSMioBCAUOJwAAAABVVNEAAAAAAAZUvzcMkXAfSwqbLoAiAlgPsZ7GIPRi7NIyKgEIBQ4nAAAAAAL68IAAAAAAgAAAAAAAAABRVVSAAAAAAALt4SwWfv1PIJvDRMenW0zu91YxZbphRFLA4O+gbAaigAAAAA=\"\n}", responseString)
 			})
 		})
 	})

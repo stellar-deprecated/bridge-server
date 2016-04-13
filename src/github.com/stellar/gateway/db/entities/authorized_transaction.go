@@ -8,7 +8,7 @@ type AuthorizedTransaction struct {
 	exists         bool
 	Id             *int64    `db:"id"`
 	TransactionId  string    `db:"transaction_id"`
-	Memo           *string   `db:"memo"`
+	Memo           string    `db:"memo"`
 	TransactionXdr string    `db:"transaction_xdr"`
 	AuthorizedAt   time.Time `db:"authorized_at"`
 	Data           string    `db:"data"`

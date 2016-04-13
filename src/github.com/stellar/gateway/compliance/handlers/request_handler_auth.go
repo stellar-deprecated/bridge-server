@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"bytes"
+	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
@@ -11,10 +13,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/stellar/gateway/crypto"
 	"github.com/stellar/gateway/db/entities"
 	"github.com/stellar/gateway/protocols"
 	"github.com/stellar/gateway/protocols/compliance"
+	"github.com/stellar/gateway/protocols/memo"
 	"github.com/stellar/gateway/server"
 	"github.com/stellar/gateway/submitter"
 	"github.com/stellar/go-stellar-base/xdr"
@@ -64,7 +66,7 @@ func (rh *RequestHandler) HandlerAuth(c web.C, w http.ResponseWriter, r *http.Re
 		server.Write(w, errorResponse)
 		return
 	}
-	err = crypto.Verify(senderStellarToml.SigningKey, []byte(request.Data), signatureBytes)
+	err = rh.SignatureSignerVerifier.Verify(senderStellarToml.SigningKey, []byte(request.Data), signatureBytes)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"signing_key": senderStellarToml.SigningKey,
@@ -79,19 +81,58 @@ func (rh *RequestHandler) HandlerAuth(c web.C, w http.ResponseWriter, r *http.Re
 	b64r := base64.NewDecoder(base64.StdEncoding, strings.NewReader(authData.Tx))
 	var tx xdr.Transaction
 	_, err = xdr.Unmarshal(b64r, &tx)
-
 	if err != nil {
-		log.WithFields(log.Fields{"err": err}).Warn("Error decoding Transaction XDR")
-		server.Write(w, protocols.InvalidParameterError)
+		errorResponse := protocols.NewInvalidParameterError("data.tx", authData.Tx)
+		log.WithFields(log.Fields{
+			"err": err,
+			"tx":  authData.Tx,
+		}).Warn("Error decoding Transaction XDR")
+		server.Write(w, errorResponse)
 		return
 	}
 
-	var memo *string
+	if tx.Memo.Hash == nil {
+		errorResponse := protocols.NewInvalidParameterError("data.tx", authData.Tx)
+		log.WithFields(log.Fields{"tx": authData.Tx}).Warn("Transaction does not contain Memo.Hash")
+		server.Write(w, errorResponse)
+		return
+	}
 
-	if tx.Memo.Hash != nil {
-		memoBytes := [32]byte(*tx.Memo.Hash)
-		memoBase64 := base64.StdEncoding.EncodeToString(memoBytes[:])
-		memo = &memoBase64
+	// Validate memo preimage hash
+	memoPreimageHashBytes := sha256.Sum256([]byte(authData.Memo))
+	memoBytes := [32]byte(*tx.Memo.Hash)
+
+	if memoPreimageHashBytes != memoBytes {
+		errorResponse := protocols.NewInvalidParameterError("data.tx", authData.Tx)
+
+		h := xdr.Hash(memoPreimageHashBytes)
+		tx.Memo.Hash = &h
+
+		var txBytes bytes.Buffer
+		_, err = xdr.Marshal(&txBytes, tx)
+		if err != nil {
+			log.Error("Error mashaling transaction")
+			server.Write(w, protocols.InternalServerError)
+			return
+		}
+
+		expectedTx := base64.StdEncoding.EncodeToString(txBytes.Bytes())
+
+		log.WithFields(log.Fields{"tx": authData.Tx, "expected_tx": expectedTx}).Warn("Memo preimage hash does not equal tx Memo.Hash")
+		server.Write(w, errorResponse)
+		return
+	}
+
+	var memoPreimage memo.Memo
+	err = json.Unmarshal([]byte(authData.Memo), &memoPreimage)
+	if err != nil {
+		errorResponse := protocols.NewInvalidParameterError("data.memo", authData.Memo)
+		log.WithFields(log.Fields{
+			"err":  err,
+			"memo": authData.Memo,
+		}).Warn("Cannot unmarshal memo preimage")
+		server.Write(w, errorResponse)
+		return
 	}
 
 	transactionHash, err := submitter.TransactionHash(&tx, rh.Config.NetworkPassphrase)
@@ -133,8 +174,15 @@ func (rh *RequestHandler) HandlerAuth(c web.C, w http.ResponseWriter, r *http.Re
 			response.TxStatus = compliance.AuthStatusOk
 		case http.StatusAccepted: // AuthStatusPending
 			response.TxStatus = compliance.AuthStatusPending
-			// TODO read from the response
-			response.Pending = 600
+
+			var pendingResponse compliance.PendingResponse
+			err := json.Unmarshal(body, &pendingResponse)
+			if err != nil {
+				// Set default value
+				response.Pending = 600
+			} else {
+				response.Pending = pendingResponse.Pending
+			}
 		case http.StatusForbidden: // AuthStatusDenied
 			response.TxStatus = compliance.AuthStatusDenied
 		default:
@@ -212,8 +260,15 @@ func (rh *RequestHandler) HandlerAuth(c web.C, w http.ResponseWriter, r *http.Re
 				response.InfoStatus = compliance.AuthStatusOk
 			case http.StatusAccepted: // AuthStatusPending
 				response.InfoStatus = compliance.AuthStatusPending
-				// TODO read from the response
-				response.Pending = 600
+
+				var pendingResponse compliance.PendingResponse
+				err := json.Unmarshal(body, &pendingResponse)
+				if err != nil {
+					// Set default value
+					response.Pending = 600
+				} else {
+					response.Pending = pendingResponse.Pending
+				}
 			case http.StatusForbidden: // AuthStatusDenied
 				response.InfoStatus = compliance.AuthStatusDenied
 			default:
@@ -228,14 +283,15 @@ func (rh *RequestHandler) HandlerAuth(c web.C, w http.ResponseWriter, r *http.Re
 
 		if response.InfoStatus == compliance.AuthStatusOk {
 			// Fetch Info
+			fetchInfoRequest := compliance.FetchInfoRequest{Address: memoPreimage.Transaction.Route}
 			resp, err := rh.Client.PostForm(
 				rh.Config.Callbacks.FetchInfo,
-				url.Values{"data": {string(request.Data)}},
+				fetchInfoRequest.ToValues(),
 			)
 			if err != nil {
 				log.WithFields(log.Fields{
-					"ask_user": rh.Config.Callbacks.FetchInfo,
-					"err":      err,
+					"fetch_info": rh.Config.Callbacks.FetchInfo,
+					"err":        err,
 				}).Error("Error sending request to fetch_info server")
 				server.Write(w, protocols.InternalServerError)
 				return
@@ -244,15 +300,19 @@ func (rh *RequestHandler) HandlerAuth(c web.C, w http.ResponseWriter, r *http.Re
 			defer resp.Body.Close()
 			body, err := ioutil.ReadAll(resp.Body)
 			if err != nil {
-				log.Error("Error reading fetch_info server response")
+				log.WithFields(log.Fields{
+					"fetch_info": rh.Config.Callbacks.FetchInfo,
+					"err":        err,
+				}).Error("Error reading fetch_info server response")
 				server.Write(w, protocols.InternalServerError)
 				return
 			}
 
 			if resp.StatusCode != http.StatusOK {
 				log.WithFields(log.Fields{
-					"status": resp.StatusCode,
-					"body":   string(body),
+					"fetch_info": rh.Config.Callbacks.FetchInfo,
+					"status":     resp.StatusCode,
+					"body":       string(body),
 				}).Error("Error response from fetch_info server")
 				server.Write(w, protocols.InternalServerError)
 				return
@@ -267,7 +327,7 @@ func (rh *RequestHandler) HandlerAuth(c web.C, w http.ResponseWriter, r *http.Re
 	if response.TxStatus == compliance.AuthStatusOk && response.InfoStatus == compliance.AuthStatusOk {
 		authorizedTransaction := &entities.AuthorizedTransaction{
 			TransactionId:  hex.EncodeToString(transactionHash[:]),
-			Memo:           memo,
+			Memo:           base64.StdEncoding.EncodeToString(memoBytes[:]),
 			TransactionXdr: authData.Tx,
 			AuthorizedAt:   time.Now(),
 			Data:           request.Data,

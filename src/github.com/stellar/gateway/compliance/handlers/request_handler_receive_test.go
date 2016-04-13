@@ -31,6 +31,7 @@ func TestRequestHandlerReceive(t *testing.T) {
 	mockEntityManager := new(mocks.MockEntityManager)
 	mockRepository := new(mocks.MockRepository)
 	mockFederationResolver := new(mocks.MockFederationResolver)
+	mockSignatureSignerVerifier := new(mocks.MockSignatureSignerVerifier)
 	mockStellartomlResolver := new(mocks.MockStellartomlResolver)
 	requestHandler := RequestHandler{}
 
@@ -44,6 +45,7 @@ func TestRequestHandlerReceive(t *testing.T) {
 		&inject.Object{Value: mockEntityManager},
 		&inject.Object{Value: mockRepository},
 		&inject.Object{Value: mockFederationResolver},
+		&inject.Object{Value: mockSignatureSignerVerifier},
 		&inject.Object{Value: mockStellartomlResolver},
 	)
 	if err != nil {
@@ -79,7 +81,7 @@ func TestRequestHandlerReceive(t *testing.T) {
 			params := url.Values{"memo": {memo}}
 
 			authorizedTransaction := entities.AuthorizedTransaction{
-				Memo: &memo,
+				Memo: memo,
 				Data: "hello world",
 			}
 
