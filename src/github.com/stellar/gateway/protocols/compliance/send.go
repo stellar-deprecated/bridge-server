@@ -31,7 +31,7 @@ type SendRequest struct {
 	SendAssetIssuer string `name:"send_asset_issuer"`
 	// path[n][asset_code] path[n][asset_issuer]
 	Path []protocols.Asset `name:"path"`
-	// Extra memo should contain sender KYC data
+	// Extra memo
 	ExtraMemo string `name:"extra_memo" required:""`
 
 	protocols.FormRequest

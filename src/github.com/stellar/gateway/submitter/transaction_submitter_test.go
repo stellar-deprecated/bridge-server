@@ -131,7 +131,9 @@ func TestTransactionSubmitter(t *testing.T) {
 					mockHorizon.On("SubmitTransaction", txB64).Return(
 						horizon.SubmitTransactionResponse{
 							Ledger: nil,
-							Error:  horizon.PaymentMalformed,
+							Extras:  &horizon.SubmitTransactionResponseExtras{
+								ResultXdr:   "AAAAAAAAAGT/////AAAAAQAAAAAAAAAB////+wAAAAA=", // no_destination
+							},
 						},
 						nil,
 					).Once()
@@ -194,7 +196,9 @@ func TestTransactionSubmitter(t *testing.T) {
 					mockHorizon.On("SubmitTransaction", txB64).Return(
 						horizon.SubmitTransactionResponse{
 							Ledger: nil,
-							Error:  horizon.TransactionBadSequence,
+							Extras:  &horizon.SubmitTransactionResponseExtras{
+								ResultXdr:   "AAAAAAAAAAD////7AAAAAA==", // tx_bad_seq
+							},
 						},
 						nil,
 					).Once()

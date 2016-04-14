@@ -164,7 +164,7 @@ func (rh *RequestHandler) HandlerSend(c web.C, w http.ResponseWriter, r *http.Re
 
 	authData := compliance.AuthData{
 		Sender:   request.Sender,
-		NeedInfo: false, // TODO
+		NeedInfo: rh.Config.NeedsAuth,
 		Tx:       txBase64,
 		Memo:     string(memoJson),
 	}

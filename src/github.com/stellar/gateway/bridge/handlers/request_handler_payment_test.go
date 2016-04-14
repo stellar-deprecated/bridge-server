@@ -61,20 +61,26 @@ func TestRequestHandlerPayment(t *testing.T) {
 
 	Convey("Given payment request", t, func() {
 		Convey("When source is invalid", func() {
-			source := "SDRAS7XIQNX25UDCCX725R4EYGBFYGJE4HJ2A3DFCWJIHMRSMS7CXX43"
+			params := url.Values{
+				"source":      {"SDRAS7XIQNX25UDCCX725R4EYGBFYGJE4HJ2A3DFCWJIHMRSMS7CXX43"},
+				"destination": {"GBABZMS7MEDWKWSHOMUKAWGIOE5UA4XLVPUHRHVMUW2DUVEZXLH5OIET"},
+				"amount":      {"20.0"},
+			}
 
 			Convey("it should return error", func() {
-				statusCode, response := net.GetResponse(testServer, url.Values{"source": {source}})
+				statusCode, response := net.GetResponse(testServer, params)
 				responseString := strings.TrimSpace(string(response))
 				assert.Equal(t, 400, statusCode)
-				expectedResponse := horizon.SubmitTransactionResponse{Error: horizon.PaymentInvalidSource}
-				assert.Equal(t, expectedResponse.Marshal(), []byte(responseString))
+				assert.Equal(t, "{\n  \"code\": \"invalid_parameter\",\n  \"message\": \"Invalid parameter.\",\n  \"data\": {\n    \"name\": \"source\"\n  }\n}", responseString)
 			})
 		})
 
 		Convey("When destination is invalid", func() {
-			source := "SDRAS7XIQNX25UDCCX725R4EYGBFYGJE4HJ2A3DFCWJIHMRSMS7CXX42"
-			destination := "GD3YBOYIUVLU"
+			params := url.Values{
+				"source":      {"SDRAS7XIQNX25UDCCX725R4EYGBFYGJE4HJ2A3DFCWJIHMRSMS7CXX42"},
+				"destination": {"GD3YBOYIUVLU"},
+				"amount":      {"20.0"},
+			}
 
 			mockFederationResolver.On(
 				"Resolve",
@@ -86,11 +92,10 @@ func TestRequestHandlerPayment(t *testing.T) {
 			).Once()
 
 			Convey("it should return error", func() {
-				statusCode, response := net.GetResponse(testServer, url.Values{"destination": {destination}, "source": {source}})
+				statusCode, response := net.GetResponse(testServer, params)
 				responseString := strings.TrimSpace(string(response))
 				assert.Equal(t, 400, statusCode)
-				expectedResponse := horizon.SubmitTransactionResponse{Error: horizon.PaymentInvalidDestination}
-				assert.Equal(t, expectedResponse.Marshal(), []byte(responseString))
+				assert.Equal(t, "{\n  \"code\": \"invalid_parameter\",\n  \"message\": \"Invalid parameter.\",\n  \"data\": {\n    \"name\": \"destination\"\n  }\n}", responseString)
 			})
 		})
 
@@ -98,6 +103,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 			params := url.Values{
 				"source":      {"SDRAS7XIQNX25UDCCX725R4EYGBFYGJE4HJ2A3DFCWJIHMRSMS7CXX42"},
 				"destination": {"bob*stellar.org"},
+				"amount":      {"20.0"},
 			}
 
 			Convey("When FederationResolver returns error", func() {
@@ -114,8 +120,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 					statusCode, response := net.GetResponse(testServer, params)
 					responseString := strings.TrimSpace(string(response))
 					assert.Equal(t, 400, statusCode)
-					expectedResponse := horizon.SubmitTransactionResponse{Error: horizon.PaymentCannotResolveDestination}
-					assert.Equal(t, expectedResponse.Marshal(), []byte(responseString))
+					assert.Equal(t, "{\n  \"code\": \"cannot_resolve_destination\",\n  \"message\": \"Cannot resolve federated Stellar address.\"\n}", responseString)
 				})
 			})
 
@@ -155,7 +160,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 
 				var ledger uint64
 				ledger = 1988728
-				horizonResponse := horizon.SubmitTransactionResponse{&ledger, nil, nil}
+				horizonResponse := horizon.SubmitTransactionResponse{&ledger, nil}
 
 				mockHorizon.On(
 					"SubmitTransaction",
@@ -216,7 +221,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 
 				var ledger uint64
 				ledger = 1988728
-				horizonResponse := horizon.SubmitTransactionResponse{&ledger, nil, nil}
+				horizonResponse := horizon.SubmitTransactionResponse{&ledger, nil}
 
 				mockHorizon.On(
 					"SubmitTransaction",
@@ -238,11 +243,14 @@ func TestRequestHandlerPayment(t *testing.T) {
 			})
 		})
 
-		Convey("When assetIssuer is invalid", func() {
-			source := "SDRAS7XIQNX25UDCCX725R4EYGBFYGJE4HJ2A3DFCWJIHMRSMS7CXX42"
-			destination := "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632"
-			assetCode := "USD"
-			assetIssuer := "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN631"
+		Convey("When asset_issuer is invalid", func() {
+			params := url.Values{
+				"source":       {"SDRAS7XIQNX25UDCCX725R4EYGBFYGJE4HJ2A3DFCWJIHMRSMS7CXX42"},
+				"destination":  {"GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632"},
+				"asset_code":   {"USD"},
+				"asset_issuer": {"GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN631"},
+				"amount":       {"100.0"},
+			}
 
 			mockFederationResolver.On(
 				"Resolve",
@@ -254,19 +262,10 @@ func TestRequestHandlerPayment(t *testing.T) {
 			).Once()
 
 			Convey("it should return error", func() {
-				statusCode, response := net.GetResponse(
-					testServer,
-					url.Values{
-						"source":       {source},
-						"destination":  {destination},
-						"asset_code":   {assetCode},
-						"asset_issuer": {assetIssuer},
-					},
-				)
+				statusCode, response := net.GetResponse(testServer, params)
 				responseString := strings.TrimSpace(string(response))
 				assert.Equal(t, 400, statusCode)
-				expectedResponse := horizon.SubmitTransactionResponse{Error: horizon.PaymentInvalidIssuer}
-				assert.Equal(t, expectedResponse.Marshal(), []byte(responseString))
+				assert.Equal(t, "{\n  \"code\": \"invalid_parameter\",\n  \"message\": \"Invalid parameter.\",\n  \"data\": {\n    \"name\": \"asset_issuer\"\n  }\n}", responseString)
 			})
 		})
 
@@ -310,8 +309,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 				)
 				responseString := strings.TrimSpace(string(response))
 				assert.Equal(t, 400, statusCode)
-				expectedResponse := horizon.SubmitTransactionResponse{Error: horizon.PaymentMalformedAssetCode}
-				assert.Equal(t, expectedResponse.Marshal(), []byte(responseString))
+				assert.Equal(t, "{\n  \"code\": \"invalid_parameter\",\n  \"message\": \"Invalid parameter.\",\n  \"data\": {\n    \"name\": \"asset_code\"\n  }\n}", responseString)
 			})
 		})
 
@@ -355,8 +353,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 				)
 				responseString := strings.TrimSpace(string(response))
 				assert.Equal(t, 400, statusCode)
-				expectedResponse := horizon.SubmitTransactionResponse{Error: horizon.PaymentInvalidAmount}
-				assert.Equal(t, expectedResponse.Marshal(), []byte(responseString))
+				assert.Equal(t, "{\n  \"code\": \"invalid_parameter\",\n  \"message\": \"Invalid parameter.\",\n  \"data\": {\n    \"name\": \"amount\"\n  }\n}", responseString)
 			})
 		})
 
@@ -385,8 +382,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 					statusCode, response := net.GetResponse(testServer, validParams)
 					responseString := strings.TrimSpace(string(response))
 					assert.Equal(t, 400, statusCode)
-					expectedResponse := horizon.SubmitTransactionResponse{Error: horizon.PaymentMissingParamMemo}
-					assert.Equal(t, expectedResponse.Marshal(), []byte(responseString))
+					assert.Equal(t, "{\n  \"code\": \"missing_parameter\",\n  \"message\": \"Required parameter is missing.\",\n  \"data\": {\n    \"name\": \"memo_type\"\n  }\n}", responseString)
 				})
 
 				Convey("only `memo_type` param is set", func() {
@@ -394,8 +390,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 					statusCode, response := net.GetResponse(testServer, validParams)
 					responseString := strings.TrimSpace(string(response))
 					assert.Equal(t, 400, statusCode)
-					expectedResponse := horizon.SubmitTransactionResponse{Error: horizon.PaymentMissingParamMemo}
-					assert.Equal(t, expectedResponse.Marshal(), []byte(responseString))
+					assert.Equal(t, "{\n  \"code\": \"missing_parameter\",\n  \"message\": \"Required parameter is missing.\",\n  \"data\": {\n    \"name\": \"memo\"\n  }\n}", responseString)
 				})
 
 				Convey("memo_type=hash to long", func() {
@@ -404,8 +399,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 					statusCode, response := net.GetResponse(testServer, validParams)
 					responseString := strings.TrimSpace(string(response))
 					assert.Equal(t, 400, statusCode)
-					expectedResponse := horizon.SubmitTransactionResponse{Error: horizon.PaymentInvalidMemo}
-					assert.Equal(t, expectedResponse.Marshal(), []byte(responseString))
+					assert.Equal(t, "{\n  \"code\": \"invalid_parameter\",\n  \"message\": \"Invalid parameter.\",\n  \"data\": {\n    \"name\": \"memo\"\n  }\n}", responseString)
 				})
 
 				Convey("unsupported memo_type", func() {
@@ -414,8 +408,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 					statusCode, response := net.GetResponse(testServer, validParams)
 					responseString := strings.TrimSpace(string(response))
 					assert.Equal(t, 400, statusCode)
-					expectedResponse := horizon.SubmitTransactionResponse{Error: horizon.PaymentInvalidMemo}
-					assert.Equal(t, expectedResponse.Marshal(), []byte(responseString))
+					assert.Equal(t, "{\n  \"code\": \"invalid_parameter\",\n  \"message\": \"Invalid parameter.\",\n  \"data\": {\n    \"name\": \"memo\"\n  }\n}", responseString)
 				})
 
 				Convey("memo is attached to the transaction", func() {
@@ -431,7 +424,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 
 					var ledger uint64
 					ledger = 1988727
-					horizonResponse := horizon.SubmitTransactionResponse{&ledger, nil, nil}
+					horizonResponse := horizon.SubmitTransactionResponse{&ledger, nil}
 
 					mockHorizon.On(
 						"SubmitTransaction",
@@ -465,7 +458,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 
 					var ledger uint64
 					ledger = 1988727
-					horizonResponse := horizon.SubmitTransactionResponse{&ledger, nil, nil}
+					horizonResponse := horizon.SubmitTransactionResponse{&ledger, nil}
 
 					mockHorizon.On(
 						"SubmitTransaction",
@@ -497,8 +490,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 					statusCode, response := net.GetResponse(testServer, validParams)
 					responseString := strings.TrimSpace(string(response))
 					assert.Equal(t, 400, statusCode)
-					expectedResponse := horizon.SubmitTransactionResponse{Error: horizon.PaymentSourceNotExist}
-					assert.Equal(t, expectedResponse.Marshal(), []byte(responseString))
+					assert.Equal(t, "{\n  \"code\": \"source_not_exist\",\n  \"message\": \"Source account does not exist.\"\n}", responseString)
 				})
 			})
 
@@ -515,13 +507,9 @@ func TestRequestHandlerPayment(t *testing.T) {
 
 				horizonResponse := horizon.SubmitTransactionResponse{
 					nil,
-					&horizon.SubmitTransactionResponseError{
-						Status: 400,
-						Code:   "transaction_failed",
-					},
 					&horizon.SubmitTransactionResponseExtras{
 						EnvelopeXdr: "envelope",
-						ResultXdr:   "result",
+						ResultXdr:   "AAAAAAAAAAD////7AAAAAA==", // tx_bad_seq
 					},
 				}
 
@@ -534,13 +522,8 @@ func TestRequestHandlerPayment(t *testing.T) {
 					statusCode, response := net.GetResponse(testServer, validParams)
 					responseString := strings.TrimSpace(string(response))
 
-					expectedResponse, err := json.MarshalIndent(horizonResponse, "", "  ")
-					if err != nil {
-						panic(err)
-					}
-
 					assert.Equal(t, 400, statusCode)
-					assert.Equal(t, string(expectedResponse), responseString)
+					assert.Equal(t, "{\n  \"code\": \"transaction_bad_seq\",\n  \"message\": \"Bad Sequence. Please, try again.\"\n}", responseString)
 				})
 			})
 
@@ -571,7 +554,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 
 				var ledger uint64
 				ledger = 1988727
-				horizonResponse := horizon.SubmitTransactionResponse{&ledger, nil, nil}
+				horizonResponse := horizon.SubmitTransactionResponse{&ledger, nil}
 
 				mockHorizon.On(
 					"SubmitTransaction",
@@ -605,7 +588,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 
 				var ledger uint64
 				ledger = 1988727
-				horizonResponse := horizon.SubmitTransactionResponse{&ledger, nil, nil}
+				horizonResponse := horizon.SubmitTransactionResponse{&ledger, nil}
 
 				mockHorizon.On(
 					"SubmitTransaction",
@@ -672,7 +655,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 			Convey("transaction success (send native)", func() {
 				var ledger uint64
 				ledger = 1988727
-				horizonResponse := horizon.SubmitTransactionResponse{&ledger, nil, nil}
+				horizonResponse := horizon.SubmitTransactionResponse{&ledger, nil}
 
 				mockHorizon.On(
 					"SubmitTransaction",
@@ -699,7 +682,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 
 				var ledger uint64
 				ledger = 1988727
-				horizonResponse := horizon.SubmitTransactionResponse{&ledger, nil, nil}
+				horizonResponse := horizon.SubmitTransactionResponse{&ledger, nil}
 
 				mockHorizon.On(
 					"SubmitTransaction",
@@ -733,7 +716,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 
 				var ledger uint64
 				ledger = 1988727
-				horizonResponse := horizon.SubmitTransactionResponse{&ledger, nil, nil}
+				horizonResponse := horizon.SubmitTransactionResponse{&ledger, nil}
 
 				mockHorizon.On(
 					"SubmitTransaction",
@@ -789,8 +772,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 				statusCode, response := net.GetResponse(testServer, params)
 				responseString := strings.TrimSpace(string(response))
 				assert.Equal(t, 500, statusCode)
-				expectedResponse := horizon.SubmitTransactionResponse{Error: horizon.ServerError}
-				assert.Equal(t, expectedResponse.Marshal(), []byte(responseString))
+				assert.Equal(t, "{\n  \"code\": \"internal_server_error\",\n  \"message\": \"Internal Server Error, please try again.\"\n}", responseString)
 			})
 
 			Convey("it should return denied when compliance server returns denied", func() {
@@ -813,8 +795,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 				statusCode, response := net.GetResponse(testServer, params)
 				responseString := strings.TrimSpace(string(response))
 				assert.Equal(t, 403, statusCode)
-				expectedResponse := horizon.NewErrorResponse(horizon.PaymentDenied)
-				assert.Equal(t, expectedResponse.Marshal(), []byte(responseString))
+				assert.Equal(t, "{\n  \"code\": \"denied\",\n  \"message\": \"Transaction denied by destination.\"\n}", responseString)
 			})
 
 			Convey("it should return pending when compliance server returns pending", func() {
@@ -837,10 +818,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 				statusCode, response := net.GetResponse(testServer, params)
 				responseString := strings.TrimSpace(string(response))
 				assert.Equal(t, 202, statusCode)
-				expectedResponse := horizon.NewErrorResponse(
-					horizon.NewPaymentPendingError(3600),
-				)
-				assert.Equal(t, expectedResponse.Marshal(), []byte(responseString))
+				assert.Equal(t, "{\n  \"code\": \"pending\",\n  \"message\": \"Transaction pending. Repeat your request after given time.\",\n  \"data\": {\n    \"pending\": 3600\n  }\n}", responseString)
 			})
 
 			Convey("it should submit transaction when compliance server returns success", func() {
@@ -916,7 +894,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 
 				var ledger uint64
 				ledger = 1988727
-				horizonResponse := horizon.SubmitTransactionResponse{&ledger, nil, nil}
+				horizonResponse := horizon.SubmitTransactionResponse{&ledger, nil}
 
 				mockTransactionSubmitter.On(
 					"SignAndSubmitRawTransaction",

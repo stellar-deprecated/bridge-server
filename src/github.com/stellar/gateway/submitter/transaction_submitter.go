@@ -168,7 +168,7 @@ func (ts *TransactionSubmitter) SignAndSubmitRawTransaction(seed string, tx *xdr
 	}
 
 	// Sync sequence number
-	if response.Error != nil && response.Error.Code == "transaction_bad_seq" {
+	if response.Extras != nil && response.Extras.ResultXdr == "AAAAAAAAAAD////7AAAAAA==" {
 		account.Mutex.Lock()
 		ts.log.Print("Syncing sequence number for ", account.Keypair.Address())
 		accountResponse, err2 := ts.Horizon.LoadAccount(account.Keypair.Address())
