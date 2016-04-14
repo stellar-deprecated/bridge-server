@@ -95,6 +95,35 @@ func ErrorFromHorizonResponse(response horizon.SubmitTransactionResponse) *proto
 				default:
 					return protocols.InternalServerError
 				}
+			} else if operationsResult.Tr.PathPaymentResult != nil {
+				switch operationsResult.Tr.PathPaymentResult.Code {
+				case xdr.PathPaymentResultCodePathPaymentMalformed:
+					return PaymentMalformed
+				case xdr.PathPaymentResultCodePathPaymentUnderfunded:
+					return PaymentUnderfunded
+				case xdr.PathPaymentResultCodePathPaymentSrcNoTrust:
+					return PaymentSrcNoTrust
+				case xdr.PathPaymentResultCodePathPaymentSrcNotAuthorized:
+					return PaymentSrcNotAuthorized
+				case xdr.PathPaymentResultCodePathPaymentNoDestination:
+					return PaymentNoDestination
+				case xdr.PathPaymentResultCodePathPaymentNoTrust:
+					return PaymentNoTrust
+				case xdr.PathPaymentResultCodePathPaymentNotAuthorized:
+					return PaymentNotAuthorized
+				case xdr.PathPaymentResultCodePathPaymentLineFull:
+					return PaymentLineFull
+				case xdr.PathPaymentResultCodePathPaymentNoIssuer:
+					return PaymentNoIssuer
+				case xdr.PathPaymentResultCodePathPaymentTooFewOffers:
+					return PaymentTooFewOffers
+				case xdr.PathPaymentResultCodePathPaymentOfferCrossSelf:
+					return PaymentOfferCrossSelf
+				case xdr.PathPaymentResultCodePathPaymentOverSendmax:
+					return PaymentOverSendmax
+				default:
+					return protocols.InternalServerError
+				}
 			}
 		} else {
 			return protocols.InternalServerError

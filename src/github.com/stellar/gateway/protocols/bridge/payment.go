@@ -31,6 +31,9 @@ var (
 	PaymentNotAuthorized    = &protocols.ErrorResponse{Code: "payment_not_authorized", Message: "Destination not authorized to trust asset. It needs to be allowed first by using /authorize endpoint.", Status: http.StatusBadRequest}
 	PaymentLineFull         = &protocols.ErrorResponse{Code: "payment_line_full", Message: "Sending this payment would make a destination go above their limit.", Status: http.StatusBadRequest}
 	PaymentNoIssuer         = &protocols.ErrorResponse{Code: "payment_no_issuer", Message: "Missing issuer on asset.", Status: http.StatusBadRequest}
+	PaymentTooFewOffers     = &protocols.ErrorResponse{Code: "payment_too_few_offers", Message: "Not enough offers to satisfy path.", Status: http.StatusBadRequest}
+	PaymentOfferCrossSelf   = &protocols.ErrorResponse{Code: "payment_offer_cross_self", Message: "would cross one of its own offers.", Status: http.StatusBadRequest}
+	PaymentOverSendmax      = &protocols.ErrorResponse{Code: "payment_over_sendmax", Message: "Could not satisfy sendmax.", Status: http.StatusBadRequest}
 )
 
 type PaymentRequest struct {

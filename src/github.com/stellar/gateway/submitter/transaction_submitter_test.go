@@ -131,8 +131,8 @@ func TestTransactionSubmitter(t *testing.T) {
 					mockHorizon.On("SubmitTransaction", txB64).Return(
 						horizon.SubmitTransactionResponse{
 							Ledger: nil,
-							Extras:  &horizon.SubmitTransactionResponseExtras{
-								ResultXdr:   "AAAAAAAAAGT/////AAAAAQAAAAAAAAAB////+wAAAAA=", // no_destination
+							Extras: &horizon.SubmitTransactionResponseExtras{
+								ResultXdr: "AAAAAAAAAGT/////AAAAAQAAAAAAAAAB////+wAAAAA=", // no_destination
 							},
 						},
 						nil,
@@ -196,8 +196,8 @@ func TestTransactionSubmitter(t *testing.T) {
 					mockHorizon.On("SubmitTransaction", txB64).Return(
 						horizon.SubmitTransactionResponse{
 							Ledger: nil,
-							Extras:  &horizon.SubmitTransactionResponseExtras{
-								ResultXdr:   "AAAAAAAAAAD////7AAAAAA==", // tx_bad_seq
+							Extras: &horizon.SubmitTransactionResponseExtras{
+								ResultXdr: "AAAAAAAAAAD////7AAAAAA==", // tx_bad_seq
 							},
 						},
 						nil,
