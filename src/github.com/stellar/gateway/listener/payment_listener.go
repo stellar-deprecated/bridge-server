@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"strconv"
 	"time"
 
 	"github.com/Sirupsen/logrus"
@@ -94,6 +95,23 @@ func (pl PaymentListener) Listen() (err error) {
 
 func (pl PaymentListener) onPayment(payment horizon.PaymentResponse) (err error) {
 	pl.log.WithFields(logrus.Fields{"id": payment.Id}).Info("New payment")
+
+	id, err := strconv.ParseInt(payment.Id, 10, 64)
+	if err != nil {
+		pl.log.WithFields(logrus.Fields{"err": err}).Error("Error converting ID to int64")
+		return err
+	}
+
+	existingPayment, err := pl.repository.GetReceivedPaymentById(id)
+	if err != nil {
+		pl.log.WithFields(logrus.Fields{"err": err}).Error("Error checking if receive payment exists")
+		return err
+	}
+
+	if existingPayment != nil {
+		pl.log.WithFields(logrus.Fields{"id": payment.Id}).Info("Payment already exists")
+		return
+	}
 
 	dbPayment := entities.ReceivedPayment{
 		OperationId: payment.Id,

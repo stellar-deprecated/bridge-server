@@ -77,10 +77,22 @@ func TestPaymentListener(t *testing.T) {
 			PagingToken: operation.PagingToken,
 		}
 
+		Convey("When operation exists", func() {
+			operation.Type = "payment"
+			mockRepository.On("GetReceivedPaymentById", int64(1)).Return(&entities.ReceivedPayment{}, nil).Once()
+
+			Convey("it should save the status", func() {
+				err := paymentListener.onPayment(operation)
+				assert.Nil(t, err)
+				mockEntityManager.AssertExpectations(t)
+			})
+		})
+
 		Convey("When operation is not a payment", func() {
 			operation.Type = "create_account"
 			dbPayment.Status = "Not a payment operation"
 			mockEntityManager.On("Persist", &dbPayment).Return(nil).Once()
+			mockRepository.On("GetReceivedPaymentById", int64(1)).Return(nil, nil).Once()
 
 			Convey("it should save the status", func() {
 				err := paymentListener.onPayment(operation)
@@ -94,6 +106,7 @@ func TestPaymentListener(t *testing.T) {
 			operation.To = "GDNXBMIJLLLXZYKZBHXJ45WQ4AJQBRVT776YKGQTDBHTSPMNAFO3OZOS"
 			dbPayment.Status = "Operation sent not received"
 			mockEntityManager.On("Persist", &dbPayment).Return(nil).Once()
+			mockRepository.On("GetReceivedPaymentById", int64(1)).Return(nil, nil).Once()
 
 			Convey("it should save the status", func() {
 				err := paymentListener.onPayment(operation)
@@ -109,6 +122,7 @@ func TestPaymentListener(t *testing.T) {
 			operation.AssetIssuer = "GC4WWLMUGZJMRVJM7JUVVZBY3LJ5HL4RKIPADEGKEMLAAJEDRONUGYG7"
 			dbPayment.Status = "Asset not allowed"
 			mockEntityManager.On("Persist", &dbPayment).Return(nil).Once()
+			mockRepository.On("GetReceivedPaymentById", int64(1)).Return(nil, nil).Once()
 
 			Convey("it should save the status", func() {
 				err := paymentListener.onPayment(operation)
@@ -124,6 +138,7 @@ func TestPaymentListener(t *testing.T) {
 			operation.AssetIssuer = "GD4I7AFSLZGTDL34TQLWJOM2NHLIIOEKD5RHHZUW54HERBLSIRKUOXRR"
 			dbPayment.Status = "Asset not allowed"
 			mockEntityManager.On("Persist", &dbPayment).Return(nil).Once()
+			mockRepository.On("GetReceivedPaymentById", int64(1)).Return(nil, nil).Once()
 
 			Convey("it should save the status", func() {
 				err := paymentListener.onPayment(operation)
@@ -138,6 +153,7 @@ func TestPaymentListener(t *testing.T) {
 			operation.AssetCode = "USD"
 			operation.AssetIssuer = "GD4I7AFSLZGTDL34TQLWJOM2NHLIIOEKD5RHHZUW54HERBLSIRKUOXRR"
 
+			mockRepository.On("GetReceivedPaymentById", int64(1)).Return(nil, nil).Once()
 			mockHorizon.On("LoadMemo", &operation).Return(errors.New("Connection error")).Once()
 
 			Convey("it should return error", func() {
@@ -156,6 +172,7 @@ func TestPaymentListener(t *testing.T) {
 			operation.Memo.Type = "text"
 			operation.Memo.Value = "testing"
 
+			mockRepository.On("GetReceivedPaymentById", int64(1)).Return(nil, nil).Once()
 			mockHorizon.On("LoadMemo", &operation).Return(nil).Once()
 			receiveHookStatusCode = 503
 
@@ -177,6 +194,7 @@ func TestPaymentListener(t *testing.T) {
 
 			dbPayment.Status = "Success"
 
+			mockRepository.On("GetReceivedPaymentById", int64(1)).Return(nil, nil).Once()
 			mockHorizon.On("LoadMemo", &operation).Return(nil).Once()
 			mockEntityManager.On("Persist", &dbPayment).Return(nil).Once()
 			receiveHookStatusCode = 200
@@ -200,6 +218,7 @@ func TestPaymentListener(t *testing.T) {
 
 			dbPayment.Status = "Success"
 
+			mockRepository.On("GetReceivedPaymentById", int64(1)).Return(nil, nil).Once()
 			mockHorizon.On("LoadMemo", &operation).Return(nil).Once()
 			mockEntityManager.On("Persist", &dbPayment).Return(nil).Once()
 			receiveHookStatusCode = 200

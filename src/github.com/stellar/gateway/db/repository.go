@@ -10,6 +10,7 @@ type RepositoryInterface interface {
 	GetAuthorizedTransactionByMemo(memo string) (*entities.AuthorizedTransaction, error)
 	GetAllowedFiByDomain(domain string) (*entities.AllowedFi, error)
 	GetAllowedUserByDomainAndUserId(domain, userId string) (*entities.AllowedUser, error)
+	GetReceivedPaymentById(id int64) (*entities.ReceivedPayment, error)
 }
 
 type Repository struct {
@@ -60,5 +61,14 @@ func (r Repository) GetAllowedUserByDomainAndUserId(domain, userId string) (*ent
 		return nil, err
 	} else {
 		return allowedUser.(*entities.AllowedUser), err
+	}
+}
+
+func (r Repository) GetReceivedPaymentById(id int64) (*entities.ReceivedPayment, error) {
+	receivedPayment, err := r.driver.GetOne(&entities.ReceivedPayment{}, "id = ?", id)
+	if receivedPayment == nil {
+		return nil, err
+	} else {
+		return receivedPayment.(*entities.ReceivedPayment), err
 	}
 }

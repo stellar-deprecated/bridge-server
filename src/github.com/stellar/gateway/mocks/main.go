@@ -110,6 +110,15 @@ func (m *MockRepository) GetAllowedUserByDomainAndUserId(domain, userId string) 
 	}
 }
 
+func (m *MockRepository) GetReceivedPaymentById(id int64) (*entities.ReceivedPayment, error) {
+	a := m.Called(id)
+	if a.Get(0) == nil {
+		return nil, a.Error(1)
+	} else {
+		return a.Get(0).(*entities.ReceivedPayment), a.Error(1)
+	}
+}
+
 type MockSignatureSignerVerifier struct {
 	mock.Mock
 }
