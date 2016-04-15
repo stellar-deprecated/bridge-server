@@ -94,7 +94,7 @@ func (pl PaymentListener) Listen() (err error) {
 }
 
 func (pl PaymentListener) onPayment(payment horizon.PaymentResponse) (err error) {
-	pl.log.WithFields(logrus.Fields{"id": payment.Id}).Info("New payment")
+	pl.log.WithFields(logrus.Fields{"id": payment.Id}).Info("New received payment")
 
 	id, err := strconv.ParseInt(payment.Id, 10, 64)
 	if err != nil {

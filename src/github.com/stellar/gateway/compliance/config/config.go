@@ -10,6 +10,7 @@ import (
 type Config struct {
 	ExternalPort      *int   `mapstructure:"external_port"`
 	InternalPort      *int   `mapstructure:"internal_port"`
+	LogFormat         string `mapstructure:"log_format"`
 	NeedsAuth         bool   `mapstructure:"needs_auth"`
 	NetworkPassphrase string `mapstructure:"network_passphrase"`
 	Database          struct {

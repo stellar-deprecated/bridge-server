@@ -32,6 +32,7 @@ The `config.toml` file must be present in a working directory. Config file shoul
   * `sanctions` - Callback that performs sanctions check. Read [Callbacks](#callbacks) section.
   * `ask_user` - Callback that asks user for permission for reading their data. Read [Callbacks](#callbacks) section.
   * `fetch_info` - Callback that returns user data.
+* `log_format` - set to `json` for JSON logs
 
 Check [`config-example.toml`](./config-example.toml).
 

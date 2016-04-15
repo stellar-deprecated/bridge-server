@@ -11,6 +11,7 @@ type Config struct {
 	Port              *int
 	Horizon           string
 	Compliance        string
+	LogFormat         string `mapstructure:"log_format"`
 	ApiKey            string `mapstructure:"api_key"`
 	NetworkPassphrase string `mapstructure:"network_passphrase"`
 	Assets            []Asset

@@ -44,6 +44,7 @@ The `config.toml` file must be present in a working directory. Config file shoul
 * `hooks`
   * `receive` - URL of the webhook where requests will be sent when a new payment is sent to the receiving account. **WARNING** The bridge server can send multiple requests to this webhook for a single payment! You need to be prepared for it. See: [Security](#security).
   * `error` - URL of the webhook where requests will be sent when there is an error with an incoming payment
+* `log_format` - set to `json` for JSON logs
 
 Check [`config-example.toml`](./config-example.toml).
 
