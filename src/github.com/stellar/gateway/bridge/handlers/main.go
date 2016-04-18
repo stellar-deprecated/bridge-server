@@ -9,9 +9,10 @@ import (
 	"github.com/stellar/gateway/submitter"
 )
 
+// RequestHandler implements bridge server request handlers
 type RequestHandler struct {
 	Config               *config.Config                          `inject:""`
-	Client               net.HttpClientInterface                 `inject:""`
+	Client               net.HTTPClientInterface                 `inject:""`
 	Horizon              horizon.HorizonInterface                `inject:""`
 	StellarTomlResolver  stellartoml.ResolverInterface           `inject:""`
 	FederationResolver   federation.ResolverInterface            `inject:""`

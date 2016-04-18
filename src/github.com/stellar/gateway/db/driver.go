@@ -4,6 +4,7 @@ import (
 	"github.com/stellar/gateway/db/entities"
 )
 
+// Driver interface allows mocking database driver
 type Driver interface {
 	Init(url string) (err error)
 	MigrateUp(component string) (migrationsApplied int, err error)

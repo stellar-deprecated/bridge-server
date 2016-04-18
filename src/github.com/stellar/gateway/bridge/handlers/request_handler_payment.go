@@ -19,6 +19,7 @@ import (
 	"github.com/stellar/go-stellar-base/xdr"
 )
 
+// Payment implements /payment endpoint
 func (rh *RequestHandler) Payment(w http.ResponseWriter, r *http.Request) {
 	request := &bridge.PaymentRequest{}
 	request.FromRequest(r)
@@ -111,9 +112,9 @@ func (rh *RequestHandler) Payment(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		_, err = keypair.Parse(destinationObject.AccountId)
+		_, err = keypair.Parse(destinationObject.AccountID)
 		if err != nil {
-			log.WithFields(log.Fields{"AccountId": destinationObject.AccountId}).Print("Invalid AccountId in destination")
+			log.WithFields(log.Fields{"AccountId": destinationObject.AccountID}).Print("Invalid AccountId in destination")
 			server.Write(w, protocols.NewInvalidParameterError("destination", request.Destination))
 			return
 		}
@@ -157,7 +158,7 @@ func (rh *RequestHandler) Payment(w http.ResponseWriter, r *http.Request) {
 
 		if request.AssetCode != "" && request.AssetIssuer != "" {
 			mutators := []interface{}{
-				b.Destination{destinationObject.AccountId},
+				b.Destination{destinationObject.AccountID},
 				b.CreditAmount{request.AssetCode, request.AssetIssuer, request.Amount},
 			}
 
@@ -168,7 +169,7 @@ func (rh *RequestHandler) Payment(w http.ResponseWriter, r *http.Request) {
 			operationBuilder = b.Payment(mutators...)
 		} else {
 			mutators := []interface{}{
-				b.Destination{destinationObject.AccountId},
+				b.Destination{destinationObject.AccountID},
 				b.NativeAmount{request.Amount},
 			}
 
@@ -177,7 +178,7 @@ func (rh *RequestHandler) Payment(w http.ResponseWriter, r *http.Request) {
 			}
 
 			// Check if destination account exist
-			_, err = rh.Horizon.LoadAccount(destinationObject.AccountId)
+			_, err = rh.Horizon.LoadAccount(destinationObject.AccountID)
 			if err != nil {
 				log.WithFields(log.Fields{"error": err}).Error("Error loading account")
 				operationBuilder = b.CreateAccount(mutators...)

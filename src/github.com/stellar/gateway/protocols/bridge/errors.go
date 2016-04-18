@@ -11,14 +11,21 @@ import (
 )
 
 var (
-	TransactionBadSequence         = &protocols.ErrorResponse{Code: "transaction_bad_seq", Message: "Bad Sequence. Please, try again.", Status: http.StatusBadRequest}
-	TransactionBadAuth             = &protocols.ErrorResponse{Code: "transaction_bad_auth", Message: "Invalid network or too few signatures.", Status: http.StatusBadRequest}
+	// TransactionBadSequence is an error response
+	TransactionBadSequence = &protocols.ErrorResponse{Code: "transaction_bad_seq", Message: "Bad Sequence. Please, try again.", Status: http.StatusBadRequest}
+	// TransactionBadAuth is an error response
+	TransactionBadAuth = &protocols.ErrorResponse{Code: "transaction_bad_auth", Message: "Invalid network or too few signatures.", Status: http.StatusBadRequest}
+	// TransactionInsufficientBalance is an error response
 	TransactionInsufficientBalance = &protocols.ErrorResponse{Code: "transaction_insufficient_balance", Message: "Transaction fee would bring account below reserve.", Status: http.StatusBadRequest}
-	TransactionNoAccount           = &protocols.ErrorResponse{Code: "transaction_no_account", Message: "Source account not found.", Status: http.StatusBadRequest}
-	TransactionInsufficientFee     = &protocols.ErrorResponse{Code: "transaction_insufficient_fee", Message: "Transaction fee is too small.", Status: http.StatusBadRequest}
-	TransactionBadAuthExtra        = &protocols.ErrorResponse{Code: "transaction_bad_auth_extra", Message: "Unused signatures attached to transaction.", Status: http.StatusBadRequest}
+	// TransactionNoAccount is an error response
+	TransactionNoAccount = &protocols.ErrorResponse{Code: "transaction_no_account", Message: "Source account not found.", Status: http.StatusBadRequest}
+	// TransactionInsufficientFee is an error response
+	TransactionInsufficientFee = &protocols.ErrorResponse{Code: "transaction_insufficient_fee", Message: "Transaction fee is too small.", Status: http.StatusBadRequest}
+	// TransactionBadAuthExtra is an error response
+	TransactionBadAuthExtra = &protocols.ErrorResponse{Code: "transaction_bad_auth_extra", Message: "Unused signatures attached to transaction.", Status: http.StatusBadRequest}
 )
 
+// ErrorFromHorizonResponse checks if horizon.SubmitTransactionResponse is an error response and creates ErrorResponse for it
 func ErrorFromHorizonResponse(response horizon.SubmitTransactionResponse) *protocols.ErrorResponse {
 	if response.Ledger == nil && response.Extras != nil {
 		var txResult xdr.TransactionResult

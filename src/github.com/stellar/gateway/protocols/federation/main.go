@@ -11,19 +11,22 @@ import (
 	"github.com/stellar/gateway/protocols/stellartoml"
 )
 
+// ResolverInterface helps mocking Resolver object
 type ResolverInterface interface {
 	Resolve(address string) (response Response, stellarToml stellartoml.StellarToml, err error)
-	GetDestination(federationUrl, address string) (response Response, err error)
+	GetDestination(federationURL, address string) (response Response, err error)
 }
 
+// Resolver resolves federation query
 type Resolver struct {
 	StellarTomlResolver *stellartoml.Resolver `inject:""`
 }
 
+// Resolve resolves federation address or account ID.
 func (r *Resolver) Resolve(address string) (response Response, stellarToml stellartoml.StellarToml, err error) {
 	tokens := strings.Split(address, "*")
 	if len(tokens) == 1 {
-		response.AccountId = address
+		response.AccountID = address
 	} else if len(tokens) == 2 {
 		stellarToml, err = r.StellarTomlResolver.GetStellarToml(tokens[1])
 		if err != nil {
@@ -44,13 +47,14 @@ func (r *Resolver) Resolve(address string) (response Response, stellarToml stell
 	return
 }
 
-func (r *Resolver) GetDestination(federationUrl, address string) (response Response, err error) {
-	if !strings.HasPrefix(federationUrl, "https://") {
+// GetDestination resolves federation address using server specified federationURL
+func (r *Resolver) GetDestination(federationURL, address string) (response Response, err error) {
+	if !strings.HasPrefix(federationURL, "https://") {
 		err = errors.New("Only HTTPS federation servers allowed")
 		return
 	}
 
-	resp, err := http.Get(federationUrl + "?type=name&q=" + address)
+	resp, err := http.Get(federationURL + "?type=name&q=" + address)
 	if err != nil {
 		return
 	}

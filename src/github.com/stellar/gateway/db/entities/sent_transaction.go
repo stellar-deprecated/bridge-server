@@ -4,18 +4,23 @@ import (
 	"time"
 )
 
+// SentTransactionStatus type represents sent transaction status
 type SentTransactionStatus string
 
 const (
+	// SentTransactionStatusSending is a status indicating that transaction is sending
 	SentTransactionStatusSending SentTransactionStatus = "sending"
+	// SentTransactionStatusSuccess is a status indicating that transaction has been successfully sent
 	SentTransactionStatusSuccess SentTransactionStatus = "success"
+	// SentTransactionStatusFailure is a status indicating that there has been an error while sending a transaction
 	SentTransactionStatusFailure SentTransactionStatus = "failure"
 )
 
+// SentTransaction represents transaction sent by the gateway server
 type SentTransaction struct {
 	exists        bool
-	Id            *int64                `db:"id"`
-	TransactionId string                `db:"transaction_id"`
+	ID            *int64                `db:"id"`
+	TransactionID string                `db:"transaction_id"`
 	Status        SentTransactionStatus `db:"status"` // sending/success/failure
 	Source        string                `db:"source"`
 	SubmittedAt   time.Time             `db:"submitted_at"`
@@ -25,26 +30,31 @@ type SentTransaction struct {
 	ResultXdr     *string               `db:"result_xdr"`
 }
 
-func (e *SentTransaction) GetId() *int64 {
-	if e.Id == nil {
+// GetID returns ID of the entity
+func (e *SentTransaction) GetID() *int64 {
+	if e.ID == nil {
 		return nil
 	}
-	newId := *e.Id
-	return &newId
+	newID := *e.ID
+	return &newID
 }
 
-func (e *SentTransaction) SetId(id int64) {
-	e.Id = &id
+// SetID sets ID of the entity
+func (e *SentTransaction) SetID(id int64) {
+	e.ID = &id
 }
 
+// IsNew returns true if the entity has not been persisted yet
 func (e *SentTransaction) IsNew() bool {
 	return !e.exists
 }
 
+// SetExists sets entity as persisted
 func (e *SentTransaction) SetExists() {
 	e.exists = true
 }
 
+// MarkSucceeded marks transaction as succeeded
 func (e *SentTransaction) MarkSucceeded(ledger uint64) {
 	e.Status = SentTransactionStatusSuccess
 	e.Ledger = &ledger
@@ -52,6 +62,7 @@ func (e *SentTransaction) MarkSucceeded(ledger uint64) {
 	e.SucceededAt = &now
 }
 
+// MarkFailed marks transaction as failed
 func (e *SentTransaction) MarkFailed(resultXdr string) {
 	e.Status = SentTransactionStatusFailure
 	e.ResultXdr = &resultXdr

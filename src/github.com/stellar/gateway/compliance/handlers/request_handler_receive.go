@@ -10,6 +10,7 @@ import (
 	"github.com/zenazn/goji/web"
 )
 
+// HandlerReceive implements /receive endpoint
 func (rh *RequestHandler) HandlerReceive(c web.C, w http.ResponseWriter, r *http.Request) {
 	request := &compliance.ReceiveRequest{}
 	request.FromRequest(r)

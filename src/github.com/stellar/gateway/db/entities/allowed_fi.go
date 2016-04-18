@@ -4,27 +4,32 @@ import (
 	"time"
 )
 
+// AllowedFi represents allowed FI
 type AllowedFi struct {
 	exists    bool
-	Id        *int64    `db:"id"`
+	ID        *int64    `db:"id"`
 	Name      string    `db:"name"`
 	Domain    string    `db:"domain"`
 	PublicKey string    `db:"public_key"`
 	AllowedAt time.Time `db:"allowed_at"`
 }
 
-func (e *AllowedFi) GetId() *int64 {
-	return e.Id
+// GetID returns ID of the entity
+func (e *AllowedFi) GetID() *int64 {
+	return e.ID
 }
 
-func (e *AllowedFi) SetId(id int64) {
-	e.Id = &id
+// SetID sets ID of the entity
+func (e *AllowedFi) SetID(id int64) {
+	e.ID = &id
 }
 
+// IsNew returns true if the entity has not been persisted yet
 func (e *AllowedFi) IsNew() bool {
 	return !e.exists
 }
 
+// SetExists sets entity as persisted
 func (e *AllowedFi) SetExists() {
 	e.exists = true
 }

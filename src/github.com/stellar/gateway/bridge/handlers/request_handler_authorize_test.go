@@ -23,11 +23,11 @@ func TestRequestHandlerAuthorize(t *testing.T) {
 
 	config := config.Config{
 		Assets: []config.Asset{
-			config.Asset{"USD", "GD4I7AFSLZGTDL34TQLWJOM2NHLIIOEKD5RHHZUW54HERBLSIRKUOXRR"},
-			config.Asset{"EUR", "GD4I7AFSLZGTDL34TQLWJOM2NHLIIOEKD5RHHZUW54HERBLSIRKUOXRR"},
+			{Code: "USD", Issuer: "GD4I7AFSLZGTDL34TQLWJOM2NHLIIOEKD5RHHZUW54HERBLSIRKUOXRR"},
+			{Code: "EUR", Issuer: "GD4I7AFSLZGTDL34TQLWJOM2NHLIIOEKD5RHHZUW54HERBLSIRKUOXRR"},
 		},
 		Accounts: config.Accounts{
-			IssuingAccountId: "GD4I7AFSLZGTDL34TQLWJOM2NHLIIOEKD5RHHZUW54HERBLSIRKUOXRR",
+			IssuingAccountID: "GD4I7AFSLZGTDL34TQLWJOM2NHLIIOEKD5RHHZUW54HERBLSIRKUOXRR",
 			// GBQXA3ABGQGTCLEVZIUTDRWWJOQD5LSAEDZAG7GMOGD2HBLWONGUVO4I
 			AuthorizingSeed: "SC37TBSIAYKIDQ6GTGLT2HSORLIHZQHBXVFI5P5K4Q5TSHRTRBK3UNWG",
 		},
@@ -39,11 +39,11 @@ func TestRequestHandlerAuthorize(t *testing.T) {
 
 	Convey("Given authorize request", t, func() {
 		Convey("When accountId is invalid", func() {
-			accountId := "GD3YBOYIUVLU"
+			accountID := "GD3YBOYIUVLU"
 			assetCode := "USD"
 
 			Convey("it should return error", func() {
-				statusCode, response := net.GetResponse(testServer, url.Values{"account_id": {accountId}, "asset_code": {assetCode}})
+				statusCode, response := net.GetResponse(testServer, url.Values{"account_id": {accountID}, "asset_code": {assetCode}})
 				responseString := strings.TrimSpace(string(response))
 				assert.Equal(t, 400, statusCode)
 				assert.Equal(t, "{\n  \"code\": \"invalid_parameter\",\n  \"message\": \"Invalid parameter.\",\n  \"data\": {\n    \"name\": \"account_id\"\n  }\n}", responseString)
@@ -51,11 +51,11 @@ func TestRequestHandlerAuthorize(t *testing.T) {
 		})
 
 		Convey("When assetCode is invalid", func() {
-			accountId := "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632"
+			accountID := "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632"
 			assetCode := "GBP"
 
 			Convey("it should return error", func() {
-				statusCode, response := net.GetResponse(testServer, url.Values{"account_id": {accountId}, "asset_code": {assetCode}})
+				statusCode, response := net.GetResponse(testServer, url.Values{"account_id": {accountID}, "asset_code": {assetCode}})
 				responseString := strings.TrimSpace(string(response))
 				assert.Equal(t, 400, statusCode)
 				assert.Equal(t, "{\n  \"code\": \"invalid_parameter\",\n  \"message\": \"Invalid parameter.\",\n  \"data\": {\n    \"name\": \"asset_code\"\n  }\n}", responseString)
@@ -63,11 +63,11 @@ func TestRequestHandlerAuthorize(t *testing.T) {
 		})
 
 		Convey("When params are valid", func() {
-			accountId := "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632"
+			accountID := "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632"
 			assetCode := "USD"
 
 			operation := b.AllowTrust(
-				b.Trustor{accountId},
+				b.Trustor{accountID},
 				b.Authorize{true},
 				b.AllowTrustAsset{assetCode},
 			)
@@ -84,7 +84,7 @@ func TestRequestHandlerAuthorize(t *testing.T) {
 				).Once()
 
 				Convey("it should return server error", func() {
-					statusCode, response := net.GetResponse(testServer, url.Values{"account_id": {accountId}, "asset_code": {assetCode}})
+					statusCode, response := net.GetResponse(testServer, url.Values{"account_id": {accountID}, "asset_code": {assetCode}})
 					responseString := strings.TrimSpace(string(response))
 					assert.Equal(t, 500, statusCode)
 					assert.Equal(t, "{\n  \"code\": \"internal_server_error\",\n  \"message\": \"Internal Server Error, please try again.\"\n}", responseString)
@@ -108,7 +108,7 @@ func TestRequestHandlerAuthorize(t *testing.T) {
 				).Return(expectedSubmitResponse, nil).Once()
 
 				Convey("it should succeed", func() {
-					statusCode, response := net.GetResponse(testServer, url.Values{"account_id": {accountId}, "asset_code": {assetCode}})
+					statusCode, response := net.GetResponse(testServer, url.Values{"account_id": {accountID}, "asset_code": {assetCode}})
 					var actualSubmitTransactionResponse horizon.SubmitTransactionResponse
 					json.Unmarshal(response, &actualSubmitTransactionResponse)
 					assert.Equal(t, 200, statusCode)

@@ -10,6 +10,7 @@ import (
 	"github.com/stellar/go-stellar-base/keypair"
 )
 
+// SendRequest represents request sent to /send endpoint of compliance server
 type SendRequest struct {
 	// Source account ID
 	Source string `name:"source" required:""`
@@ -37,17 +38,17 @@ type SendRequest struct {
 	protocols.FormRequest
 }
 
-// Will populate request fields using http.Request.
+// FromRequest will populate request fields using http.Request.
 func (request *SendRequest) FromRequest(r *http.Request) {
 	request.FormRequest.FromRequest(r, request)
 }
 
-// Will create url.Values from request.
+// ToValues will create url.Values from request.
 func (request *SendRequest) ToValues() url.Values {
 	return request.FormRequest.ToValues(request)
 }
 
-// Validates if request fields are valid. Useful when checking if a request is correct.
+// Validate validates if request fields are valid. Useful when checking if a request is correct.
 func (request *SendRequest) Validate() error {
 	err := request.FormRequest.CheckRequired(request)
 	if err != nil {
@@ -80,6 +81,7 @@ func validateStellarAddress(address string) bool {
 	return len(tokens) == 2
 }
 
+// SendResponse represents response returned by /send endpoint
 type SendResponse struct {
 	protocols.SuccessResponse
 	AuthResponse `json:"auth_response"`
@@ -87,6 +89,7 @@ type SendResponse struct {
 	TransactionXdr string `json:"transaction_xdr,omitempty"`
 }
 
+// Marshal marshals SendResponse
 func (response *SendResponse) Marshal() []byte {
 	json, _ := json.MarshalIndent(response, "", "  ")
 	return json

@@ -19,6 +19,7 @@ import (
 	"github.com/zenazn/goji/web"
 )
 
+// HandlerSend implements /send endpoint
 func (rh *RequestHandler) HandlerSend(c web.C, w http.ResponseWriter, r *http.Request) {
 	request := &compliance.SendRequest{}
 	request.FromRequest(r)
@@ -76,7 +77,7 @@ func (rh *RequestHandler) HandlerSend(c web.C, w http.ResponseWriter, r *http.Re
 	}
 
 	mutators := []interface{}{
-		b.Destination{destinationObject.AccountId},
+		b.Destination{destinationObject.AccountID},
 		b.CreditAmount{
 			request.AssetCode,
 			request.AssetIssuer,
@@ -141,8 +142,8 @@ func (rh *RequestHandler) HandlerSend(c web.C, w http.ResponseWriter, r *http.Re
 		},
 	}
 
-	memoJson := memoPreimage.Marshal()
-	memoHashBytes := sha256.Sum256(memoJson)
+	memoJSON := memoPreimage.Marshal()
+	memoHashBytes := sha256.Sum256(memoJSON)
 	memoMutator := &b.MemoHash{xdr.Hash(memoHashBytes)}
 
 	transaction, err := submitter.BuildTransaction(
@@ -166,7 +167,7 @@ func (rh *RequestHandler) HandlerSend(c web.C, w http.ResponseWriter, r *http.Re
 		Sender:   request.Sender,
 		NeedInfo: rh.Config.NeedsAuth,
 		Tx:       txBase64,
-		Memo:     string(memoJson),
+		Memo:     string(memoJSON),
 	}
 
 	data, err := json.Marshal(authData)

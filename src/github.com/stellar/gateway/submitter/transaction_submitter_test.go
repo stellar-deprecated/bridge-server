@@ -21,7 +21,7 @@ func TestTransactionSubmitter(t *testing.T) {
 
 	Convey("TransactionSubmitter", t, func() {
 		seed := "SDZT3EJZ7FZRYNTLOZ7VH6G5UYBFO2IO3Q5PGONMILPCZU3AL7QNZHTE"
-		accountId := "GCLOMB72ODBFUGK4E2BK7VMR3RNZ5WSTMEOGNA2YUVHFR3WMH2XBAB6H"
+		accountID := "GCLOMB72ODBFUGK4E2BK7VMR3RNZ5WSTMEOGNA2YUVHFR3WMH2XBAB6H"
 
 		Convey("LoadAccount", func() {
 			transactionSubmitter := NewTransactionSubmitter(
@@ -39,7 +39,7 @@ func TestTransactionSubmitter(t *testing.T) {
 			Convey("When there is a problem loading an account", func() {
 				mockHorizon.On(
 					"LoadAccount",
-					accountId,
+					accountID,
 				).Return(
 					horizon.AccountResponse{},
 					errors.New("Account not found"),
@@ -53,10 +53,10 @@ func TestTransactionSubmitter(t *testing.T) {
 			Convey("Successfully loads an account", func() {
 				mockHorizon.On(
 					"LoadAccount",
-					accountId,
+					accountID,
 				).Return(
 					horizon.AccountResponse{
-						AccountId:      accountId,
+						AccountID:      accountID,
 						SequenceNumber: "10372672437354496",
 					},
 					nil,
@@ -64,7 +64,7 @@ func TestTransactionSubmitter(t *testing.T) {
 
 				account, err := transactionSubmitter.LoadAccount(seed)
 				assert.Nil(t, err)
-				assert.Equal(t, account.Keypair.Address(), accountId)
+				assert.Equal(t, account.Keypair.Address(), accountID)
 				assert.Equal(t, account.Seed, seed)
 				assert.Equal(t, account.SequenceNumber, uint64(10372672437354496))
 				mockHorizon.AssertExpectations(t)
@@ -88,10 +88,10 @@ func TestTransactionSubmitter(t *testing.T) {
 
 					mockHorizon.On(
 						"LoadAccount",
-						accountId,
+						accountID,
 					).Return(
 						horizon.AccountResponse{
-							AccountId:      accountId,
+							AccountID:      accountID,
 							SequenceNumber: "10372672437354496",
 						},
 						nil,
@@ -108,7 +108,7 @@ func TestTransactionSubmitter(t *testing.T) {
 						mock.AnythingOfType("*entities.SentTransaction"),
 					).Return(nil).Once().Run(func(args mock.Arguments) {
 						transaction := args.Get(0).(*entities.SentTransaction)
-						assert.Equal(t, "4f885999be6ea7891052a53e496bcfb5c5a1a5bfb31923f649b028fdc74dd050", transaction.TransactionId)
+						assert.Equal(t, "4f885999be6ea7891052a53e496bcfb5c5a1a5bfb31923f649b028fdc74dd050", transaction.TransactionID)
 						assert.Equal(t, "sending", string(transaction.Status))
 						assert.Equal(t, "GCLOMB72ODBFUGK4E2BK7VMR3RNZ5WSTMEOGNA2YUVHFR3WMH2XBAB6H", transaction.Source)
 						assert.Equal(t, mocks.PredefinedTime, transaction.SubmittedAt)
@@ -121,7 +121,7 @@ func TestTransactionSubmitter(t *testing.T) {
 						mock.AnythingOfType("*entities.SentTransaction"),
 					).Return(nil).Once().Run(func(args mock.Arguments) {
 						transaction := args.Get(0).(*entities.SentTransaction)
-						assert.Equal(t, "4f885999be6ea7891052a53e496bcfb5c5a1a5bfb31923f649b028fdc74dd050", transaction.TransactionId)
+						assert.Equal(t, "4f885999be6ea7891052a53e496bcfb5c5a1a5bfb31923f649b028fdc74dd050", transaction.TransactionID)
 						assert.Equal(t, "failure", string(transaction.Status))
 						assert.Equal(t, "GCLOMB72ODBFUGK4E2BK7VMR3RNZ5WSTMEOGNA2YUVHFR3WMH2XBAB6H", transaction.Source)
 						assert.Equal(t, mocks.PredefinedTime, transaction.SubmittedAt)
@@ -153,10 +153,10 @@ func TestTransactionSubmitter(t *testing.T) {
 
 					mockHorizon.On(
 						"LoadAccount",
-						accountId,
+						accountID,
 					).Return(
 						horizon.AccountResponse{
-							AccountId:      accountId,
+							AccountID:      accountID,
 							SequenceNumber: "10372672437354496",
 						},
 						nil,
@@ -173,7 +173,7 @@ func TestTransactionSubmitter(t *testing.T) {
 						mock.AnythingOfType("*entities.SentTransaction"),
 					).Return(nil).Once().Run(func(args mock.Arguments) {
 						transaction := args.Get(0).(*entities.SentTransaction)
-						assert.Equal(t, "4f885999be6ea7891052a53e496bcfb5c5a1a5bfb31923f649b028fdc74dd050", transaction.TransactionId)
+						assert.Equal(t, "4f885999be6ea7891052a53e496bcfb5c5a1a5bfb31923f649b028fdc74dd050", transaction.TransactionID)
 						assert.Equal(t, "sending", string(transaction.Status))
 						assert.Equal(t, "GCLOMB72ODBFUGK4E2BK7VMR3RNZ5WSTMEOGNA2YUVHFR3WMH2XBAB6H", transaction.Source)
 						assert.Equal(t, mocks.PredefinedTime, transaction.SubmittedAt)
@@ -186,7 +186,7 @@ func TestTransactionSubmitter(t *testing.T) {
 						mock.AnythingOfType("*entities.SentTransaction"),
 					).Return(nil).Once().Run(func(args mock.Arguments) {
 						transaction := args.Get(0).(*entities.SentTransaction)
-						assert.Equal(t, "4f885999be6ea7891052a53e496bcfb5c5a1a5bfb31923f649b028fdc74dd050", transaction.TransactionId)
+						assert.Equal(t, "4f885999be6ea7891052a53e496bcfb5c5a1a5bfb31923f649b028fdc74dd050", transaction.TransactionID)
 						assert.Equal(t, "failure", string(transaction.Status))
 						assert.Equal(t, "GCLOMB72ODBFUGK4E2BK7VMR3RNZ5WSTMEOGNA2YUVHFR3WMH2XBAB6H", transaction.Source)
 						assert.Equal(t, mocks.PredefinedTime, transaction.SubmittedAt)
@@ -206,10 +206,10 @@ func TestTransactionSubmitter(t *testing.T) {
 					// Updating sequence number
 					mockHorizon.On(
 						"LoadAccount",
-						accountId,
+						accountID,
 					).Return(
 						horizon.AccountResponse{
-							AccountId:      accountId,
+							AccountID:      accountID,
 							SequenceNumber: "100",
 						},
 						nil,
@@ -231,10 +231,10 @@ func TestTransactionSubmitter(t *testing.T) {
 
 					mockHorizon.On(
 						"LoadAccount",
-						accountId,
+						accountID,
 					).Return(
 						horizon.AccountResponse{
-							AccountId:      accountId,
+							AccountID:      accountID,
 							SequenceNumber: "10372672437354496",
 						},
 						nil,
@@ -251,7 +251,7 @@ func TestTransactionSubmitter(t *testing.T) {
 						mock.AnythingOfType("*entities.SentTransaction"),
 					).Return(nil).Once().Run(func(args mock.Arguments) {
 						transaction := args.Get(0).(*entities.SentTransaction)
-						assert.Equal(t, "4f885999be6ea7891052a53e496bcfb5c5a1a5bfb31923f649b028fdc74dd050", transaction.TransactionId)
+						assert.Equal(t, "4f885999be6ea7891052a53e496bcfb5c5a1a5bfb31923f649b028fdc74dd050", transaction.TransactionID)
 						assert.Equal(t, "sending", string(transaction.Status))
 						assert.Equal(t, "GCLOMB72ODBFUGK4E2BK7VMR3RNZ5WSTMEOGNA2YUVHFR3WMH2XBAB6H", transaction.Source)
 						assert.Equal(t, mocks.PredefinedTime, transaction.SubmittedAt)
@@ -264,7 +264,7 @@ func TestTransactionSubmitter(t *testing.T) {
 						mock.AnythingOfType("*entities.SentTransaction"),
 					).Return(nil).Once().Run(func(args mock.Arguments) {
 						transaction := args.Get(0).(*entities.SentTransaction)
-						assert.Equal(t, "4f885999be6ea7891052a53e496bcfb5c5a1a5bfb31923f649b028fdc74dd050", transaction.TransactionId)
+						assert.Equal(t, "4f885999be6ea7891052a53e496bcfb5c5a1a5bfb31923f649b028fdc74dd050", transaction.TransactionID)
 						assert.Equal(t, "success", string(transaction.Status))
 						assert.Equal(t, "GCLOMB72ODBFUGK4E2BK7VMR3RNZ5WSTMEOGNA2YUVHFR3WMH2XBAB6H", transaction.Source)
 						assert.Equal(t, mocks.PredefinedTime, transaction.SubmittedAt)
@@ -303,10 +303,10 @@ func TestTransactionSubmitter(t *testing.T) {
 
 					mockHorizon.On(
 						"LoadAccount",
-						accountId,
+						accountID,
 					).Return(
 						horizon.AccountResponse{
-							AccountId:      accountId,
+							AccountID:      accountID,
 							SequenceNumber: "10372672437354496",
 						},
 						nil,
@@ -323,7 +323,7 @@ func TestTransactionSubmitter(t *testing.T) {
 						mock.AnythingOfType("*entities.SentTransaction"),
 					).Return(nil).Once().Run(func(args mock.Arguments) {
 						transaction := args.Get(0).(*entities.SentTransaction)
-						assert.Equal(t, "60cb3c020b0c97352cbabdf68a822b04baea61927b0f1ac31260a9f8d0150316", transaction.TransactionId)
+						assert.Equal(t, "60cb3c020b0c97352cbabdf68a822b04baea61927b0f1ac31260a9f8d0150316", transaction.TransactionID)
 						assert.Equal(t, "sending", string(transaction.Status))
 						assert.Equal(t, "GCLOMB72ODBFUGK4E2BK7VMR3RNZ5WSTMEOGNA2YUVHFR3WMH2XBAB6H", transaction.Source)
 						assert.Equal(t, mocks.PredefinedTime, transaction.SubmittedAt)
@@ -336,7 +336,7 @@ func TestTransactionSubmitter(t *testing.T) {
 						mock.AnythingOfType("*entities.SentTransaction"),
 					).Return(nil).Once().Run(func(args mock.Arguments) {
 						transaction := args.Get(0).(*entities.SentTransaction)
-						assert.Equal(t, "60cb3c020b0c97352cbabdf68a822b04baea61927b0f1ac31260a9f8d0150316", transaction.TransactionId)
+						assert.Equal(t, "60cb3c020b0c97352cbabdf68a822b04baea61927b0f1ac31260a9f8d0150316", transaction.TransactionID)
 						assert.Equal(t, "success", string(transaction.Status))
 						assert.Equal(t, "GCLOMB72ODBFUGK4E2BK7VMR3RNZ5WSTMEOGNA2YUVHFR3WMH2XBAB6H", transaction.Source)
 						assert.Equal(t, mocks.PredefinedTime, transaction.SubmittedAt)

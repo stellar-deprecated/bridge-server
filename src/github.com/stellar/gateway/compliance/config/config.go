@@ -7,6 +7,7 @@ import (
 	"github.com/stellar/go-stellar-base/keypair"
 )
 
+// Config contains config params of the compliance server
 type Config struct {
 	ExternalPort      *int   `mapstructure:"external_port"`
 	InternalPort      *int   `mapstructure:"internal_port"`
@@ -15,23 +16,26 @@ type Config struct {
 	NetworkPassphrase string `mapstructure:"network_passphrase"`
 	Database          struct {
 		Type string
-		Url  string
+		URL  string
 	}
 	Keys
 	Callbacks
 }
 
+// Keys contains values of `keys` config group
 type Keys struct {
 	SigningSeed   string `mapstructure:"signing_seed"`
 	EncryptionKey string `mapstructure:"encryption_key"`
 }
 
+// Callbacks contains values of `callbacks` config group
 type Callbacks struct {
 	Sanctions string
 	AskUser   string `mapstructure:"ask_user"`
 	FetchInfo string `mapstructure:"fetch_info"`
 }
 
+// Validate validates config and returns error if any of config values is incorrect
 func (c *Config) Validate() (err error) {
 	if c.ExternalPort == nil {
 		err = errors.New("external_port param is required")
@@ -69,8 +73,8 @@ func (c *Config) Validate() (err error) {
 		}
 	}
 
-	var dbUrl *url.URL
-	dbUrl, err = url.Parse(c.Database.Url)
+	var dbURL *url.URL
+	dbURL, err = url.Parse(c.Database.URL)
 	if err != nil {
 		err = errors.New("Cannot parse database.url param")
 		return
@@ -79,10 +83,10 @@ func (c *Config) Validate() (err error) {
 	switch c.Database.Type {
 	case "mysql":
 		// Add `parseTime=true` param to mysql url
-		query := dbUrl.Query()
+		query := dbURL.Query()
 		query.Set("parseTime", "true")
-		dbUrl.RawQuery = query.Encode()
-		c.Database.Url = dbUrl.String()
+		dbURL.RawQuery = query.Encode()
+		c.Database.URL = dbURL.String()
 	case "postgres":
 		break
 	default:

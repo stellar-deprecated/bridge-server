@@ -6,15 +6,17 @@ import (
 	"github.com/stellar/go-stellar-base/keypair"
 )
 
-type SignatureSignerVerifierInterface interface {
+// SignerVerifierInterface is the interface that helps mocking SignerVerifier
+type SignerVerifierInterface interface {
 	Sign(secretSeed string, message []byte) (string, error)
 	Verify(publicKey string, message, signature []byte) error
 }
 
-type SignatureSignerVerifier struct{}
+// SignerVerifier implements methods to Sign and Verify signatures
+type SignerVerifier struct{}
 
-// Signs message using secretSeed. Returns base64-encoded signature.
-func (s *SignatureSignerVerifier) Sign(secretSeed string, message []byte) (string, error) {
+// Sign signs message using secretSeed. Returns base64-encoded signature.
+func (s *SignerVerifier) Sign(secretSeed string, message []byte) (string, error) {
 	kp, err := keypair.Parse(secretSeed)
 	if err != nil {
 		return "", err
@@ -28,8 +30,8 @@ func (s *SignatureSignerVerifier) Sign(secretSeed string, message []byte) (strin
 	return base64.StdEncoding.EncodeToString(signature), nil
 }
 
-// Verifies if signature is a valid signature of message signed by publicKey.
-func (s *SignatureSignerVerifier) Verify(publicKey string, message, signature []byte) error {
+// Verify verifies if signature is a valid signature of message signed by publicKey.
+func (s *SignerVerifier) Verify(publicKey string, message, signature []byte) error {
 	kp, err := keypair.Parse(publicKey)
 	if err != nil {
 		return err

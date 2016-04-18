@@ -23,6 +23,7 @@ import (
 	"github.com/zenazn/goji/web"
 )
 
+// HandlerAuth implements authorize endpoint
 func (rh *RequestHandler) HandlerAuth(c web.C, w http.ResponseWriter, r *http.Request) {
 	request := &compliance.AuthRequest{}
 	request.FromRequest(r)
@@ -219,7 +220,7 @@ func (rh *RequestHandler) HandlerAuth(c web.C, w http.ResponseWriter, r *http.Re
 
 			if allowedFi == nil {
 				// FI not found check AllowedUser
-				allowedUser, err := rh.Repository.GetAllowedUserByDomainAndUserId(tokens[1], tokens[0])
+				allowedUser, err := rh.Repository.GetAllowedUserByDomainAndUserID(tokens[1], tokens[0])
 				if err != nil {
 					log.WithFields(log.Fields{"err": err}).Error("Error getting AllowedUser from DB")
 					server.Write(w, protocols.InternalServerError)
@@ -326,7 +327,7 @@ func (rh *RequestHandler) HandlerAuth(c web.C, w http.ResponseWriter, r *http.Re
 
 	if response.TxStatus == compliance.AuthStatusOk && response.InfoStatus == compliance.AuthStatusOk {
 		authorizedTransaction := &entities.AuthorizedTransaction{
-			TransactionId:  hex.EncodeToString(transactionHash[:]),
+			TransactionID:  hex.EncodeToString(transactionHash[:]),
 			Memo:           base64.StdEncoding.EncodeToString(memoBytes[:]),
 			TransactionXdr: authData.Tx,
 			AuthorizedAt:   time.Now(),

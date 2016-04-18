@@ -8,14 +8,19 @@ import (
 	"github.com/stellar/gateway/protocols"
 )
 
+// AuthStatus represents auth status returned by Auth Server
 type AuthStatus string
 
 const (
-	AuthStatusOk      AuthStatus = "ok"
+	// AuthStatusOk is returned when authentication was successful
+	AuthStatusOk AuthStatus = "ok"
+	// AuthStatusPending is returned when authentication is pending
 	AuthStatusPending AuthStatus = "pending"
-	AuthStatusDenied  AuthStatus = "denied"
+	// AuthStatusDenied is returned when authentication was denied
+	AuthStatusDenied AuthStatus = "denied"
 )
 
+// AuthRequest represents auth request sent to compliance server
 type AuthRequest struct {
 	// Stringified AuthData JSON object
 	Data string `name:"data" required:""`
@@ -25,6 +30,7 @@ type AuthRequest struct {
 	formRequest protocols.FormRequest
 }
 
+// AuthData represents how AuthRequest.Data field looks like. It is Marshalled because of the attached signature.
 type AuthData struct {
 	// The stellar address of the customer that is initiating the send.
 	Sender string `json:"sender"`
@@ -36,22 +42,23 @@ type AuthData struct {
 	Memo string `json:"memo"`
 }
 
+// Marshal marshals AuthData
 func (authData *AuthData) Marshal() []byte {
 	json, _ := json.Marshal(authData)
 	return json
 }
 
-// Will populate request fields using http.Request.
+// FromRequest will populate request fields using http.Request.
 func (request *AuthRequest) FromRequest(r *http.Request) {
 	request.formRequest.FromRequest(r, request)
 }
 
-// Will create url.Values from request.
+// ToValues will create url.Values from request.
 func (request *AuthRequest) ToValues() url.Values {
 	return request.formRequest.ToValues(request)
 }
 
-// Validates if request fields are valid. Useful when checking if a request is correct.
+// Validate validates if request fields are valid. Useful when checking if a request is correct.
 func (request *AuthRequest) Validate() error {
 	err := request.formRequest.CheckRequired(request)
 	if err != nil {
@@ -61,6 +68,7 @@ func (request *AuthRequest) Validate() error {
 	return nil
 }
 
+// AuthResponse represents response sent by auth server
 type AuthResponse struct {
 	protocols.SuccessResponse
 	// If this FI is willing to share AML information or not. {ok, denied, pending}
@@ -73,6 +81,7 @@ type AuthResponse struct {
 	Pending int `json:"pending,omitempty"`
 }
 
+// Marshal marshals AuthResponse
 func (response *AuthResponse) Marshal() []byte {
 	json, _ := json.MarshalIndent(response, "", "  ")
 	return json

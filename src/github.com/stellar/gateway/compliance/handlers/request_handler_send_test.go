@@ -31,11 +31,11 @@ func TestRequestHandlerSend(t *testing.T) {
 		},
 	}
 
-	mockHttpClient := new(mocks.MockHttpClient)
+	mockHTTPClient := new(mocks.MockHTTPClient)
 	mockEntityManager := new(mocks.MockEntityManager)
 	mockRepository := new(mocks.MockRepository)
 	mockFederationResolver := new(mocks.MockFederationResolver)
-	mockSignatureSignerVerifier := new(mocks.MockSignatureSignerVerifier)
+	mockSignerVerifier := new(mocks.MockSignerVerifier)
 	mockStellartomlResolver := new(mocks.MockStellartomlResolver)
 	requestHandler := RequestHandler{}
 
@@ -45,11 +45,11 @@ func TestRequestHandlerSend(t *testing.T) {
 	err := g.Provide(
 		&inject.Object{Value: &requestHandler},
 		&inject.Object{Value: c},
-		&inject.Object{Value: mockHttpClient},
+		&inject.Object{Value: mockHTTPClient},
 		&inject.Object{Value: mockEntityManager},
 		&inject.Object{Value: mockRepository},
 		&inject.Object{Value: mockFederationResolver},
-		&inject.Object{Value: mockSignatureSignerVerifier},
+		&inject.Object{Value: mockSignerVerifier},
 		&inject.Object{Value: mockStellartomlResolver},
 	)
 	if err != nil {
@@ -110,7 +110,7 @@ func TestRequestHandlerSend(t *testing.T) {
 					"Resolve",
 					"bob*stellar.org",
 				).Return(federation.Response{
-					AccountId: "GAMVF7G4GJC4A7JMFJWLUAEIBFQD5RT3DCB5DC5TJDEKQBBACQ4JZVEE",
+					AccountID: "GAMVF7G4GJC4A7JMFJWLUAEIBFQD5RT3DCB5DC5TJDEKQBBACQ4JZVEE",
 				}, stellartoml.StellarToml{
 					AuthServer: authServer,
 				}, nil).Once()
@@ -124,25 +124,25 @@ func TestRequestHandlerSend(t *testing.T) {
 					TxStatus:   compliance.AuthStatusOk,
 				}
 
-				mockHttpClient.On(
+				mockHTTPClient.On(
 					"PostForm",
 					c.Callbacks.FetchInfo,
 					url.Values{"address": {"alice*stellar.org"}},
 				).Return(
-					net.BuildHttpResponse(200, "{\"name\": \"Alice Doe\"}"),
+					net.BuildHTTPResponse(200, "{\"name\": \"Alice Doe\"}"),
 					nil,
 				).Once()
 
-				mockHttpClient.On(
+				mockHTTPClient.On(
 					"PostForm",
 					authServer,
 					url.Values{"data": {data}, "sig": {sig}},
 				).Return(
-					net.BuildHttpResponse(200, string(authResponse.Marshal())),
+					net.BuildHTTPResponse(200, string(authResponse.Marshal())),
 					nil,
 				).Once()
 
-				mockSignatureSignerVerifier.On(
+				mockSignerVerifier.On(
 					"Sign",
 					c.Keys.SigningSeed,
 					[]byte(data),
@@ -172,7 +172,7 @@ func TestRequestHandlerSend(t *testing.T) {
 					"Resolve",
 					"bob*stellar.org",
 				).Return(federation.Response{
-					AccountId: "GAMVF7G4GJC4A7JMFJWLUAEIBFQD5RT3DCB5DC5TJDEKQBBACQ4JZVEE",
+					AccountID: "GAMVF7G4GJC4A7JMFJWLUAEIBFQD5RT3DCB5DC5TJDEKQBBACQ4JZVEE",
 				}, stellartoml.StellarToml{
 					AuthServer: authServer,
 				}, nil).Once()
@@ -186,25 +186,25 @@ func TestRequestHandlerSend(t *testing.T) {
 					TxStatus:   compliance.AuthStatusOk,
 				}
 
-				mockHttpClient.On(
+				mockHTTPClient.On(
 					"PostForm",
 					c.Callbacks.FetchInfo,
 					url.Values{"address": {"alice*stellar.org"}},
 				).Return(
-					net.BuildHttpResponse(200, "{\"name\": \"Alice Doe\"}"),
+					net.BuildHTTPResponse(200, "{\"name\": \"Alice Doe\"}"),
 					nil,
 				).Once()
 
-				mockHttpClient.On(
+				mockHTTPClient.On(
 					"PostForm",
 					authServer,
 					url.Values{"data": {data}, "sig": {sig}},
 				).Return(
-					net.BuildHttpResponse(200, string(authResponse.Marshal())),
+					net.BuildHTTPResponse(200, string(authResponse.Marshal())),
 					nil,
 				).Once()
 
-				mockSignatureSignerVerifier.On(
+				mockSignerVerifier.On(
 					"Sign",
 					c.Keys.SigningSeed,
 					[]byte(data),

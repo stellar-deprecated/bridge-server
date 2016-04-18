@@ -30,7 +30,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 		Compliance:        "http://compliance",
 	}
 	mockHorizon := new(mocks.MockHorizon)
-	mockHttpClient := new(mocks.MockHttpClient)
+	mockHTTPClient := new(mocks.MockHTTPClient)
 	mockTransactionSubmitter := new(mocks.MockTransactionSubmitter)
 	mockFederationResolver := new(mocks.MockFederationResolver)
 	mockStellartomlResolver := new(mocks.MockStellartomlResolver)
@@ -43,7 +43,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 		&inject.Object{Value: &requestHandler},
 		&inject.Object{Value: c},
 		&inject.Object{Value: mockHorizon},
-		&inject.Object{Value: mockHttpClient},
+		&inject.Object{Value: mockHTTPClient},
 		&inject.Object{Value: mockTransactionSubmitter},
 		&inject.Object{Value: mockFederationResolver},
 		&inject.Object{Value: mockStellartomlResolver},
@@ -86,7 +86,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 				"Resolve",
 				"GD3YBOYIUVLU",
 			).Return(
-				federation.Response{AccountId: "GD3YBOYIUVLU"},
+				federation.Response{AccountID: "GD3YBOYIUVLU"},
 				stellartoml.StellarToml{},
 				nil,
 			).Once()
@@ -136,7 +136,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 					"Resolve",
 					"bob*stellar.org",
 				).Return(
-					federation.Response{AccountId: "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632"},
+					federation.Response{AccountID: "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632"},
 					stellartoml.StellarToml{},
 					nil,
 				).Once()
@@ -194,7 +194,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 					"bob*stellar.org",
 				).Return(
 					federation.Response{
-						AccountId: "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632",
+						AccountID: "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632",
 						MemoType:  "text",
 						Memo:      "125",
 					},
@@ -256,7 +256,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 				"Resolve",
 				"GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632",
 			).Return(
-				federation.Response{AccountId: "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632"},
+				federation.Response{AccountID: "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632"},
 				stellartoml.StellarToml{},
 				nil,
 			).Once()
@@ -281,7 +281,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 				"Resolve",
 				"GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632",
 			).Return(
-				federation.Response{AccountId: "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632"},
+				federation.Response{AccountID: "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632"},
 				stellartoml.StellarToml{},
 				nil,
 			).Once()
@@ -325,7 +325,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 				"Resolve",
 				"GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632",
 			).Return(
-				federation.Response{AccountId: "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632"},
+				federation.Response{AccountID: "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632"},
 				stellartoml.StellarToml{},
 				nil,
 			).Once()
@@ -371,7 +371,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 				"Resolve",
 				"GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632",
 			).Return(
-				federation.Response{AccountId: "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632"},
+				federation.Response{AccountID: "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632"},
 				stellartoml.StellarToml{},
 				nil,
 			).Once()
@@ -637,7 +637,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 				"Resolve",
 				"GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632",
 			).Return(
-				federation.Response{AccountId: "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632"},
+				federation.Response{AccountID: "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632"},
 				stellartoml.StellarToml{},
 				nil,
 			).Once()
@@ -753,12 +753,12 @@ func TestRequestHandlerPayment(t *testing.T) {
 			}
 
 			Convey("it should return error when compliance server returns error", func() {
-				mockHttpClient.On(
+				mockHTTPClient.On(
 					"PostForm",
 					"http://compliance/send",
 					mock.AnythingOfType("url.Values"),
 				).Return(
-					net.BuildHttpResponse(400, "error"),
+					net.BuildHTTPResponse(400, "error"),
 					nil,
 				).Run(func(args mock.Arguments) {
 					values := args.Get(1).(url.Values)
@@ -776,12 +776,12 @@ func TestRequestHandlerPayment(t *testing.T) {
 			})
 
 			Convey("it should return denied when compliance server returns denied", func() {
-				mockHttpClient.On(
+				mockHTTPClient.On(
 					"PostForm",
 					"http://compliance/send",
 					mock.AnythingOfType("url.Values"),
 				).Return(
-					net.BuildHttpResponse(200, "{\"auth_response\": {\"tx_status\": \"denied\"}}"),
+					net.BuildHTTPResponse(200, "{\"auth_response\": {\"tx_status\": \"denied\"}}"),
 					nil,
 				).Run(func(args mock.Arguments) {
 					values := args.Get(1).(url.Values)
@@ -799,12 +799,12 @@ func TestRequestHandlerPayment(t *testing.T) {
 			})
 
 			Convey("it should return pending when compliance server returns pending", func() {
-				mockHttpClient.On(
+				mockHTTPClient.On(
 					"PostForm",
 					"http://compliance/send",
 					mock.AnythingOfType("url.Values"),
 				).Return(
-					net.BuildHttpResponse(200, "{\"auth_response\": {\"info_status\": \"pending\", \"pending\": 3600}}"),
+					net.BuildHTTPResponse(200, "{\"auth_response\": {\"info_status\": \"pending\", \"pending\": 3600}}"),
 					nil,
 				).Run(func(args mock.Arguments) {
 					values := args.Get(1).(url.Values)
@@ -848,7 +848,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 					SeqNum: 0,
 					Memo:   memo,
 					Operations: []xdr.Operation{
-						xdr.Operation{
+						{
 							Body: xdr.OperationBody{
 								Type: xdr.OperationTypePayment,
 								PaymentOp: &xdr.PaymentOp{
@@ -877,12 +877,12 @@ func TestRequestHandlerPayment(t *testing.T) {
 					TransactionXdr: "AAAAAC3/58Z9rycNLmF6voWX9VmDETFVGhFoWf66mcMuir/DAAAAZAAAAAAAAAAAAAAAAAAAAAO5TSe5k00+CKUuUtfafav6xITv43pTgO6QiPes4u/N6QAAAAEAAAAAAAAAAQAAAAAZUvzcMkXAfSwqbLoAiAlgPsZ7GIPRi7NIyKgEIBQ4nAAAAAFVU0QAAAAAABlS/NwyRcB9LCpsugCICWA+xnsYg9GLs0jIqAQgFDicAAAAAAvrwgAAAAAA",
 				}
 
-				mockHttpClient.On(
+				mockHTTPClient.On(
 					"PostForm",
 					"http://compliance/send",
 					mock.AnythingOfType("url.Values"),
 				).Return(
-					net.BuildHttpResponse(200, string(complianceResponse.Marshal())),
+					net.BuildHTTPResponse(200, string(complianceResponse.Marshal())),
 					nil,
 				).Run(func(args mock.Arguments) {
 					values := args.Get(1).(url.Values)

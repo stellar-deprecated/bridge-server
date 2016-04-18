@@ -32,11 +32,11 @@ func TestRequestHandlerAuth(t *testing.T) {
 		},
 	}
 
-	mockHttpClient := new(mocks.MockHttpClient)
+	mockHTTPClient := new(mocks.MockHTTPClient)
 	mockEntityManager := new(mocks.MockEntityManager)
 	mockRepository := new(mocks.MockRepository)
 	mockFederationResolver := new(mocks.MockFederationResolver)
-	mockSignatureSignerVerifier := new(mocks.MockSignatureSignerVerifier)
+	mockSignerVerifier := new(mocks.MockSignerVerifier)
 	mockStellartomlResolver := new(mocks.MockStellartomlResolver)
 	requestHandler := RequestHandler{}
 
@@ -46,11 +46,11 @@ func TestRequestHandlerAuth(t *testing.T) {
 	err := g.Provide(
 		&inject.Object{Value: &requestHandler},
 		&inject.Object{Value: c},
-		&inject.Object{Value: mockHttpClient},
+		&inject.Object{Value: mockHTTPClient},
 		&inject.Object{Value: mockEntityManager},
 		&inject.Object{Value: mockRepository},
 		&inject.Object{Value: mockFederationResolver},
-		&inject.Object{Value: mockSignatureSignerVerifier},
+		&inject.Object{Value: mockSignerVerifier},
 		&inject.Object{Value: mockStellartomlResolver},
 	)
 	if err != nil {
@@ -118,7 +118,7 @@ func TestRequestHandlerAuth(t *testing.T) {
 				"sig":  {"ACamNqa0dF8gf97URhFVKWSD7fmvZKc5At+8dCLM5ySR0HsHySF3G2WuwYP2nKjeqjKmu3U9Z3+u1P10w1KBCA=="},
 			}
 
-			mockSignatureSignerVerifier.On(
+			mockSignerVerifier.On(
 				"Verify",
 				"GBYJZW5XFAI6XV73H5SAIUYK6XZI4CGGVBUBO3ANA2SV7KKDAXTV6AEB",
 				mock.AnythingOfType("[]uint8"),
@@ -144,7 +144,7 @@ func TestRequestHandlerAuth(t *testing.T) {
 				SigningKey: "GBYJZW5XFAI6XV73H5SAIUYK6XZI4CGGVBUBO3ANA2SV7KKDAXTV6AEB",
 			}, nil).Once()
 
-			mockSignatureSignerVerifier.On(
+			mockSignerVerifier.On(
 				"Verify",
 				"GBYJZW5XFAI6XV73H5SAIUYK6XZI4CGGVBUBO3ANA2SV7KKDAXTV6AEB",
 				mock.AnythingOfType("[]uint8"),
@@ -153,7 +153,7 @@ func TestRequestHandlerAuth(t *testing.T) {
 
 			Convey("it returns AuthResponse", func() {
 				authorizedTransaction := &entities.AuthorizedTransaction{
-					TransactionId:  "29ec92f95b00dd8e8bbb0d2a2fc90db8ed5b26c396c44ac978bb13ccd8d25524",
+					TransactionID:  "29ec92f95b00dd8e8bbb0d2a2fc90db8ed5b26c396c44ac978bb13ccd8d25524",
 					Memo:           "RBNvo1WzZ4oRRq0W9+hknpT7T8If536DEMBg9hyq/4o=",
 					TransactionXdr: "AAAAAC3/58Z9rycNLmF6voWX9VmDETFVGhFoWf66mcMuir/DAAAAZAAAAAAAAAAAAAAAAAAAAANEE2+jVbNnihFGrRb36GSelPtPwh/nfoMQwGD2HKr/igAAAAEAAAAAAAAAAgAAAAFVU0QAAAAAAEbpO2riZmlZMkHuBxUBYAAas3hWyo9VL1IOdnfXAVFBAAAAADuaygAAAAAAGVL83DJFwH0sKmy6AIgJYD7GexiD0YuzSMioBCAUOJwAAAABVVNEAAAAAAAZUvzcMkXAfSwqbLoAiAlgPsZ7GIPRi7NIyKgEIBQ4nAAAAAAL68IAAAAAAgAAAAAAAAABRVVSAAAAAAALt4SwWfv1PIJvDRMenW0zu91YxZbphRFLA4O+gbAaigAAAAA=",
 					Data:           params["data"][0],
@@ -164,7 +164,7 @@ func TestRequestHandlerAuth(t *testing.T) {
 					mock.AnythingOfType("*entities.AuthorizedTransaction"),
 				).Run(func(args mock.Arguments) {
 					value := args.Get(0).(*entities.AuthorizedTransaction)
-					assert.Equal(t, authorizedTransaction.TransactionId, value.TransactionId)
+					assert.Equal(t, authorizedTransaction.TransactionID, value.TransactionID)
 					assert.Equal(t, authorizedTransaction.Memo, value.Memo)
 					assert.Equal(t, authorizedTransaction.TransactionXdr, value.TransactionXdr)
 					assert.WithinDuration(t, time.Now(), value.AuthorizedAt, 2*time.Second)
@@ -199,7 +199,7 @@ func TestRequestHandlerAuth(t *testing.T) {
 				SigningKey: "GBYJZW5XFAI6XV73H5SAIUYK6XZI4CGGVBUBO3ANA2SV7KKDAXTV6AEB",
 			}, nil).Once()
 
-			mockSignatureSignerVerifier.On(
+			mockSignerVerifier.On(
 				"Verify",
 				"GBYJZW5XFAI6XV73H5SAIUYK6XZI4CGGVBUBO3ANA2SV7KKDAXTV6AEB",
 				mock.AnythingOfType("[]uint8"),
@@ -207,12 +207,12 @@ func TestRequestHandlerAuth(t *testing.T) {
 			).Return(nil).Once()
 
 			Convey("when sanctions server returns forbidden it returns tx_status `denied`", func() {
-				mockHttpClient.On(
+				mockHTTPClient.On(
 					"PostForm",
 					"http://sanctions",
 					url.Values{"data": params["data"]},
 				).Return(
-					net.BuildHttpResponse(403, "forbidden"),
+					net.BuildHTTPResponse(403, "forbidden"),
 					nil,
 				).Once()
 
@@ -223,12 +223,12 @@ func TestRequestHandlerAuth(t *testing.T) {
 			})
 
 			Convey("when sanctions server returns accepted it returns tx_status `pending`", func() {
-				mockHttpClient.On(
+				mockHTTPClient.On(
 					"PostForm",
 					"http://sanctions",
 					url.Values{"data": params["data"]},
 				).Return(
-					net.BuildHttpResponse(202, "pending"),
+					net.BuildHTTPResponse(202, "pending"),
 					nil,
 				).Once()
 
@@ -239,17 +239,17 @@ func TestRequestHandlerAuth(t *testing.T) {
 			})
 
 			Convey("when sanctions server returns ok it returns tx_status `ok` and persists transaction", func() {
-				mockHttpClient.On(
+				mockHTTPClient.On(
 					"PostForm",
 					"http://sanctions",
 					url.Values{"data": params["data"]},
 				).Return(
-					net.BuildHttpResponse(200, "ok"),
+					net.BuildHTTPResponse(200, "ok"),
 					nil,
 				).Once()
 
 				authorizedTransaction := &entities.AuthorizedTransaction{
-					TransactionId:  "29ec92f95b00dd8e8bbb0d2a2fc90db8ed5b26c396c44ac978bb13ccd8d25524",
+					TransactionID:  "29ec92f95b00dd8e8bbb0d2a2fc90db8ed5b26c396c44ac978bb13ccd8d25524",
 					Memo:           "RBNvo1WzZ4oRRq0W9+hknpT7T8If536DEMBg9hyq/4o=",
 					TransactionXdr: "AAAAAC3/58Z9rycNLmF6voWX9VmDETFVGhFoWf66mcMuir/DAAAAZAAAAAAAAAAAAAAAAAAAAANEE2+jVbNnihFGrRb36GSelPtPwh/nfoMQwGD2HKr/igAAAAEAAAAAAAAAAgAAAAFVU0QAAAAAAEbpO2riZmlZMkHuBxUBYAAas3hWyo9VL1IOdnfXAVFBAAAAADuaygAAAAAAGVL83DJFwH0sKmy6AIgJYD7GexiD0YuzSMioBCAUOJwAAAABVVNEAAAAAAAZUvzcMkXAfSwqbLoAiAlgPsZ7GIPRi7NIyKgEIBQ4nAAAAAAL68IAAAAAAgAAAAAAAAABRVVSAAAAAAALt4SwWfv1PIJvDRMenW0zu91YxZbphRFLA4O+gbAaigAAAAA=",
 					Data:           params["data"][0],
@@ -260,7 +260,7 @@ func TestRequestHandlerAuth(t *testing.T) {
 					mock.AnythingOfType("*entities.AuthorizedTransaction"),
 				).Run(func(args mock.Arguments) {
 					value := args.Get(0).(*entities.AuthorizedTransaction)
-					assert.Equal(t, authorizedTransaction.TransactionId, value.TransactionId)
+					assert.Equal(t, authorizedTransaction.TransactionID, value.TransactionID)
 					assert.Equal(t, authorizedTransaction.Memo, value.Memo)
 					assert.Equal(t, authorizedTransaction.TransactionXdr, value.TransactionXdr)
 					assert.WithinDuration(t, time.Now(), value.AuthorizedAt, 2*time.Second)
@@ -300,7 +300,7 @@ func TestRequestHandlerAuth(t *testing.T) {
 				SigningKey: "GBYJZW5XFAI6XV73H5SAIUYK6XZI4CGGVBUBO3ANA2SV7KKDAXTV6AEB",
 			}, nil).Once()
 
-			mockSignatureSignerVerifier.On(
+			mockSignerVerifier.On(
 				"Verify",
 				"GBYJZW5XFAI6XV73H5SAIUYK6XZI4CGGVBUBO3ANA2SV7KKDAXTV6AEB",
 				mock.AnythingOfType("[]uint8"),
@@ -308,22 +308,22 @@ func TestRequestHandlerAuth(t *testing.T) {
 			).Return(nil).Once()
 
 			// Make sanctions checks successful (tested previously)
-			mockHttpClient.On(
+			mockHTTPClient.On(
 				"PostForm",
 				"http://sanctions",
 				url.Values{"data": params["data"]},
 			).Return(
-				net.BuildHttpResponse(200, "ok"),
+				net.BuildHTTPResponse(200, "ok"),
 				nil,
 			).Once()
 
 			Convey("when ask_user server returns forbidden it returns info_status `denied`", func() {
-				mockHttpClient.On(
+				mockHTTPClient.On(
 					"PostForm",
 					"http://ask_user",
 					url.Values{"data": params["data"]},
 				).Return(
-					net.BuildHttpResponse(403, "forbidden"),
+					net.BuildHTTPResponse(403, "forbidden"),
 					nil,
 				).Once()
 
@@ -334,12 +334,12 @@ func TestRequestHandlerAuth(t *testing.T) {
 			})
 
 			Convey("when ask_user server returns pending it returns info_status `pending`", func() {
-				mockHttpClient.On(
+				mockHTTPClient.On(
 					"PostForm",
 					"http://ask_user",
 					url.Values{"data": params["data"]},
 				).Return(
-					net.BuildHttpResponse(202, "{\"pending\": 300}"),
+					net.BuildHTTPResponse(202, "{\"pending\": 300}"),
 					nil,
 				).Once()
 
@@ -350,12 +350,12 @@ func TestRequestHandlerAuth(t *testing.T) {
 			})
 
 			Convey("when ask_user server returns pending but invalid response body it returns info_status `pending` (600 seconds)", func() {
-				mockHttpClient.On(
+				mockHTTPClient.On(
 					"PostForm",
 					"http://ask_user",
 					url.Values{"data": params["data"]},
 				).Return(
-					net.BuildHttpResponse(202, "pending"),
+					net.BuildHTTPResponse(202, "pending"),
 					nil,
 				).Once()
 
@@ -366,26 +366,26 @@ func TestRequestHandlerAuth(t *testing.T) {
 			})
 
 			Convey("when ask_user server returns ok it returns info_status `ok` and DestInfo and persists transaction", func() {
-				mockHttpClient.On(
+				mockHTTPClient.On(
 					"PostForm",
 					"http://ask_user",
 					url.Values{"data": params["data"]},
 				).Return(
-					net.BuildHttpResponse(200, "ok"),
+					net.BuildHTTPResponse(200, "ok"),
 					nil,
 				).Once()
 
-				mockHttpClient.On(
+				mockHTTPClient.On(
 					"PostForm",
 					"http://fetch_info",
 					url.Values{"address": {"bob*acme.com"}},
 				).Return(
-					net.BuildHttpResponse(200, "user data"),
+					net.BuildHTTPResponse(200, "user data"),
 					nil,
 				).Once()
 
 				authorizedTransaction := &entities.AuthorizedTransaction{
-					TransactionId:  "b9c3a075b4c20663a26779202fdd2a25a6816114b46ef7553076af68ce1986f5",
+					TransactionID:  "b9c3a075b4c20663a26779202fdd2a25a6816114b46ef7553076af68ce1986f5",
 					Memo:           "kpndMTMlNzq/CEyA/532cWC8Ickm3HlKTU1EbmQcnVU=",
 					TransactionXdr: "AAAAAC3/58Z9rycNLmF6voWX9VmDETFVGhFoWf66mcMuir/DAAAAZAAAAAAAAAAAAAAAAAAAAAOSmd0xMyU3Or8ITID/nfZxYLwhySbceUpNTURuZBydVQAAAAEAAAAAAAAAAgAAAAFVU0QAAAAAAEbpO2riZmlZMkHuBxUBYAAas3hWyo9VL1IOdnfXAVFBAAAAADuaygAAAAAAGVL83DJFwH0sKmy6AIgJYD7GexiD0YuzSMioBCAUOJwAAAABVVNEAAAAAAAZUvzcMkXAfSwqbLoAiAlgPsZ7GIPRi7NIyKgEIBQ4nAAAAAAL68IAAAAAAgAAAAAAAAABRVVSAAAAAAALt4SwWfv1PIJvDRMenW0zu91YxZbphRFLA4O+gbAaigAAAAA=",
 					Data:           params["data"][0],
@@ -396,7 +396,7 @@ func TestRequestHandlerAuth(t *testing.T) {
 					mock.AnythingOfType("*entities.AuthorizedTransaction"),
 				).Run(func(args mock.Arguments) {
 					value := args.Get(0).(*entities.AuthorizedTransaction)
-					assert.Equal(t, authorizedTransaction.TransactionId, value.TransactionId)
+					assert.Equal(t, authorizedTransaction.TransactionID, value.TransactionID)
 					assert.Equal(t, authorizedTransaction.Memo, value.Memo)
 					assert.Equal(t, authorizedTransaction.TransactionXdr, value.TransactionXdr)
 					assert.WithinDuration(t, time.Now(), value.AuthorizedAt, 2*time.Second)
@@ -421,17 +421,17 @@ func TestRequestHandlerAuth(t *testing.T) {
 						nil,
 					).Once()
 
-					mockHttpClient.On(
+					mockHTTPClient.On(
 						"PostForm",
 						"http://fetch_info",
 						url.Values{"address": {"bob*acme.com"}},
 					).Return(
-						net.BuildHttpResponse(200, "user data"),
+						net.BuildHTTPResponse(200, "user data"),
 						nil,
 					).Once()
 
 					authorizedTransaction := &entities.AuthorizedTransaction{
-						TransactionId:  "b9c3a075b4c20663a26779202fdd2a25a6816114b46ef7553076af68ce1986f5",
+						TransactionID:  "b9c3a075b4c20663a26779202fdd2a25a6816114b46ef7553076af68ce1986f5",
 						Memo:           "kpndMTMlNzq/CEyA/532cWC8Ickm3HlKTU1EbmQcnVU=",
 						TransactionXdr: "AAAAAC3/58Z9rycNLmF6voWX9VmDETFVGhFoWf66mcMuir/DAAAAZAAAAAAAAAAAAAAAAAAAAAOSmd0xMyU3Or8ITID/nfZxYLwhySbceUpNTURuZBydVQAAAAEAAAAAAAAAAgAAAAFVU0QAAAAAAEbpO2riZmlZMkHuBxUBYAAas3hWyo9VL1IOdnfXAVFBAAAAADuaygAAAAAAGVL83DJFwH0sKmy6AIgJYD7GexiD0YuzSMioBCAUOJwAAAABVVNEAAAAAAAZUvzcMkXAfSwqbLoAiAlgPsZ7GIPRi7NIyKgEIBQ4nAAAAAAL68IAAAAAAgAAAAAAAAABRVVSAAAAAAALt4SwWfv1PIJvDRMenW0zu91YxZbphRFLA4O+gbAaigAAAAA=",
 						Data:           params["data"][0],
@@ -442,7 +442,7 @@ func TestRequestHandlerAuth(t *testing.T) {
 						mock.AnythingOfType("*entities.AuthorizedTransaction"),
 					).Run(func(args mock.Arguments) {
 						value := args.Get(0).(*entities.AuthorizedTransaction)
-						assert.Equal(t, authorizedTransaction.TransactionId, value.TransactionId)
+						assert.Equal(t, authorizedTransaction.TransactionID, value.TransactionID)
 						assert.Equal(t, authorizedTransaction.Memo, value.Memo)
 						assert.Equal(t, authorizedTransaction.TransactionXdr, value.TransactionXdr)
 						assert.WithinDuration(t, time.Now(), value.AuthorizedAt, 2*time.Second)
@@ -465,7 +465,7 @@ func TestRequestHandlerAuth(t *testing.T) {
 					).Once()
 
 					mockRepository.On(
-						"GetAllowedUserByDomainAndUserId",
+						"GetAllowedUserByDomainAndUserID",
 						"stellar.org", // sender = `alice*stellar.org`
 						"alice",
 					).Return(
@@ -473,17 +473,17 @@ func TestRequestHandlerAuth(t *testing.T) {
 						nil,
 					).Once()
 
-					mockHttpClient.On(
+					mockHTTPClient.On(
 						"PostForm",
 						"http://fetch_info",
 						url.Values{"address": {"bob*acme.com"}},
 					).Return(
-						net.BuildHttpResponse(200, "user data"),
+						net.BuildHTTPResponse(200, "user data"),
 						nil,
 					).Once()
 
 					authorizedTransaction := &entities.AuthorizedTransaction{
-						TransactionId:  "b9c3a075b4c20663a26779202fdd2a25a6816114b46ef7553076af68ce1986f5",
+						TransactionID:  "b9c3a075b4c20663a26779202fdd2a25a6816114b46ef7553076af68ce1986f5",
 						Memo:           "kpndMTMlNzq/CEyA/532cWC8Ickm3HlKTU1EbmQcnVU=",
 						TransactionXdr: "AAAAAC3/58Z9rycNLmF6voWX9VmDETFVGhFoWf66mcMuir/DAAAAZAAAAAAAAAAAAAAAAAAAAAOSmd0xMyU3Or8ITID/nfZxYLwhySbceUpNTURuZBydVQAAAAEAAAAAAAAAAgAAAAFVU0QAAAAAAEbpO2riZmlZMkHuBxUBYAAas3hWyo9VL1IOdnfXAVFBAAAAADuaygAAAAAAGVL83DJFwH0sKmy6AIgJYD7GexiD0YuzSMioBCAUOJwAAAABVVNEAAAAAAAZUvzcMkXAfSwqbLoAiAlgPsZ7GIPRi7NIyKgEIBQ4nAAAAAAL68IAAAAAAgAAAAAAAAABRVVSAAAAAAALt4SwWfv1PIJvDRMenW0zu91YxZbphRFLA4O+gbAaigAAAAA=",
 						Data:           params["data"][0],
@@ -494,7 +494,7 @@ func TestRequestHandlerAuth(t *testing.T) {
 						mock.AnythingOfType("*entities.AuthorizedTransaction"),
 					).Run(func(args mock.Arguments) {
 						value := args.Get(0).(*entities.AuthorizedTransaction)
-						assert.Equal(t, authorizedTransaction.TransactionId, value.TransactionId)
+						assert.Equal(t, authorizedTransaction.TransactionID, value.TransactionID)
 						assert.Equal(t, authorizedTransaction.Memo, value.Memo)
 						assert.Equal(t, authorizedTransaction.TransactionXdr, value.TransactionXdr)
 						assert.WithinDuration(t, time.Now(), value.AuthorizedAt, 2*time.Second)
@@ -517,7 +517,7 @@ func TestRequestHandlerAuth(t *testing.T) {
 					).Once()
 
 					mockRepository.On(
-						"GetAllowedUserByDomainAndUserId",
+						"GetAllowedUserByDomainAndUserID",
 						"stellar.org", // sender = `alice*stellar.org`
 						"alice",
 					).Return(

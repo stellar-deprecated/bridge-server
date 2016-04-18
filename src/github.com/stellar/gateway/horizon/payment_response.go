@@ -1,7 +1,8 @@
 package horizon
 
+// PaymentResponse contains a single payment data returned by Horizon
 type PaymentResponse struct {
-	Id          string `json:"id"`
+	ID          string `json:"id"`
 	Type        string `json:"type"`
 	PagingToken string `json:"paging_token"`
 

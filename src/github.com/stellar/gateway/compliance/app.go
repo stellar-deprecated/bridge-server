@@ -20,6 +20,7 @@ import (
 	"github.com/zenazn/goji/web"
 )
 
+// App is the application object
 type App struct {
 	config         config.Config
 	requestHandler handlers.RequestHandler
@@ -32,14 +33,14 @@ func NewApp(config config.Config, migrateFlag bool) (app *App, err error) {
 	var driver db.Driver
 	switch config.Database.Type {
 	case "mysql":
-		driver = &mysql.MysqlDriver{}
+		driver = &mysql.Driver{}
 	case "postgres":
-		driver = &postgres.PostgresDriver{}
+		driver = &postgres.Driver{}
 	default:
-		return nil, fmt.Errorf("%s database has no driver.", config.Database.Type)
+		return nil, fmt.Errorf("%s database has no driver", config.Database.Type)
 	}
 
-	err = driver.Init(config.Database.Url)
+	err = driver.Init(config.Database.URL)
 	if err != nil {
 		return
 	}
@@ -66,7 +67,7 @@ func NewApp(config config.Config, migrateFlag bool) (app *App, err error) {
 		&inject.Object{Value: &config},
 		&inject.Object{Value: &entityManager},
 		&inject.Object{Value: &repository},
-		&inject.Object{Value: &crypto.SignatureSignerVerifier{}},
+		&inject.Object{Value: &crypto.SignerVerifier{}},
 		&inject.Object{Value: &stellartoml.Resolver{}},
 		&inject.Object{Value: &federation.Resolver{}},
 		&inject.Object{Value: &http.Client{}},
@@ -79,6 +80,7 @@ func NewApp(config config.Config, migrateFlag bool) (app *App, err error) {
 	return
 }
 
+// Serve starts the server
 func (a *App) Serve() {
 	// External endpoints
 	external := web.New()

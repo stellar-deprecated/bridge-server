@@ -27,11 +27,11 @@ func TestRequestHandlerReceive(t *testing.T) {
 		},
 	}
 
-	mockHttpClient := new(mocks.MockHttpClient)
+	mockHTTPClient := new(mocks.MockHTTPClient)
 	mockEntityManager := new(mocks.MockEntityManager)
 	mockRepository := new(mocks.MockRepository)
 	mockFederationResolver := new(mocks.MockFederationResolver)
-	mockSignatureSignerVerifier := new(mocks.MockSignatureSignerVerifier)
+	mockSignerVerifier := new(mocks.MockSignerVerifier)
 	mockStellartomlResolver := new(mocks.MockStellartomlResolver)
 	requestHandler := RequestHandler{}
 
@@ -41,11 +41,11 @@ func TestRequestHandlerReceive(t *testing.T) {
 	err := g.Provide(
 		&inject.Object{Value: &requestHandler},
 		&inject.Object{Value: c},
-		&inject.Object{Value: mockHttpClient},
+		&inject.Object{Value: mockHTTPClient},
 		&inject.Object{Value: mockEntityManager},
 		&inject.Object{Value: mockRepository},
 		&inject.Object{Value: mockFederationResolver},
-		&inject.Object{Value: mockSignatureSignerVerifier},
+		&inject.Object{Value: mockSignerVerifier},
 		&inject.Object{Value: mockStellartomlResolver},
 	)
 	if err != nil {

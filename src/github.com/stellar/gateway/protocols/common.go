@@ -9,13 +9,15 @@ import (
 	"github.com/facebookgo/structtag"
 )
 
+// Asset represents asset in responses
 type Asset struct {
 	Code   string `name:"asset_code"`
 	Issuer string `name:"asset_issuer"`
 }
 
+// FormRequest allows transforming http.Request url.Values from/to request structs
 type FormRequest struct {
-	HttpRequest *http.Request
+	HTTPRequest *http.Request
 }
 
 const (
@@ -23,8 +25,9 @@ const (
 	pathIssuerField = "path[%d][asset_issuer]"
 )
 
+// FromRequest transforms http.Request to request struct object
 func (request *FormRequest) FromRequest(r *http.Request, destination interface{}) {
-	request.HttpRequest = r
+	request.HTTPRequest = r
 
 	rvalue := reflect.ValueOf(destination).Elem()
 	typ := rvalue.Type()
@@ -65,6 +68,7 @@ func (request *FormRequest) FromRequest(r *http.Request, destination interface{}
 	return
 }
 
+// CheckRequired checks whether all fields marked as required have value
 func (request *FormRequest) CheckRequired(destination interface{}) error {
 	rvalue := reflect.ValueOf(destination).Elem()
 	typ := rvalue.Type()
@@ -80,7 +84,7 @@ func (request *FormRequest) CheckRequired(destination interface{}) error {
 
 		if required {
 			name := typ.Field(i).Tag.Get("name")
-			if request.HttpRequest.PostFormValue(name) == "" {
+			if request.HTTPRequest.PostFormValue(name) == "" {
 				return NewMissingParameter(name)
 			}
 		}
@@ -88,6 +92,7 @@ func (request *FormRequest) CheckRequired(destination interface{}) error {
 	return nil
 }
 
+// ToValues transforms request object to url.Values
 func (request *FormRequest) ToValues(object interface{}) (values url.Values) {
 	values = make(map[string][]string)
 	rvalue := reflect.ValueOf(object).Elem()
@@ -116,8 +121,10 @@ func (request *FormRequest) ToValues(object interface{}) (values url.Values) {
 	return
 }
 
+// SuccessResponse is embedded in all success responses and implements server.Response interface
 type SuccessResponse struct{}
 
+// HTTPStatus returns http.StatusOK
 func (response *SuccessResponse) HTTPStatus() int {
 	return http.StatusOK
 }

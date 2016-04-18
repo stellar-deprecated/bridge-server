@@ -11,22 +11,23 @@ import (
 	"github.com/zenazn/goji/web"
 )
 
+// HandlerAllowAccess implements /allow_access endpoint
 func (rh *RequestHandler) HandlerAllowAccess(c web.C, w http.ResponseWriter, r *http.Request) {
 	name := r.PostFormValue("name")
 	domain := r.PostFormValue("domain")
 	publicKey := r.PostFormValue("public_key")
-	userId := r.PostFormValue("user_id")
+	userID := r.PostFormValue("user_id")
 
 	// TODO check params
 
 	var err error
 
-	if userId != "" {
+	if userID != "" {
 		entity := &entities.AllowedUser{
 			FiName:      name,
 			FiDomain:    domain,
 			FiPublicKey: publicKey,
-			UserId:      userId,
+			UserID:      userID,
 			AllowedAt:   time.Now(),
 		}
 		err = rh.EntityManager.Persist(entity)

@@ -25,6 +25,7 @@ import (
 	"github.com/zenazn/goji/web/middleware"
 )
 
+// App is the application object
 type App struct {
 	config         config.Config
 	requestHandler handlers.RequestHandler
@@ -37,21 +38,21 @@ func NewApp(config config.Config, migrateFlag bool) (app *App, err error) {
 	var driver db.Driver
 	switch config.Database.Type {
 	case "mysql":
-		driver = &mysql.MysqlDriver{}
+		driver = &mysql.Driver{}
 	case "postgres":
-		driver = &postgres.PostgresDriver{}
+		driver = &postgres.Driver{}
 	case "":
 		// Allow to start gateway server with a single endpoint: /payment
 		break
 	default:
-		return nil, fmt.Errorf("%s database has no driver.", config.Database.Type)
+		return nil, fmt.Errorf("%s database has no driver", config.Database.Type)
 	}
 
 	var entityManager db.EntityManagerInterface
 	var repository db.RepositoryInterface
 
 	if driver != nil {
-		err = driver.Init(config.Database.Url)
+		err = driver.Init(config.Database.URL)
 		if err != nil {
 			return
 		}
@@ -112,7 +113,7 @@ func NewApp(config config.Config, migrateFlag bool) (app *App, err error) {
 
 	var paymentListener listener.PaymentListener
 
-	if config.Accounts.ReceivingAccountId == "" {
+	if config.Accounts.ReceivingAccountID == "" {
 		log.Warning("No accounts.receiving_account_id param. Skipping...")
 	} else if config.Hooks.Receive == "" {
 		log.Warning("No hooks.receive param. Skipping...")
@@ -129,8 +130,8 @@ func NewApp(config config.Config, migrateFlag bool) (app *App, err error) {
 		log.Print("PaymentListener created")
 	}
 
-	if len(config.ApiKey) > 0 && len(config.ApiKey) < 15 {
-		err = errors.New("api-key have to be at least 15 chars long.")
+	if len(config.APIKey) > 0 && len(config.APIKey) < 15 {
+		err = errors.New("api-key have to be at least 15 chars long")
 		return
 	}
 
@@ -162,6 +163,7 @@ func NewApp(config config.Config, migrateFlag bool) (app *App, err error) {
 	return
 }
 
+// Serve starts the server
 func (a *App) Serve() {
 	portString := fmt.Sprintf(":%d", *a.config.Port)
 	flag.Set("bind", portString)
@@ -169,8 +171,8 @@ func (a *App) Serve() {
 	goji.Abandon(middleware.Logger)
 	goji.Use(server.StripTrailingSlashMiddleware())
 	goji.Use(server.HeadersMiddleware())
-	if a.config.ApiKey != "" {
-		goji.Use(server.ApiKeyMiddleware(a.config.ApiKey))
+	if a.config.APIKey != "" {
+		goji.Use(server.APIKeyMiddleware(a.config.APIKey))
 	}
 
 	if a.config.Accounts.AuthorizingSeed != "" {

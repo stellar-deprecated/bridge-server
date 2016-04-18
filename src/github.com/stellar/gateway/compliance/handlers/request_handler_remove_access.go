@@ -9,16 +9,17 @@ import (
 	"github.com/zenazn/goji/web"
 )
 
+// HandlerRemoveAccess implements /remove_access endpoint
 func (rh *RequestHandler) HandlerRemoveAccess(c web.C, w http.ResponseWriter, r *http.Request) {
 	domain := r.PostFormValue("domain")
-	userId := r.PostFormValue("user_id")
+	userID := r.PostFormValue("user_id")
 
 	// TODO check params
 
 	var entityManagerErr error
 
-	if userId != "" {
-		allowedUser, err := rh.Repository.GetAllowedUserByDomainAndUserId(domain, userId)
+	if userID != "" {
+		allowedUser, err := rh.Repository.GetAllowedUserByDomainAndUserID(domain, userID)
 		if err != nil {
 			log.WithFields(log.Fields{"err": err}).Warn("Error getting allowed user")
 			server.Write(w, protocols.InternalServerError)

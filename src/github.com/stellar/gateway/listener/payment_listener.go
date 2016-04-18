@@ -17,6 +17,7 @@ import (
 	"github.com/stellar/gateway/protocols/compliance"
 )
 
+// PaymentListener is listening for a new payments received by ReceivingAccount
 type PaymentListener struct {
 	config        *config.Config
 	entityManager db.EntityManagerInterface
@@ -26,8 +27,9 @@ type PaymentListener struct {
 	now           func() time.Time
 }
 
-const HOOK_TIMEOUT = 10 * time.Second
+const hookTimeout = 10 * time.Second
 
+// NewPaymentListener creates a new PaymentListener
 func NewPaymentListener(
 	config *config.Config,
 	entityManager db.EntityManagerInterface,
@@ -46,10 +48,11 @@ func NewPaymentListener(
 	return
 }
 
+// Listen starts listening for new payments
 func (pl PaymentListener) Listen() (err error) {
-	accountId := pl.config.Accounts.ReceivingAccountId
+	accountID := pl.config.Accounts.ReceivingAccountID
 
-	_, err = pl.horizon.LoadAccount(accountId)
+	_, err = pl.horizon.LoadAccount(accountID)
 	if err != nil {
 		return
 	}
@@ -72,12 +75,12 @@ func (pl PaymentListener) Listen() (err error) {
 			}
 
 			pl.log.WithFields(logrus.Fields{
-				"accountId": accountId,
+				"accountId": accountID,
 				"cursor":    cursorValue,
 			}).Info("Started listening for new payments")
 
 			err = pl.horizon.StreamPayments(
-				accountId,
+				accountID,
 				cursor,
 				pl.onPayment,
 			)
@@ -94,27 +97,27 @@ func (pl PaymentListener) Listen() (err error) {
 }
 
 func (pl PaymentListener) onPayment(payment horizon.PaymentResponse) (err error) {
-	pl.log.WithFields(logrus.Fields{"id": payment.Id}).Info("New received payment")
+	pl.log.WithFields(logrus.Fields{"id": payment.ID}).Info("New received payment")
 
-	id, err := strconv.ParseInt(payment.Id, 10, 64)
+	id, err := strconv.ParseInt(payment.ID, 10, 64)
 	if err != nil {
 		pl.log.WithFields(logrus.Fields{"err": err}).Error("Error converting ID to int64")
 		return err
 	}
 
-	existingPayment, err := pl.repository.GetReceivedPaymentById(id)
+	existingPayment, err := pl.repository.GetReceivedPaymentByID(id)
 	if err != nil {
 		pl.log.WithFields(logrus.Fields{"err": err}).Error("Error checking if receive payment exists")
 		return err
 	}
 
 	if existingPayment != nil {
-		pl.log.WithFields(logrus.Fields{"id": payment.Id}).Info("Payment already exists")
+		pl.log.WithFields(logrus.Fields{"id": payment.ID}).Info("Payment already exists")
 		return
 	}
 
 	dbPayment := entities.ReceivedPayment{
-		OperationId: payment.Id,
+		OperationID: payment.ID,
 		ProcessedAt: pl.now(),
 		PagingToken: payment.PagingToken,
 	}
@@ -130,7 +133,7 @@ func (pl PaymentListener) onPayment(payment horizon.PaymentResponse) (err error)
 		return
 	}
 
-	if payment.To != pl.config.Accounts.ReceivingAccountId {
+	if payment.To != pl.config.Accounts.ReceivingAccountID {
 		dbPayment.Status = "Operation sent not received"
 		savePayment(&dbPayment)
 		return nil
@@ -184,12 +187,12 @@ func (pl PaymentListener) onPayment(payment horizon.PaymentResponse) (err error)
 	}
 
 	client := http.Client{
-		Timeout: HOOK_TIMEOUT,
+		Timeout: hookTimeout,
 	}
 	resp, err := client.PostForm(
 		pl.config.Hooks.Receive,
 		url.Values{
-			"id":         {payment.Id},
+			"id":         {payment.ID},
 			"from":       {payment.From},
 			"amount":     {payment.Amount},
 			"asset_code": {payment.AssetCode},

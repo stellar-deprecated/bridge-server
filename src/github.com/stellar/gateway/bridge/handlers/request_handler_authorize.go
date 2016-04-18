@@ -10,11 +10,12 @@ import (
 	b "github.com/stellar/go-stellar-base/build"
 )
 
+// Authorize implements /authorize endpoint
 func (rh *RequestHandler) Authorize(w http.ResponseWriter, r *http.Request) {
 	request := &bridge.AuthorizeRequest{}
 	request.FromRequest(r)
 
-	err := request.Validate(rh.Config.Assets, rh.Config.Accounts.IssuingAccountId)
+	err := request.Validate(rh.Config.Assets, rh.Config.Accounts.IssuingAccountID)
 	if err != nil {
 		errorResponse := err.(*protocols.ErrorResponse)
 		log.WithFields(errorResponse.LogData).Error(errorResponse.Error())
@@ -23,7 +24,7 @@ func (rh *RequestHandler) Authorize(w http.ResponseWriter, r *http.Request) {
 	}
 
 	operationMutator := b.AllowTrust(
-		b.Trustor{request.AccountId},
+		b.Trustor{request.AccountID},
 		b.Authorize{true},
 		b.AllowTrustAsset{request.AssetCode},
 	)

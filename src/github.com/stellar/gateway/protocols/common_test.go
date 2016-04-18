@@ -26,15 +26,15 @@ func TestProtocols(t *testing.T) {
 				SendAssetIssuer: "SendAssetIssuer",
 				ExtraMemo:       "ExtraMemo",
 				Path: []protocols.Asset{
-					protocols.Asset{"USD", "BLAH"},
-					protocols.Asset{},
-					protocols.Asset{"EUR", "BLAH2"},
+					{Code: "USD", Issuer: "BLAH"},
+					{},
+					{Code: "EUR", Issuer: "BLAH2"},
 				},
 			}
 
 			values := request.ToValues()
 			httpRequest := &http.Request{PostForm: values}
-			request.FormRequest.HttpRequest = httpRequest
+			request.FormRequest.HTTPRequest = httpRequest
 
 			request2 := &compliance.SendRequest{}
 			request2.FromRequest(httpRequest)
