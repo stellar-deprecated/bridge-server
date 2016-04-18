@@ -99,44 +99,50 @@ func (rh *RequestHandler) HandlerSend(c web.C, w http.ResponseWriter, r *http.Re
 	}
 
 	// Fetch Sender Info
-	fetchInfoRequest := compliance.FetchInfoRequest{Address: request.Sender}
-	resp, err := rh.Client.PostForm(
-		rh.Config.Callbacks.FetchInfo,
-		fetchInfoRequest.ToValues(),
-	)
-	if err != nil {
-		log.WithFields(log.Fields{
-			"fetch_info": rh.Config.Callbacks.FetchInfo,
-			"err":        err,
-		}).Error("Error sending request to fetch_info server")
-		server.Write(w, protocols.InternalServerError)
-		return
-	}
+	senderInfo := ""
 
-	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		log.WithFields(log.Fields{
-			"fetch_info": rh.Config.Callbacks.FetchInfo,
-			"err":        err,
-		}).Error("Error reading fetch_info server response")
-		server.Write(w, protocols.InternalServerError)
-		return
-	}
+	if rh.Config.Callbacks.FetchInfo != "" {
+		fetchInfoRequest := compliance.FetchInfoRequest{Address: request.Sender}
+		resp, err := rh.Client.PostForm(
+			rh.Config.Callbacks.FetchInfo,
+			fetchInfoRequest.ToValues(),
+		)
+		if err != nil {
+			log.WithFields(log.Fields{
+				"fetch_info": rh.Config.Callbacks.FetchInfo,
+				"err":        err,
+			}).Error("Error sending request to fetch_info server")
+			server.Write(w, protocols.InternalServerError)
+			return
+		}
 
-	if resp.StatusCode != http.StatusOK {
-		log.WithFields(log.Fields{
-			"fetch_info": rh.Config.Callbacks.FetchInfo,
-			"status":     resp.StatusCode,
-			"body":       string(body),
-		}).Error("Error response from fetch_info server")
-		server.Write(w, protocols.InternalServerError)
-		return
+		defer resp.Body.Close()
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			log.WithFields(log.Fields{
+				"fetch_info": rh.Config.Callbacks.FetchInfo,
+				"err":        err,
+			}).Error("Error reading fetch_info server response")
+			server.Write(w, protocols.InternalServerError)
+			return
+		}
+
+		if resp.StatusCode != http.StatusOK {
+			log.WithFields(log.Fields{
+				"fetch_info": rh.Config.Callbacks.FetchInfo,
+				"status":     resp.StatusCode,
+				"body":       string(body),
+			}).Error("Error response from fetch_info server")
+			server.Write(w, protocols.InternalServerError)
+			return
+		}
+
+		senderInfo = string(body)
 	}
 
 	memoPreimage := &memo.Memo{
 		Transaction: memo.Transaction{
-			SenderInfo: string(body),
+			SenderInfo: senderInfo,
 			Route:      request.Destination,
 			Extra:      request.ExtraMemo,
 		},
@@ -188,7 +194,7 @@ func (rh *RequestHandler) HandlerSend(c web.C, w http.ResponseWriter, r *http.Re
 		Data:      string(data),
 		Signature: sig,
 	}
-	resp, err = rh.Client.PostForm(
+	resp, err := rh.Client.PostForm(
 		stellarToml.AuthServer,
 		authRequest.ToValues(),
 	)
@@ -202,7 +208,7 @@ func (rh *RequestHandler) HandlerSend(c web.C, w http.ResponseWriter, r *http.Re
 	}
 
 	defer resp.Body.Close()
-	body, err = ioutil.ReadAll(resp.Body)
+	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		log.Error("Error reading auth server response")
 		server.Write(w, protocols.InternalServerError)
