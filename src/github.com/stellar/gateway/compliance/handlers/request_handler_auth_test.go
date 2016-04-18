@@ -18,6 +18,7 @@ import (
 	"github.com/stellar/gateway/protocols/compliance"
 	"github.com/stellar/gateway/protocols/memo"
 	"github.com/stellar/gateway/protocols/stellartoml"
+	"github.com/stellar/gateway/test"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/zenazn/goji/web"
@@ -73,7 +74,14 @@ func TestRequestHandlerAuth(t *testing.T) {
 			statusCode, response := net.GetResponse(testServer, url.Values{})
 			responseString := strings.TrimSpace(string(response))
 			assert.Equal(t, 400, statusCode)
-			assert.Equal(t, "{\n  \"code\": \"missing_parameter\",\n  \"message\": \"Required parameter is missing.\",\n  \"data\": {\n    \"name\": \"data\"\n  }\n}", responseString)
+			expected := test.StringToJSONMap(`{
+  "code": "missing_parameter",
+  "message": "Required parameter is missing.",
+  "data": {
+    "name": "data"
+  }
+}`)
+			assert.Equal(t, expected, test.StringToJSONMap(responseString))
 		})
 
 		Convey("When data is invalid", func() {
@@ -85,7 +93,14 @@ func TestRequestHandlerAuth(t *testing.T) {
 			statusCode, response := net.GetResponse(testServer, params)
 			responseString := strings.TrimSpace(string(response))
 			assert.Equal(t, 400, statusCode)
-			assert.Equal(t, "{\n  \"code\": \"invalid_parameter\",\n  \"message\": \"Invalid parameter.\",\n  \"data\": {\n    \"name\": \"data\"\n  }\n}", responseString)
+			expected := test.StringToJSONMap(`{
+  "code": "invalid_parameter",
+  "message": "Invalid parameter.",
+  "data": {
+    "name": "data"
+  }
+}`)
+			assert.Equal(t, expected, test.StringToJSONMap(responseString))
 		})
 
 		Convey("When sender's stellar.toml does not contain signing key", func() {
@@ -102,7 +117,14 @@ func TestRequestHandlerAuth(t *testing.T) {
 			statusCode, response := net.GetResponse(testServer, params)
 			responseString := strings.TrimSpace(string(response))
 			assert.Equal(t, 400, statusCode)
-			assert.Equal(t, "{\n  \"code\": \"invalid_parameter\",\n  \"message\": \"Invalid parameter.\",\n  \"data\": {\n    \"name\": \"data.sender\"\n  }\n}", responseString)
+			expected := test.StringToJSONMap(`{
+  "code": "invalid_parameter",
+  "message": "Invalid parameter.",
+  "data": {
+    "name": "data.sender"
+  }
+}`)
+			assert.Equal(t, expected, test.StringToJSONMap(responseString))
 		})
 
 		Convey("When signature is invalid", func() {
@@ -128,7 +150,14 @@ func TestRequestHandlerAuth(t *testing.T) {
 			statusCode, response := net.GetResponse(testServer, params)
 			responseString := strings.TrimSpace(string(response))
 			assert.Equal(t, 400, statusCode)
-			assert.Equal(t, "{\n  \"code\": \"invalid_parameter\",\n  \"message\": \"Invalid parameter.\",\n  \"data\": {\n    \"name\": \"sig\"\n  }\n}", responseString)
+			expected := test.StringToJSONMap(`{
+  "code": "invalid_parameter",
+  "message": "Invalid parameter.",
+  "data": {
+    "name": "sig"
+  }
+}`)
+			assert.Equal(t, expected, test.StringToJSONMap(responseString))
 		})
 
 		Convey("When all params are valid", func() {
@@ -174,7 +203,11 @@ func TestRequestHandlerAuth(t *testing.T) {
 				statusCode, response := net.GetResponse(testServer, params)
 				responseString := strings.TrimSpace(string(response))
 				assert.Equal(t, 200, statusCode)
-				assert.Equal(t, "{\n  \"info_status\": \"ok\",\n  \"tx_status\": \"ok\"\n}", responseString)
+				expected := test.StringToJSONMap(`{
+  "info_status": "ok",
+  "tx_status": "ok"
+}`)
+				assert.Equal(t, expected, test.StringToJSONMap(responseString))
 			})
 		})
 	})
@@ -219,7 +252,11 @@ func TestRequestHandlerAuth(t *testing.T) {
 				statusCode, response := net.GetResponse(testServer, params)
 				responseString := strings.TrimSpace(string(response))
 				assert.Equal(t, 200, statusCode)
-				assert.Equal(t, "{\n  \"info_status\": \"ok\",\n  \"tx_status\": \"denied\"\n}", responseString)
+				expected := test.StringToJSONMap(`{
+  "info_status": "ok",
+  "tx_status": "denied"
+}`)
+				assert.Equal(t, expected, test.StringToJSONMap(responseString))
 			})
 
 			Convey("when sanctions server returns accepted it returns tx_status `pending`", func() {
@@ -235,7 +272,12 @@ func TestRequestHandlerAuth(t *testing.T) {
 				statusCode, response := net.GetResponse(testServer, params)
 				responseString := strings.TrimSpace(string(response))
 				assert.Equal(t, 200, statusCode)
-				assert.Equal(t, "{\n  \"info_status\": \"ok\",\n  \"tx_status\": \"pending\",\n  \"pending\": 600\n}", responseString)
+				expected := test.StringToJSONMap(`{
+  "info_status": "ok",
+  "tx_status": "pending",
+  "pending": 600
+}`)
+				assert.Equal(t, expected, test.StringToJSONMap(responseString))
 			})
 
 			Convey("when sanctions server returns ok it returns tx_status `ok` and persists transaction", func() {
@@ -270,7 +312,11 @@ func TestRequestHandlerAuth(t *testing.T) {
 				statusCode, response := net.GetResponse(testServer, params)
 				responseString := strings.TrimSpace(string(response))
 				assert.Equal(t, 200, statusCode)
-				assert.Equal(t, "{\n  \"info_status\": \"ok\",\n  \"tx_status\": \"ok\"\n}", responseString)
+				expected := test.StringToJSONMap(`{
+  "info_status": "ok",
+  "tx_status": "ok"
+}`)
+				assert.Equal(t, expected, test.StringToJSONMap(responseString))
 			})
 		})
 
@@ -330,7 +376,11 @@ func TestRequestHandlerAuth(t *testing.T) {
 				statusCode, response := net.GetResponse(testServer, params)
 				responseString := strings.TrimSpace(string(response))
 				assert.Equal(t, 200, statusCode)
-				assert.Equal(t, "{\n  \"info_status\": \"denied\",\n  \"tx_status\": \"ok\"\n}", responseString)
+				expected := test.StringToJSONMap(`{
+  "info_status": "denied",
+  "tx_status": "ok"
+}`)
+				assert.Equal(t, expected, test.StringToJSONMap(responseString))
 			})
 
 			Convey("when ask_user server returns pending it returns info_status `pending`", func() {
@@ -346,7 +396,12 @@ func TestRequestHandlerAuth(t *testing.T) {
 				statusCode, response := net.GetResponse(testServer, params)
 				responseString := strings.TrimSpace(string(response))
 				assert.Equal(t, 200, statusCode)
-				assert.Equal(t, "{\n  \"info_status\": \"pending\",\n  \"tx_status\": \"ok\",\n  \"pending\": 300\n}", responseString)
+				expected := test.StringToJSONMap(`{
+  "info_status": "pending",
+  "tx_status": "ok",
+  "pending": 300
+}`)
+				assert.Equal(t, expected, test.StringToJSONMap(responseString))
 			})
 
 			Convey("when ask_user server returns pending but invalid response body it returns info_status `pending` (600 seconds)", func() {
@@ -362,7 +417,12 @@ func TestRequestHandlerAuth(t *testing.T) {
 				statusCode, response := net.GetResponse(testServer, params)
 				responseString := strings.TrimSpace(string(response))
 				assert.Equal(t, 200, statusCode)
-				assert.Equal(t, "{\n  \"info_status\": \"pending\",\n  \"tx_status\": \"ok\",\n  \"pending\": 600\n}", responseString)
+				expected := test.StringToJSONMap(`{
+  "info_status": "pending",
+  "tx_status": "ok",
+  "pending": 600
+}`)
+				assert.Equal(t, expected, test.StringToJSONMap(responseString))
 			})
 
 			Convey("when ask_user server returns ok it returns info_status `ok` and DestInfo and persists transaction", func() {
@@ -406,7 +466,12 @@ func TestRequestHandlerAuth(t *testing.T) {
 				statusCode, response := net.GetResponse(testServer, params)
 				responseString := strings.TrimSpace(string(response))
 				assert.Equal(t, 200, statusCode)
-				assert.Equal(t, "{\n  \"info_status\": \"ok\",\n  \"tx_status\": \"ok\",\n  \"dest_info\": \"user data\"\n}", responseString)
+				expected := test.StringToJSONMap(`{
+  "info_status": "ok",
+  "tx_status": "ok",
+  "dest_info": "user data"
+}`)
+				assert.Equal(t, expected, test.StringToJSONMap(responseString))
 			})
 
 			Convey("When no callbacks.ask_user server", func() {
@@ -452,7 +517,12 @@ func TestRequestHandlerAuth(t *testing.T) {
 					statusCode, response := net.GetResponse(testServer, params)
 					responseString := strings.TrimSpace(string(response))
 					assert.Equal(t, 200, statusCode)
-					assert.Equal(t, "{\n  \"info_status\": \"ok\",\n  \"tx_status\": \"ok\",\n  \"dest_info\": \"user data\"\n}", responseString)
+					expected := test.StringToJSONMap(`{
+  "info_status": "ok",
+  "tx_status": "ok",
+  "dest_info": "user data"
+}`)
+					assert.Equal(t, expected, test.StringToJSONMap(responseString))
 				})
 
 				Convey("when FI not allowed but User is allowed it returns info_status = `ok` and DestInfo and persists transaction", func() {
@@ -504,7 +574,12 @@ func TestRequestHandlerAuth(t *testing.T) {
 					statusCode, response := net.GetResponse(testServer, params)
 					responseString := strings.TrimSpace(string(response))
 					assert.Equal(t, 200, statusCode)
-					assert.Equal(t, "{\n  \"info_status\": \"ok\",\n  \"tx_status\": \"ok\",\n  \"dest_info\": \"user data\"\n}", responseString)
+					expected := test.StringToJSONMap(`{
+  "info_status": "ok",
+  "tx_status": "ok",
+  "dest_info": "user data"
+}`)
+					assert.Equal(t, expected, test.StringToJSONMap(responseString))
 				})
 
 				Convey("when neither FI nor User is allowed it returns info_status = `denied`", func() {
@@ -528,7 +603,11 @@ func TestRequestHandlerAuth(t *testing.T) {
 					statusCode, response := net.GetResponse(testServer, params)
 					responseString := strings.TrimSpace(string(response))
 					assert.Equal(t, 200, statusCode)
-					assert.Equal(t, "{\n  \"info_status\": \"denied\",\n  \"tx_status\": \"ok\"\n}", responseString)
+					expected := test.StringToJSONMap(`{
+  "info_status": "denied",
+  "tx_status": "ok"
+}`)
+					assert.Equal(t, expected, test.StringToJSONMap(responseString))
 				})
 			})
 		})

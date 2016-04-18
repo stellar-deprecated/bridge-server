@@ -15,6 +15,7 @@ import (
 	"github.com/stellar/gateway/protocols/compliance"
 	"github.com/stellar/gateway/protocols/federation"
 	"github.com/stellar/gateway/protocols/stellartoml"
+	"github.com/stellar/gateway/test"
 	"github.com/stretchr/testify/assert"
 	"github.com/zenazn/goji/web"
 )
@@ -72,7 +73,14 @@ func TestRequestHandlerSend(t *testing.T) {
 			statusCode, response := net.GetResponse(testServer, url.Values{})
 			responseString := strings.TrimSpace(string(response))
 			assert.Equal(t, 400, statusCode)
-			assert.Equal(t, "{\n  \"code\": \"missing_parameter\",\n  \"message\": \"Required parameter is missing.\",\n  \"data\": {\n    \"name\": \"source\"\n  }\n}", responseString)
+			expected := test.StringToJSONMap(`{
+			  "code": "missing_parameter",
+			  "message": "Required parameter is missing.",
+			  "data": {
+			    "name": "source"
+			  }
+			}`)
+			assert.Equal(t, expected, test.StringToJSONMap(responseString))
 		})
 
 		Convey("When source param is invalid", func() {
@@ -89,7 +97,14 @@ func TestRequestHandlerSend(t *testing.T) {
 			statusCode, response := net.GetResponse(testServer, params)
 			responseString := strings.TrimSpace(string(response))
 			assert.Equal(t, 400, statusCode)
-			assert.Equal(t, "{\n  \"code\": \"invalid_parameter\",\n  \"message\": \"Invalid parameter.\",\n  \"data\": {\n    \"name\": \"source\"\n  }\n}", responseString)
+			expected := test.StringToJSONMap(`{
+			  "code": "invalid_parameter",
+			  "message": "Invalid parameter.",
+			  "data": {
+			    "name": "source"
+			  }
+			}`)
+			assert.Equal(t, expected, test.StringToJSONMap(responseString))
 		})
 
 		Convey("When params are valid", func() {
@@ -151,7 +166,14 @@ func TestRequestHandlerSend(t *testing.T) {
 				statusCode, response := net.GetResponse(testServer, params)
 				responseString := strings.TrimSpace(string(response))
 				assert.Equal(t, 200, statusCode)
-				assert.Equal(t, "{\n  \"auth_response\": {\n    \"info_status\": \"ok\",\n    \"tx_status\": \"ok\"\n  },\n  \"transaction_xdr\": \"AAAAAC3/58Z9rycNLmF6voWX9VmDETFVGhFoWf66mcMuir/DAAAAZAAAAAAAAAAAAAAAAAAAAANGzcuG2Z4WMLeEJJfEHFImaPhGJrZklOKsbdZFw+6kIwAAAAEAAAAAAAAAAQAAAAAZUvzcMkXAfSwqbLoAiAlgPsZ7GIPRi7NIyKgEIBQ4nAAAAAFVU0QAAAAAABlS/NwyRcB9LCpsugCICWA+xnsYg9GLs0jIqAQgFDicAAAAAAvrwgAAAAAA\"\n}", responseString)
+				expected := test.StringToJSONMap(`{
+				  "auth_response": {
+				    "info_status": "ok",
+				    "tx_status": "ok"
+				  },
+				  "transaction_xdr": "AAAAAC3/58Z9rycNLmF6voWX9VmDETFVGhFoWf66mcMuir/DAAAAZAAAAAAAAAAAAAAAAAAAAANGzcuG2Z4WMLeEJJfEHFImaPhGJrZklOKsbdZFw+6kIwAAAAEAAAAAAAAAAQAAAAAZUvzcMkXAfSwqbLoAiAlgPsZ7GIPRi7NIyKgEIBQ4nAAAAAFVU0QAAAAAABlS/NwyRcB9LCpsugCICWA+xnsYg9GLs0jIqAQgFDicAAAAAAvrwgAAAAAA"
+				}`)
+				assert.Equal(t, expected, test.StringToJSONMap(responseString))
 			})
 
 			Convey("it returns SendResponse when success (path payment)", func() {
@@ -213,7 +235,14 @@ func TestRequestHandlerSend(t *testing.T) {
 				statusCode, response := net.GetResponse(testServer, params)
 				responseString := strings.TrimSpace(string(response))
 				assert.Equal(t, 200, statusCode)
-				assert.Equal(t, "{\n  \"auth_response\": {\n    \"info_status\": \"ok\",\n    \"tx_status\": \"ok\"\n  },\n  \"transaction_xdr\": \"AAAAAC3/58Z9rycNLmF6voWX9VmDETFVGhFoWf66mcMuir/DAAAAZAAAAAAAAAAAAAAAAAAAAANGzcuG2Z4WMLeEJJfEHFImaPhGJrZklOKsbdZFw+6kIwAAAAEAAAAAAAAAAgAAAAFVU0QAAAAAAEbpO2riZmlZMkHuBxUBYAAas3hWyo9VL1IOdnfXAVFBAAAAADuaygAAAAAAGVL83DJFwH0sKmy6AIgJYD7GexiD0YuzSMioBCAUOJwAAAABVVNEAAAAAAAZUvzcMkXAfSwqbLoAiAlgPsZ7GIPRi7NIyKgEIBQ4nAAAAAAL68IAAAAAAgAAAAAAAAABRVVSAAAAAAALt4SwWfv1PIJvDRMenW0zu91YxZbphRFLA4O+gbAaigAAAAA=\"\n}", responseString)
+				expected := test.StringToJSONMap(`{
+				  "auth_response": {
+				    "info_status": "ok",
+				    "tx_status": "ok"
+				  },
+				  "transaction_xdr": "AAAAAC3/58Z9rycNLmF6voWX9VmDETFVGhFoWf66mcMuir/DAAAAZAAAAAAAAAAAAAAAAAAAAANGzcuG2Z4WMLeEJJfEHFImaPhGJrZklOKsbdZFw+6kIwAAAAEAAAAAAAAAAgAAAAFVU0QAAAAAAEbpO2riZmlZMkHuBxUBYAAas3hWyo9VL1IOdnfXAVFBAAAAADuaygAAAAAAGVL83DJFwH0sKmy6AIgJYD7GexiD0YuzSMioBCAUOJwAAAABVVNEAAAAAAAZUvzcMkXAfSwqbLoAiAlgPsZ7GIPRi7NIyKgEIBQ4nAAAAAAL68IAAAAAAgAAAAAAAAABRVVSAAAAAAALt4SwWfv1PIJvDRMenW0zu91YxZbphRFLA4O+gbAaigAAAAA="
+				}`)
+				assert.Equal(t, expected, test.StringToJSONMap(responseString))
 			})
 		})
 	})

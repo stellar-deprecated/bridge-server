@@ -19,6 +19,7 @@ import (
 	"github.com/stellar/gateway/protocols/compliance"
 	"github.com/stellar/gateway/protocols/federation"
 	"github.com/stellar/gateway/protocols/stellartoml"
+	"github.com/stellar/gateway/test"
 	"github.com/stellar/go-stellar-base/xdr"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -71,7 +72,14 @@ func TestRequestHandlerPayment(t *testing.T) {
 				statusCode, response := net.GetResponse(testServer, params)
 				responseString := strings.TrimSpace(string(response))
 				assert.Equal(t, 400, statusCode)
-				assert.Equal(t, "{\n  \"code\": \"invalid_parameter\",\n  \"message\": \"Invalid parameter.\",\n  \"data\": {\n    \"name\": \"source\"\n  }\n}", responseString)
+				expected := test.StringToJSONMap(`{
+  "code": "invalid_parameter",
+  "message": "Invalid parameter.",
+  "data": {
+    "name": "source"
+  }
+}`)
+				assert.Equal(t, expected, test.StringToJSONMap(responseString))
 			})
 		})
 
@@ -95,7 +103,14 @@ func TestRequestHandlerPayment(t *testing.T) {
 				statusCode, response := net.GetResponse(testServer, params)
 				responseString := strings.TrimSpace(string(response))
 				assert.Equal(t, 400, statusCode)
-				assert.Equal(t, "{\n  \"code\": \"invalid_parameter\",\n  \"message\": \"Invalid parameter.\",\n  \"data\": {\n    \"name\": \"destination\"\n  }\n}", responseString)
+				expected := test.StringToJSONMap(`{
+  "code": "invalid_parameter",
+  "message": "Invalid parameter.",
+  "data": {
+    "name": "destination"
+  }
+}`)
+				assert.Equal(t, expected, test.StringToJSONMap(responseString))
 			})
 		})
 
@@ -120,7 +135,11 @@ func TestRequestHandlerPayment(t *testing.T) {
 					statusCode, response := net.GetResponse(testServer, params)
 					responseString := strings.TrimSpace(string(response))
 					assert.Equal(t, 400, statusCode)
-					assert.Equal(t, "{\n  \"code\": \"cannot_resolve_destination\",\n  \"message\": \"Cannot resolve federated Stellar address.\"\n}", responseString)
+					expected := test.StringToJSONMap(`{
+  "code": "cannot_resolve_destination",
+  "message": "Cannot resolve federated Stellar address."
+}`)
+					assert.Equal(t, expected, test.StringToJSONMap(responseString))
 				})
 			})
 
@@ -265,7 +284,14 @@ func TestRequestHandlerPayment(t *testing.T) {
 				statusCode, response := net.GetResponse(testServer, params)
 				responseString := strings.TrimSpace(string(response))
 				assert.Equal(t, 400, statusCode)
-				assert.Equal(t, "{\n  \"code\": \"invalid_parameter\",\n  \"message\": \"Invalid parameter.\",\n  \"data\": {\n    \"name\": \"asset_issuer\"\n  }\n}", responseString)
+				expected := test.StringToJSONMap(`{
+  "code": "invalid_parameter",
+  "message": "Invalid parameter.",
+  "data": {
+    "name": "asset_issuer"
+  }
+}`)
+				assert.Equal(t, expected, test.StringToJSONMap(responseString))
 			})
 		})
 
@@ -309,7 +335,14 @@ func TestRequestHandlerPayment(t *testing.T) {
 				)
 				responseString := strings.TrimSpace(string(response))
 				assert.Equal(t, 400, statusCode)
-				assert.Equal(t, "{\n  \"code\": \"invalid_parameter\",\n  \"message\": \"Invalid parameter.\",\n  \"data\": {\n    \"name\": \"asset_code\"\n  }\n}", responseString)
+				expected := test.StringToJSONMap(`{
+  "code": "invalid_parameter",
+  "message": "Invalid parameter.",
+  "data": {
+    "name": "asset_code"
+  }
+}`)
+				assert.Equal(t, expected, test.StringToJSONMap(responseString))
 			})
 		})
 
@@ -353,7 +386,14 @@ func TestRequestHandlerPayment(t *testing.T) {
 				)
 				responseString := strings.TrimSpace(string(response))
 				assert.Equal(t, 400, statusCode)
-				assert.Equal(t, "{\n  \"code\": \"invalid_parameter\",\n  \"message\": \"Invalid parameter.\",\n  \"data\": {\n    \"name\": \"amount\"\n  }\n}", responseString)
+				expected := test.StringToJSONMap(`{
+  "code": "invalid_parameter",
+  "message": "Invalid parameter.",
+  "data": {
+    "name": "amount"
+  }
+}`)
+				assert.Equal(t, expected, test.StringToJSONMap(responseString))
 			})
 		})
 
@@ -382,7 +422,14 @@ func TestRequestHandlerPayment(t *testing.T) {
 					statusCode, response := net.GetResponse(testServer, validParams)
 					responseString := strings.TrimSpace(string(response))
 					assert.Equal(t, 400, statusCode)
-					assert.Equal(t, "{\n  \"code\": \"missing_parameter\",\n  \"message\": \"Required parameter is missing.\",\n  \"data\": {\n    \"name\": \"memo_type\"\n  }\n}", responseString)
+					expected := test.StringToJSONMap(`{
+  "code": "missing_parameter",
+  "message": "Required parameter is missing.",
+  "data": {
+    "name": "memo_type"
+  }
+}`)
+					assert.Equal(t, expected, test.StringToJSONMap(responseString))
 				})
 
 				Convey("only `memo_type` param is set", func() {
@@ -390,7 +437,14 @@ func TestRequestHandlerPayment(t *testing.T) {
 					statusCode, response := net.GetResponse(testServer, validParams)
 					responseString := strings.TrimSpace(string(response))
 					assert.Equal(t, 400, statusCode)
-					assert.Equal(t, "{\n  \"code\": \"missing_parameter\",\n  \"message\": \"Required parameter is missing.\",\n  \"data\": {\n    \"name\": \"memo\"\n  }\n}", responseString)
+					expected := test.StringToJSONMap(`{
+  "code": "missing_parameter",
+  "message": "Required parameter is missing.",
+  "data": {
+    "name": "memo"
+  }
+}`)
+					assert.Equal(t, expected, test.StringToJSONMap(responseString))
 				})
 
 				Convey("memo_type=hash to long", func() {
@@ -399,7 +453,14 @@ func TestRequestHandlerPayment(t *testing.T) {
 					statusCode, response := net.GetResponse(testServer, validParams)
 					responseString := strings.TrimSpace(string(response))
 					assert.Equal(t, 400, statusCode)
-					assert.Equal(t, "{\n  \"code\": \"invalid_parameter\",\n  \"message\": \"Invalid parameter.\",\n  \"data\": {\n    \"name\": \"memo\"\n  }\n}", responseString)
+					expected := test.StringToJSONMap(`{
+  "code": "invalid_parameter",
+  "message": "Invalid parameter.",
+  "data": {
+    "name": "memo"
+  }
+}`)
+					assert.Equal(t, expected, test.StringToJSONMap(responseString))
 				})
 
 				Convey("unsupported memo_type", func() {
@@ -408,7 +469,14 @@ func TestRequestHandlerPayment(t *testing.T) {
 					statusCode, response := net.GetResponse(testServer, validParams)
 					responseString := strings.TrimSpace(string(response))
 					assert.Equal(t, 400, statusCode)
-					assert.Equal(t, "{\n  \"code\": \"invalid_parameter\",\n  \"message\": \"Invalid parameter.\",\n  \"data\": {\n    \"name\": \"memo\"\n  }\n}", responseString)
+					expected := test.StringToJSONMap(`{
+  "code": "invalid_parameter",
+  "message": "Invalid parameter.",
+  "data": {
+    "name": "memo"
+  }
+}`)
+					assert.Equal(t, expected, test.StringToJSONMap(responseString))
 				})
 
 				Convey("memo is attached to the transaction", func() {
@@ -490,7 +558,11 @@ func TestRequestHandlerPayment(t *testing.T) {
 					statusCode, response := net.GetResponse(testServer, validParams)
 					responseString := strings.TrimSpace(string(response))
 					assert.Equal(t, 400, statusCode)
-					assert.Equal(t, "{\n  \"code\": \"source_not_exist\",\n  \"message\": \"Source account does not exist.\"\n}", responseString)
+					expected := test.StringToJSONMap(`{
+  "code": "source_not_exist",
+  "message": "Source account does not exist."
+}`)
+					assert.Equal(t, expected, test.StringToJSONMap(responseString))
 				})
 			})
 
@@ -523,7 +595,11 @@ func TestRequestHandlerPayment(t *testing.T) {
 					responseString := strings.TrimSpace(string(response))
 
 					assert.Equal(t, 400, statusCode)
-					assert.Equal(t, "{\n  \"code\": \"transaction_bad_seq\",\n  \"message\": \"Bad Sequence. Please, try again.\"\n}", responseString)
+					expected := test.StringToJSONMap(`{
+  "code": "transaction_bad_seq",
+  "message": "Bad Sequence. Please, try again."
+}`)
+					assert.Equal(t, expected, test.StringToJSONMap(responseString))
 				})
 			})
 
@@ -772,7 +848,11 @@ func TestRequestHandlerPayment(t *testing.T) {
 				statusCode, response := net.GetResponse(testServer, params)
 				responseString := strings.TrimSpace(string(response))
 				assert.Equal(t, 500, statusCode)
-				assert.Equal(t, "{\n  \"code\": \"internal_server_error\",\n  \"message\": \"Internal Server Error, please try again.\"\n}", responseString)
+				expected := test.StringToJSONMap(`{
+  "code": "internal_server_error",
+  "message": "Internal Server Error, please try again."
+}`)
+				assert.Equal(t, expected, test.StringToJSONMap(responseString))
 			})
 
 			Convey("it should return denied when compliance server returns denied", func() {
@@ -795,7 +875,11 @@ func TestRequestHandlerPayment(t *testing.T) {
 				statusCode, response := net.GetResponse(testServer, params)
 				responseString := strings.TrimSpace(string(response))
 				assert.Equal(t, 403, statusCode)
-				assert.Equal(t, "{\n  \"code\": \"denied\",\n  \"message\": \"Transaction denied by destination.\"\n}", responseString)
+				expected := test.StringToJSONMap(`{
+  "code": "denied",
+  "message": "Transaction denied by destination."
+}`)
+				assert.Equal(t, expected, test.StringToJSONMap(responseString))
 			})
 
 			Convey("it should return pending when compliance server returns pending", func() {
@@ -818,7 +902,14 @@ func TestRequestHandlerPayment(t *testing.T) {
 				statusCode, response := net.GetResponse(testServer, params)
 				responseString := strings.TrimSpace(string(response))
 				assert.Equal(t, 202, statusCode)
-				assert.Equal(t, "{\n  \"code\": \"pending\",\n  \"message\": \"Transaction pending. Repeat your request after given time.\",\n  \"data\": {\n    \"pending\": 3600\n  }\n}", responseString)
+				expected := test.StringToJSONMap(`{
+  "code": "pending",
+  "message": "Transaction pending. Repeat your request after given time.",
+  "data": {
+    "pending": 3600
+  }
+}`)
+				assert.Equal(t, expected, test.StringToJSONMap(responseString))
 			})
 
 			Convey("it should submit transaction when compliance server returns success", func() {

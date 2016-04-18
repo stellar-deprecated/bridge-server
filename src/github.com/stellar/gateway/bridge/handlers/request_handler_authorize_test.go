@@ -14,6 +14,7 @@ import (
 	"github.com/stellar/gateway/horizon"
 	"github.com/stellar/gateway/mocks"
 	"github.com/stellar/gateway/net"
+	"github.com/stellar/gateway/test"
 	b "github.com/stellar/go-stellar-base/build"
 	"github.com/stretchr/testify/assert"
 )
@@ -46,7 +47,14 @@ func TestRequestHandlerAuthorize(t *testing.T) {
 				statusCode, response := net.GetResponse(testServer, url.Values{"account_id": {accountID}, "asset_code": {assetCode}})
 				responseString := strings.TrimSpace(string(response))
 				assert.Equal(t, 400, statusCode)
-				assert.Equal(t, "{\n  \"code\": \"invalid_parameter\",\n  \"message\": \"Invalid parameter.\",\n  \"data\": {\n    \"name\": \"account_id\"\n  }\n}", responseString)
+				expected := test.StringToJSONMap(`{
+				  "code": "invalid_parameter",
+				  "message": "Invalid parameter.",
+				  "data": {
+				    "name": "account_id"
+				  }
+				}`)
+				assert.Equal(t, expected, test.StringToJSONMap(responseString))
 			})
 		})
 
@@ -58,7 +66,14 @@ func TestRequestHandlerAuthorize(t *testing.T) {
 				statusCode, response := net.GetResponse(testServer, url.Values{"account_id": {accountID}, "asset_code": {assetCode}})
 				responseString := strings.TrimSpace(string(response))
 				assert.Equal(t, 400, statusCode)
-				assert.Equal(t, "{\n  \"code\": \"invalid_parameter\",\n  \"message\": \"Invalid parameter.\",\n  \"data\": {\n    \"name\": \"asset_code\"\n  }\n}", responseString)
+				expected := test.StringToJSONMap(`{
+				  "code": "invalid_parameter",
+				  "message": "Invalid parameter.",
+				  "data": {
+				    "name": "asset_code"
+				  }
+				}`)
+				assert.Equal(t, expected, test.StringToJSONMap(responseString))
 			})
 		})
 
@@ -87,7 +102,11 @@ func TestRequestHandlerAuthorize(t *testing.T) {
 					statusCode, response := net.GetResponse(testServer, url.Values{"account_id": {accountID}, "asset_code": {assetCode}})
 					responseString := strings.TrimSpace(string(response))
 					assert.Equal(t, 500, statusCode)
-					assert.Equal(t, "{\n  \"code\": \"internal_server_error\",\n  \"message\": \"Internal Server Error, please try again.\"\n}", responseString)
+					expected := test.StringToJSONMap(`{
+					  "code": "internal_server_error",
+					  "message": "Internal Server Error, please try again."
+					}`)
+					assert.Equal(t, expected, test.StringToJSONMap(responseString))
 
 					mockTransactionSubmitter.AssertExpectations(t)
 				})
