@@ -15,6 +15,6 @@ deploy:
   file: "dist/*"
   skip_cleanup: true
   on:
-    repo: stellar/gateway-server
+    repo: stellar/bridge-server
     tags: true
     go: '1.5'
