@@ -23,7 +23,7 @@ Alternatively, you can [build](#building) the binary yourself.
 
 ## Config
 
-The `config.toml` file must be present in a working directory. Config file should contain following values:
+The `config_bridge.toml` file must be present in a working directory. Config file should contain following values:
 
 * `port` - server listening port
 * `api_key` - when set, all requests to bridge server must contain `api_key` parameter with a correct value, otherwise the server will respond with `503 Forbidden`
@@ -57,7 +57,7 @@ It will start a server with a single endpoint: `/payment`.
 
 ## Getting started
 
-After creating `config.toml` file, you need to run DB migrations:
+After creating `config_bridge.toml` file, you need to run DB migrations:
 ```
 ./bridge --migrate-db
 ```

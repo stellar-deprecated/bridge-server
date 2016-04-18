@@ -14,7 +14,7 @@ Alternatively, you can [build](#building) the binary yourself.
 
 ## Config
 
-The `config.toml` file must be present in a working directory. Config file should contain following values:
+The `config_compliance.toml` file must be present in a working directory. Config file should contain following values:
 
 * `external_port` - external server listening port (should be accessible from public)
 * `internal_port` - internal server listening port (should be accessible from your internal network only!)
@@ -38,7 +38,7 @@ Check [`config-example.toml`](./config-example.toml).
 
 ## Getting started
 
-After creating `config.toml` file, you need to run DB migrations:
+After creating `config_compliance.toml` file, you need to run DB migrations:
 ```
 ./compliance --migrate-db
 ```

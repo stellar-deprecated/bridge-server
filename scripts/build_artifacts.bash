@@ -7,8 +7,9 @@ GOARCH=amd64
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 build() {
-  GOOS=$1
-  RELEASE="bridge-$VERSION-$GOOS-$GOARCH"
+  NAME=$1
+  GOOS=$2
+  RELEASE="$NAME-$VERSION-$GOOS-$GOARCH"
   PKG_DIR="$DIST/$RELEASE"
 
   # do the actual build
@@ -17,11 +18,11 @@ build() {
   # make package directory
   rm -rf $PKG_DIR
   mkdir -p $PKG_DIR
-  cp bin/$(srcBin $GOOS) $PKG_DIR/$(destBin $GOOS)
+  cp bin/$(srcBin $NAME $GOOS) $PKG_DIR/$(destBin $NAME $GOOS)
   cp CHANGELOG.md $PKG_DIR/
   cp LICENSE.txt $PKG_DIR/
   cp config-example.toml $PKG_DIR/
-  cp README.md $PKG_DIR/
+  cp readme_$NAME.md $PKG_DIR/
 
   # TODO: add platform specific install intstructions
 
@@ -30,8 +31,9 @@ build() {
 }
 
 srcBin() {
-  GOOS=$1
-  BIN="bridge-$GOOS-$GOARCH"
+  NAME=$1
+  GOOS=$2
+  BIN="$NAME-$GOOS-$GOARCH"
 
   if [ "$GOOS" = "windows" ]; then
     BIN+=".exe"
@@ -41,10 +43,10 @@ srcBin() {
 }
 
 destBin() {
-  if [ "$1" = "windows" ]; then
-    echo "bridge.exe"
+  if [ "$2" = "windows" ]; then
+    echo "$NAME.exe"
   else
-    echo "bridge"
+    echo "$NAME"
   fi
 }
 
@@ -63,6 +65,10 @@ pkg() {
   rm -rf $DIST/$RELEASE
 }
 
-build darwin
-build linux
-build windows
+build bridge darwin
+build bridge linux
+build bridge windows
+
+build compliance darwin
+build compliance linux
+build compliance windows
