@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -179,7 +178,11 @@ func TestRequestHandlerPayment(t *testing.T) {
 
 				var ledger uint64
 				ledger = 1988728
-				horizonResponse := horizon.SubmitTransactionResponse{&ledger, nil}
+				horizonResponse := horizon.SubmitTransactionResponse{
+					Hash:   "6a0049b44e0d0341bd52f131c74383e6ccd2b74b92c829c990994d24bbfcfa7a",
+					Ledger: &ledger,
+					Extras: nil,
+				}
 
 				mockHorizon.On(
 					"SubmitTransaction",
@@ -190,13 +193,12 @@ func TestRequestHandlerPayment(t *testing.T) {
 					statusCode, response := net.GetResponse(testServer, validParams)
 					responseString := strings.TrimSpace(string(response))
 
-					expectedResponse, err := json.MarshalIndent(horizonResponse, "", "  ")
-					if err != nil {
-						panic(err)
-					}
-
 					assert.Equal(t, 200, statusCode)
-					assert.Equal(t, string(expectedResponse), responseString)
+					expected := test.StringToJSONMap(`{
+					  "hash": "6a0049b44e0d0341bd52f131c74383e6ccd2b74b92c829c990994d24bbfcfa7a",
+					  "ledger": 1988728
+					}`)
+					assert.Equal(t, expected, test.StringToJSONMap(responseString))
 				})
 			})
 
@@ -240,7 +242,11 @@ func TestRequestHandlerPayment(t *testing.T) {
 
 				var ledger uint64
 				ledger = 1988728
-				horizonResponse := horizon.SubmitTransactionResponse{&ledger, nil}
+				horizonResponse := horizon.SubmitTransactionResponse{
+					Hash:   "ad71fc31bfae25b0bd14add4cc5306661edf84cdd73f1353d2906363899167e1",
+					Ledger: &ledger,
+					Extras: nil,
+				}
 
 				mockHorizon.On(
 					"SubmitTransaction",
@@ -251,13 +257,12 @@ func TestRequestHandlerPayment(t *testing.T) {
 					statusCode, response := net.GetResponse(testServer, validParams)
 					responseString := strings.TrimSpace(string(response))
 
-					expectedResponse, err := json.MarshalIndent(horizonResponse, "", "  ")
-					if err != nil {
-						panic(err)
-					}
-
 					assert.Equal(t, 200, statusCode)
-					assert.Equal(t, string(expectedResponse), responseString)
+					expected := test.StringToJSONMap(`{
+					  "hash": "ad71fc31bfae25b0bd14add4cc5306661edf84cdd73f1353d2906363899167e1",
+					  "ledger": 1988728
+					}`)
+					assert.Equal(t, expected, test.StringToJSONMap(responseString))
 				})
 			})
 		})
@@ -492,7 +497,11 @@ func TestRequestHandlerPayment(t *testing.T) {
 
 					var ledger uint64
 					ledger = 1988727
-					horizonResponse := horizon.SubmitTransactionResponse{&ledger, nil}
+					horizonResponse := horizon.SubmitTransactionResponse{
+						Hash:   "f16040c1c6ee29eb4cc6f797651901750ff48a203985eea74f94353502f6629d",
+						Ledger: &ledger,
+						Extras: nil,
+					}
 
 					mockHorizon.On(
 						"SubmitTransaction",
@@ -504,13 +513,12 @@ func TestRequestHandlerPayment(t *testing.T) {
 					statusCode, response := net.GetResponse(testServer, validParams)
 					responseString := strings.TrimSpace(string(response))
 
-					expectedResponse, err := json.MarshalIndent(horizonResponse, "", "  ")
-					if err != nil {
-						panic(err)
-					}
-
 					assert.Equal(t, 200, statusCode)
-					assert.Equal(t, string(expectedResponse), responseString)
+					expected := test.StringToJSONMap(`{
+					  "hash": "f16040c1c6ee29eb4cc6f797651901750ff48a203985eea74f94353502f6629d",
+					  "ledger": 1988727
+					}`)
+					assert.Equal(t, expected, test.StringToJSONMap(responseString))
 				})
 
 				Convey("memo hash is attached to the transaction", func() {
@@ -526,7 +534,11 @@ func TestRequestHandlerPayment(t *testing.T) {
 
 					var ledger uint64
 					ledger = 1988727
-					horizonResponse := horizon.SubmitTransactionResponse{&ledger, nil}
+					horizonResponse := horizon.SubmitTransactionResponse{
+						Hash:   "b6802ab06786c923d7180236a84470c03b37ec71912bfe335d0cb57ebc534881",
+						Ledger: &ledger,
+						Extras: nil,
+					}
 
 					mockHorizon.On(
 						"SubmitTransaction",
@@ -538,13 +550,12 @@ func TestRequestHandlerPayment(t *testing.T) {
 					statusCode, response := net.GetResponse(testServer, validParams)
 					responseString := strings.TrimSpace(string(response))
 
-					expectedResponse, err := json.MarshalIndent(horizonResponse, "", "  ")
-					if err != nil {
-						panic(err)
-					}
-
 					assert.Equal(t, 200, statusCode)
-					assert.Equal(t, string(expectedResponse), responseString)
+					expected := test.StringToJSONMap(`{
+					  "hash": "b6802ab06786c923d7180236a84470c03b37ec71912bfe335d0cb57ebc534881",
+					  "ledger": 1988727
+					}`)
+					assert.Equal(t, expected, test.StringToJSONMap(responseString))
 				})
 			})
 
@@ -578,8 +589,8 @@ func TestRequestHandlerPayment(t *testing.T) {
 				).Once()
 
 				horizonResponse := horizon.SubmitTransactionResponse{
-					nil,
-					&horizon.SubmitTransactionResponseExtras{
+					Ledger: nil,
+					Extras: &horizon.SubmitTransactionResponseExtras{
 						EnvelopeXdr: "envelope",
 						ResultXdr:   "AAAAAAAAAAD////7AAAAAA==", // tx_bad_seq
 					},
@@ -630,7 +641,11 @@ func TestRequestHandlerPayment(t *testing.T) {
 
 				var ledger uint64
 				ledger = 1988727
-				horizonResponse := horizon.SubmitTransactionResponse{&ledger, nil}
+				horizonResponse := horizon.SubmitTransactionResponse{
+					Hash:   "6a0049b44e0d0341bd52f131c74383e6ccd2b74b92c829c990994d24bbfcfa7a",
+					Ledger: &ledger,
+					Extras: nil,
+				}
 
 				mockHorizon.On(
 					"SubmitTransaction",
@@ -641,13 +656,12 @@ func TestRequestHandlerPayment(t *testing.T) {
 					statusCode, response := net.GetResponse(testServer, validParams)
 					responseString := strings.TrimSpace(string(response))
 
-					expectedResponse, err := json.MarshalIndent(horizonResponse, "", "  ")
-					if err != nil {
-						panic(err)
-					}
-
 					assert.Equal(t, 200, statusCode)
-					assert.Equal(t, string(expectedResponse), responseString)
+					expected := test.StringToJSONMap(`{
+					  "hash": "6a0049b44e0d0341bd52f131c74383e6ccd2b74b92c829c990994d24bbfcfa7a",
+					  "ledger": 1988727
+					}`)
+					assert.Equal(t, expected, test.StringToJSONMap(responseString))
 				})
 			})
 
@@ -664,7 +678,11 @@ func TestRequestHandlerPayment(t *testing.T) {
 
 				var ledger uint64
 				ledger = 1988727
-				horizonResponse := horizon.SubmitTransactionResponse{&ledger, nil}
+				horizonResponse := horizon.SubmitTransactionResponse{
+					Hash:   "4c8ddbc990381d5f7fe5142be0ac70fb282e7c54347734cdd7f19716fa18930b",
+					Ledger: &ledger,
+					Extras: nil,
+				}
 
 				mockHorizon.On(
 					"SubmitTransaction",
@@ -675,13 +693,12 @@ func TestRequestHandlerPayment(t *testing.T) {
 					statusCode, response := net.GetResponse(testServer, validParams)
 					responseString := strings.TrimSpace(string(response))
 
-					expectedResponse, err := json.MarshalIndent(horizonResponse, "", "  ")
-					if err != nil {
-						panic(err)
-					}
-
 					assert.Equal(t, 200, statusCode)
-					assert.Equal(t, string(expectedResponse), responseString)
+					expected := test.StringToJSONMap(`{
+					  "hash": "4c8ddbc990381d5f7fe5142be0ac70fb282e7c54347734cdd7f19716fa18930b",
+					  "ledger": 1988727
+					}`)
+					assert.Equal(t, expected, test.StringToJSONMap(responseString))
 				})
 			})
 		})
@@ -731,7 +748,11 @@ func TestRequestHandlerPayment(t *testing.T) {
 			Convey("transaction success (send native)", func() {
 				var ledger uint64
 				ledger = 1988727
-				horizonResponse := horizon.SubmitTransactionResponse{&ledger, nil}
+				horizonResponse := horizon.SubmitTransactionResponse{
+					Hash:   "88214f536658717d5a7d96e449d2fbd96277ce16f3d88dea023e5f20bd37325d",
+					Ledger: &ledger,
+					Extras: nil,
+				}
 
 				mockHorizon.On(
 					"SubmitTransaction",
@@ -742,13 +763,12 @@ func TestRequestHandlerPayment(t *testing.T) {
 					statusCode, response := net.GetResponse(testServer, validParams)
 					responseString := strings.TrimSpace(string(response))
 
-					expectedResponse, err := json.MarshalIndent(horizonResponse, "", "  ")
-					if err != nil {
-						panic(err)
-					}
-
 					assert.Equal(t, 200, statusCode)
-					assert.Equal(t, string(expectedResponse), responseString)
+					expected := test.StringToJSONMap(`{
+					  "hash": "88214f536658717d5a7d96e449d2fbd96277ce16f3d88dea023e5f20bd37325d",
+					  "ledger": 1988727
+					}`)
+					assert.Equal(t, expected, test.StringToJSONMap(responseString))
 				})
 			})
 
@@ -758,7 +778,11 @@ func TestRequestHandlerPayment(t *testing.T) {
 
 				var ledger uint64
 				ledger = 1988727
-				horizonResponse := horizon.SubmitTransactionResponse{&ledger, nil}
+				horizonResponse := horizon.SubmitTransactionResponse{
+					Hash:   "8d143f846c2e0ce20364be737c2ebdbcd0da307b4952ec8e91ffcbbc6f51f5ce",
+					Ledger: &ledger,
+					Extras: nil,
+				}
 
 				mockHorizon.On(
 					"SubmitTransaction",
@@ -769,13 +793,12 @@ func TestRequestHandlerPayment(t *testing.T) {
 					statusCode, response := net.GetResponse(testServer, validParams)
 					responseString := strings.TrimSpace(string(response))
 
-					expectedResponse, err := json.MarshalIndent(horizonResponse, "", "  ")
-					if err != nil {
-						panic(err)
-					}
-
 					assert.Equal(t, 200, statusCode)
-					assert.Equal(t, string(expectedResponse), responseString)
+					expected := test.StringToJSONMap(`{
+					  "hash": "8d143f846c2e0ce20364be737c2ebdbcd0da307b4952ec8e91ffcbbc6f51f5ce",
+					  "ledger": 1988727
+					}`)
+					assert.Equal(t, expected, test.StringToJSONMap(responseString))
 				})
 			})
 
@@ -792,7 +815,11 @@ func TestRequestHandlerPayment(t *testing.T) {
 
 				var ledger uint64
 				ledger = 1988727
-				horizonResponse := horizon.SubmitTransactionResponse{&ledger, nil}
+				horizonResponse := horizon.SubmitTransactionResponse{
+					Hash:   "be2765c309ab6911fe3938de0053672ef541290333a59dfb750f07919e9d6fec",
+					Ledger: &ledger,
+					Extras: nil,
+				}
 
 				mockHorizon.On(
 					"SubmitTransaction",
@@ -803,13 +830,12 @@ func TestRequestHandlerPayment(t *testing.T) {
 					statusCode, response := net.GetResponse(testServer, validParams)
 					responseString := strings.TrimSpace(string(response))
 
-					expectedResponse, err := json.MarshalIndent(horizonResponse, "", "  ")
-					if err != nil {
-						panic(err)
-					}
-
 					assert.Equal(t, 200, statusCode)
-					assert.Equal(t, string(expectedResponse), responseString)
+					expected := test.StringToJSONMap(`{
+					  "hash": "be2765c309ab6911fe3938de0053672ef541290333a59dfb750f07919e9d6fec",
+					  "ledger": 1988727
+					}`)
+					assert.Equal(t, expected, test.StringToJSONMap(responseString))
 				})
 			})
 		})
@@ -985,7 +1011,11 @@ func TestRequestHandlerPayment(t *testing.T) {
 
 				var ledger uint64
 				ledger = 1988727
-				horizonResponse := horizon.SubmitTransactionResponse{&ledger, nil}
+				horizonResponse := horizon.SubmitTransactionResponse{
+					Hash:   "6a0049b44e0d0341bd52f131c74383e6ccd2b74b92c829c990994d24bbfcfa7a",
+					Ledger: &ledger,
+					Extras: nil,
+				}
 
 				mockTransactionSubmitter.On(
 					"SignAndSubmitRawTransaction",
@@ -999,7 +1029,11 @@ func TestRequestHandlerPayment(t *testing.T) {
 				statusCode, response := net.GetResponse(testServer, params)
 				responseString := strings.TrimSpace(string(response))
 				assert.Equal(t, 200, statusCode)
-				assert.Equal(t, horizonResponse.Marshal(), []byte(responseString))
+				expected := test.StringToJSONMap(`{
+				  "hash": "6a0049b44e0d0341bd52f131c74383e6ccd2b74b92c829c990994d24bbfcfa7a",
+				  "ledger": 1988727
+				}`)
+				assert.Equal(t, expected, test.StringToJSONMap(responseString))
 			})
 		})
 	})

@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/stellar/gateway/horizon"
 	"github.com/stellar/gateway/protocols"
 	"github.com/stellar/gateway/protocols/bridge"
 	"github.com/stellar/gateway/protocols/compliance"
@@ -33,6 +34,8 @@ func (rh *RequestHandler) Payment(w http.ResponseWriter, r *http.Request) {
 	}
 
 	sourceKeypair, _ := keypair.Parse(request.Source)
+
+	var submitResponse horizon.SubmitTransactionResponse
 
 	if request.ExtraMemo != "" && rh.Config.Compliance != "" {
 		// Compliance server part
@@ -95,14 +98,7 @@ func (rh *RequestHandler) Payment(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		submitResponse, err := rh.TransactionSubmitter.SignAndSubmitRawTransaction(request.Source, &tx)
-		if err != nil {
-			log.WithFields(log.Fields{"err": err}).Error("Error submitting transaction")
-			server.Write(w, protocols.InternalServerError)
-			return
-		}
-
-		server.Write(w, &submitResponse)
+		submitResponse, err = rh.TransactionSubmitter.SignAndSubmitRawTransaction(request.Source, &tx)
 	} else {
 		// Payment without compliance server
 		destinationObject, _, err := rh.FederationResolver.Resolve(request.Destination)
@@ -290,20 +286,21 @@ func (rh *RequestHandler) Payment(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		submitResponse, err := rh.Horizon.SubmitTransaction(txeB64)
-		if err != nil {
-			log.WithFields(log.Fields{"error": err}).Error("Error submitting transaction")
-			server.Write(w, protocols.InternalServerError)
-			return
-		}
-
-		errorResponse := bridge.ErrorFromHorizonResponse(submitResponse)
-		if errorResponse != nil {
-			log.WithFields(errorResponse.LogData).Error(errorResponse.Error())
-			server.Write(w, errorResponse)
-			return
-		}
-
-		server.Write(w, &submitResponse)
+		submitResponse, err = rh.Horizon.SubmitTransaction(txeB64)
 	}
+
+	if err != nil {
+		log.WithFields(log.Fields{"error": err}).Error("Error submitting transaction")
+		server.Write(w, protocols.InternalServerError)
+		return
+	}
+
+	errorResponse := bridge.ErrorFromHorizonResponse(submitResponse)
+	if errorResponse != nil {
+		log.WithFields(errorResponse.LogData).Error(errorResponse.Error())
+		server.Write(w, errorResponse)
+		return
+	}
+
+	server.Write(w, &submitResponse)
 }
