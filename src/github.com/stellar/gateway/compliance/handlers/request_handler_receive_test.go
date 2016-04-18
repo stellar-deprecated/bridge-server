@@ -93,7 +93,7 @@ func TestRequestHandlerReceive(t *testing.T) {
 			statusCode, response := net.GetResponse(testServer, params)
 			responseString := strings.TrimSpace(string(response))
 			assert.Equal(t, 200, statusCode)
-			assert.Equal(t, "{\n  \"memo\": \"hello world\"\n}", responseString)
+			assert.Equal(t, "{\n  \"data\": \"hello world\"\n}", responseString)
 		})
 	})
 }

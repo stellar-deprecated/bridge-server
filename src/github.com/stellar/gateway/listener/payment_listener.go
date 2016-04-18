@@ -14,11 +14,13 @@ import (
 	"github.com/stellar/gateway/db"
 	"github.com/stellar/gateway/db/entities"
 	"github.com/stellar/gateway/horizon"
+	"github.com/stellar/gateway/net"
 	"github.com/stellar/gateway/protocols/compliance"
 )
 
 // PaymentListener is listening for a new payments received by ReceivingAccount
 type PaymentListener struct {
+	client        net.HTTPClientInterface
 	config        *config.Config
 	entityManager db.EntityManagerInterface
 	horizon       horizon.HorizonInterface
@@ -37,6 +39,9 @@ func NewPaymentListener(
 	repository db.RepositoryInterface,
 	now func() time.Time,
 ) (pl PaymentListener, err error) {
+	pl.client = &http.Client{
+		Timeout: hookTimeout,
+	}
 	pl.config = config
 	pl.entityManager = entityManager
 	pl.horizon = horizon
@@ -155,7 +160,7 @@ func (pl PaymentListener) onPayment(payment horizon.PaymentResponse) (err error)
 
 	// Request extra_memo from compliance server
 	if pl.config.Compliance != "" && payment.Memo.Type == "hash" {
-		resp, err := http.PostForm(
+		resp, err := pl.client.PostForm(
 			pl.config.Compliance+"/receive",
 			url.Values{"memo": {string(payment.Memo.Value)}},
 		)
@@ -186,10 +191,7 @@ func (pl PaymentListener) onPayment(payment horizon.PaymentResponse) (err error)
 		}
 	}
 
-	client := http.Client{
-		Timeout: hookTimeout,
-	}
-	resp, err := client.PostForm(
+	resp, err := pl.client.PostForm(
 		pl.config.Hooks.Receive,
 		url.Values{
 			"id":         {payment.ID},
@@ -198,7 +200,7 @@ func (pl PaymentListener) onPayment(payment horizon.PaymentResponse) (err error)
 			"asset_code": {payment.AssetCode},
 			"memo_type":  {payment.Memo.Type},
 			"memo":       {payment.Memo.Value},
-			"extra_memo": {receiveResponse.Memo},
+			"data":       {receiveResponse.Data},
 		},
 	)
 	if err != nil {

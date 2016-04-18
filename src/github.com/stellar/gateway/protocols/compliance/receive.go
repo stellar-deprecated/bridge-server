@@ -36,8 +36,8 @@ func (request *ReceiveRequest) Validate() error {
 // ReceiveResponse represents response returned by /receive endpoint
 type ReceiveResponse struct {
 	protocols.SuccessResponse
-	// The full text of the memo the hash of this memo is included in the transaction.
-	Memo string `json:"memo"`
+	// The AuthData hash of this memo.
+	Data string `json:"data"`
 }
 
 // Marshal marshals ReceiveResponse

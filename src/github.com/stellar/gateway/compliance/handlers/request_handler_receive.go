@@ -36,6 +36,6 @@ func (rh *RequestHandler) HandlerReceive(c web.C, w http.ResponseWriter, r *http
 		return
 	}
 
-	response := compliance.ReceiveResponse{Memo: authorizedTransaction.Data}
+	response := compliance.ReceiveResponse{Data: authorizedTransaction.Data}
 	server.Write(w, &response)
 }

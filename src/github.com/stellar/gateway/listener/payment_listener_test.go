@@ -2,9 +2,7 @@ package listener
 
 import (
 	"errors"
-	"fmt"
-	"net/http"
-	"net/http/httptest"
+	"net/url"
 	"testing"
 	"time"
 
@@ -13,6 +11,7 @@ import (
 	"github.com/stellar/gateway/db/entities"
 	"github.com/stellar/gateway/horizon"
 	"github.com/stellar/gateway/mocks"
+	"github.com/stellar/gateway/net"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -20,24 +19,7 @@ func TestPaymentListener(t *testing.T) {
 	mockEntityManager := new(mocks.MockEntityManager)
 	mockHorizon := new(mocks.MockHorizon)
 	mockRepository := new(mocks.MockRepository)
-
-	var receiveHookStatusCode int
-
-	expectedMemoType := "text"
-	expectedMemoValue := "testing"
-
-	receiveHookServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		assert.Equal(t, "POST", r.Method)
-		assert.Equal(t, "1", r.FormValue("id"))
-		assert.Equal(t, "GBIHSMPXC2KJ3NJVHEYTG3KCHYEUQRT45X6AWYWXMAXZOAX4F5LFZYYQ", r.FormValue("from"))
-		assert.Equal(t, "200", r.FormValue("amount"))
-		assert.Equal(t, "USD", r.FormValue("asset_code"))
-		assert.Equal(t, expectedMemoType, r.FormValue("memo_type"))
-		assert.Equal(t, expectedMemoValue, r.FormValue("memo"))
-		w.WriteHeader(receiveHookStatusCode)
-		fmt.Fprintln(w, "Response")
-	}))
-	defer receiveHookServer.Close()
+	mockHTTPClient := new(mocks.MockHTTPClient)
 
 	config := &config.Config{
 		Assets: []config.Asset{
@@ -49,7 +31,7 @@ func TestPaymentListener(t *testing.T) {
 			ReceivingAccountID: "GATKP6ZQM5CSLECPMTAC5226PE367QALCPM6AFHTSULPPZMT62OOPMQB",
 		},
 		Hooks: config.Hooks{
-			Receive: receiveHookServer.URL,
+			Receive: "http://receive_hook",
 		},
 	}
 
@@ -60,6 +42,8 @@ func TestPaymentListener(t *testing.T) {
 		mockRepository,
 		mocks.Now,
 	)
+
+	paymentListener.client = mockHTTPClient
 
 	Convey("PaymentListener", t, func() {
 		operation := horizon.PaymentResponse{
@@ -174,7 +158,23 @@ func TestPaymentListener(t *testing.T) {
 
 			mockRepository.On("GetReceivedPaymentByID", int64(1)).Return(nil, nil).Once()
 			mockHorizon.On("LoadMemo", &operation).Return(nil).Once()
-			receiveHookStatusCode = 503
+
+			mockHTTPClient.On(
+				"PostForm",
+				"http://receive_hook",
+				url.Values{
+					"id":         {"1"},
+					"from":       {"GBIHSMPXC2KJ3NJVHEYTG3KCHYEUQRT45X6AWYWXMAXZOAX4F5LFZYYQ"},
+					"amount":     {"200"},
+					"asset_code": {"USD"},
+					"memo_type":  {"text"},
+					"memo":       {"testing"},
+					"data":       {""},
+				},
+			).Return(
+				net.BuildHTTPResponse(503, "ok"),
+				nil,
+			).Once()
 
 			Convey("it should save the status", func() {
 				err := paymentListener.onPayment(operation)
@@ -197,7 +197,23 @@ func TestPaymentListener(t *testing.T) {
 			mockRepository.On("GetReceivedPaymentByID", int64(1)).Return(nil, nil).Once()
 			mockHorizon.On("LoadMemo", &operation).Return(nil).Once()
 			mockEntityManager.On("Persist", &dbPayment).Return(nil).Once()
-			receiveHookStatusCode = 200
+
+			mockHTTPClient.On(
+				"PostForm",
+				"http://receive_hook",
+				url.Values{
+					"id":         {"1"},
+					"from":       {"GBIHSMPXC2KJ3NJVHEYTG3KCHYEUQRT45X6AWYWXMAXZOAX4F5LFZYYQ"},
+					"amount":     {"200"},
+					"asset_code": {"USD"},
+					"memo_type":  {"text"},
+					"memo":       {"testing"},
+					"data":       {""},
+				},
+			).Return(
+				net.BuildHTTPResponse(200, "ok"),
+				nil,
+			).Once()
 
 			Convey("it should save the status", func() {
 				err := paymentListener.onPayment(operation)
@@ -213,15 +229,78 @@ func TestPaymentListener(t *testing.T) {
 			operation.AssetCode = "USD"
 			operation.AssetIssuer = "GD4I7AFSLZGTDL34TQLWJOM2NHLIIOEKD5RHHZUW54HERBLSIRKUOXRR"
 
-			expectedMemoType = ""
-			expectedMemoValue = ""
+			dbPayment.Status = "Success"
+
+			mockRepository.On("GetReceivedPaymentByID", int64(1)).Return(nil, nil).Once()
+			mockHorizon.On("LoadMemo", &operation).Return(nil).Once()
+			mockEntityManager.On("Persist", &dbPayment).Return(nil).Once()
+
+			mockHTTPClient.On(
+				"PostForm",
+				"http://receive_hook",
+				url.Values{
+					"id":         {"1"},
+					"from":       {"GBIHSMPXC2KJ3NJVHEYTG3KCHYEUQRT45X6AWYWXMAXZOAX4F5LFZYYQ"},
+					"amount":     {"200"},
+					"asset_code": {"USD"},
+					"memo_type":  {""},
+					"memo":       {""},
+					"data":       {""},
+				},
+			).Return(
+				net.BuildHTTPResponse(200, "ok"),
+				nil,
+			).Once()
+
+			Convey("it should save the status", func() {
+				err := paymentListener.onPayment(operation)
+				assert.Nil(t, err)
+				mockHorizon.AssertExpectations(t)
+				mockEntityManager.AssertExpectations(t)
+			})
+		})
+
+		Convey("When receive hook returns success and compliance server is connected", func() {
+			paymentListener.config.Compliance = "http://compliance"
+
+			operation.Type = "payment"
+			operation.To = "GATKP6ZQM5CSLECPMTAC5226PE367QALCPM6AFHTSULPPZMT62OOPMQB"
+			operation.AssetCode = "USD"
+			operation.AssetIssuer = "GD4I7AFSLZGTDL34TQLWJOM2NHLIIOEKD5RHHZUW54HERBLSIRKUOXRR"
+			operation.Memo.Type = "hash"
+			operation.Memo.Value = "b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9"
 
 			dbPayment.Status = "Success"
 
 			mockRepository.On("GetReceivedPaymentByID", int64(1)).Return(nil, nil).Once()
 			mockHorizon.On("LoadMemo", &operation).Return(nil).Once()
 			mockEntityManager.On("Persist", &dbPayment).Return(nil).Once()
-			receiveHookStatusCode = 200
+
+			mockHTTPClient.On(
+				"PostForm",
+				"http://compliance/receive",
+				url.Values{"memo": {"b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9"}},
+			).Return(
+				net.BuildHTTPResponse(200, "{\"data\": \"hello world\"}"),
+				nil,
+			).Once()
+
+			mockHTTPClient.On(
+				"PostForm",
+				"http://receive_hook",
+				url.Values{
+					"id":         {"1"},
+					"from":       {"GBIHSMPXC2KJ3NJVHEYTG3KCHYEUQRT45X6AWYWXMAXZOAX4F5LFZYYQ"},
+					"amount":     {"200"},
+					"asset_code": {"USD"},
+					"memo_type":  {"hash"},
+					"memo":       {"b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9"},
+					"data":       {"hello world"},
+				},
+			).Return(
+				net.BuildHTTPResponse(200, "ok"),
+				nil,
+			).Once()
 
 			Convey("it should save the status", func() {
 				err := paymentListener.onPayment(operation)

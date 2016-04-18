@@ -86,7 +86,8 @@ name |  | description
 `destination` | required | Account ID or Stellar address (ex. `bob*stellar.org`) of payment destination account
 `amount` | required | Amount that destination will receive
 `memo_type` | optional | Memo type, one of: `id`, `text`, `hash`, `extra`
-`memo` | optional | Memo value, when `memo_type` is `extra` you can include any info here and it will be included in the pre-image of the transaction's memo hash. See the [Stellar Memo Convention](https://github.com/stellar/stellar-protocol/issues/28). `id` it must be uint64, when `hash` it must be 32 bytes hex value.  
+`memo` | optional | Memo value, `id` it must be uint64, when `hash` it must be 32 bytes hex value.
+`extra_memo` | optional | You can include any info here and it will be included in the pre-image of the transaction's memo hash. See the [Stellar Memo Convention](https://github.com/stellar/stellar-protocol/issues/28). When set and compliance server is connected, `memo` and `memo_type` values will be ignored.
 `asset_code` | optional | Asset code (XLM when empty) destination will receive
 `asset_issuer` | optional | Account ID of asset issuer (XLM when empty) destination will receive
 `send_max` | optional | [path_payment] Maximum amount of send_asset to send
@@ -198,6 +199,7 @@ name | description
 `asset_code` | Code of the asset sent (ex. `USD`)
 `memo_type` | Type of the memo attached to the transaction. This field will be empty when no memo was attached.
 `memo` | Value of the memo attached. This field will be empty when no memo was attached.
+`data` | Value of the [AuthData](https://www.stellar.org/developers/learn/integration-guides/compliance-protocol.html). This field will be empty when compliance server is not connected.
 
 #### Response
 
