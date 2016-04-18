@@ -1,6 +1,7 @@
 package horizon
 
+// AccountResponse contains account data returned by Horizon
 type AccountResponse struct {
-	AccountId      string `json:"id"`
+	AccountID      string `json:"id"`
 	SequenceNumber string `json:"sequence"`
 }

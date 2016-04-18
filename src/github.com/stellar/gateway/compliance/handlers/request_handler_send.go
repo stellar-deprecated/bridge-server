@@ -8,33 +8,29 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"io/ioutil"
 	"net/http"
-	"net/url"
 
-	"github.com/stellar/gateway/crypto"
+	"github.com/stellar/gateway/protocols"
 	"github.com/stellar/gateway/protocols/compliance"
+	"github.com/stellar/gateway/protocols/memo"
 	"github.com/stellar/gateway/server"
 	"github.com/stellar/gateway/submitter"
 	b "github.com/stellar/go-stellar-base/build"
-	"github.com/stellar/go-stellar-base/keypair"
 	"github.com/stellar/go-stellar-base/xdr"
 	"github.com/zenazn/goji/web"
 )
 
+// HandlerSend implements /send endpoint
 func (rh *RequestHandler) HandlerSend(c web.C, w http.ResponseWriter, r *http.Request) {
 	request := &compliance.SendRequest{}
 	request.FromRequest(r)
 
-	_, err := keypair.Parse(request.Source)
+	err := request.Validate()
 	if err != nil {
-		log.WithFields(log.Fields{
-			"parameter": "source",
-			"value":     request.Source,
-		}).Error("Invalid parameter")
-		server.Write(w, compliance.InvalidParameterError)
+		errorResponse := err.(*protocols.ErrorResponse)
+		log.WithFields(errorResponse.LogData).Error(errorResponse.Error())
+		server.Write(w, errorResponse)
 		return
 	}
-
-	// TODO check the rest of params using SendRequest.Validate()
 
 	destinationObject, stellarToml, err := rh.FederationResolver.Resolve(request.Destination)
 	if err != nil {
@@ -46,33 +42,109 @@ func (rh *RequestHandler) HandlerSend(c web.C, w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	if stellarToml.AuthServer == nil {
+	if stellarToml.AuthServer == "" {
 		log.Print("No AUTH_SERVER in stellar.toml")
 		server.Write(w, compliance.AuthServerNotDefined)
 		return
 	}
 
-	operationMutator := b.Payment(
-		b.Destination{destinationObject.AccountId},
+	var payWithMutator *b.PayWithPath
+
+	if request.SendMax != "" {
+		// Path payment
+		var sendAsset b.Asset
+		if request.SendAssetCode != "" && request.SendAssetIssuer != "" {
+			sendAsset = b.CreditAsset(request.SendAssetCode, request.SendAssetIssuer)
+		} else if request.SendAssetCode == "" && request.SendAssetIssuer == "" {
+			sendAsset = b.NativeAsset()
+		} else {
+			log.Print("Missing send asset param.")
+			server.Write(w, protocols.MissingParameterError)
+			return
+		}
+
+		payWith := b.PayWith(sendAsset, request.SendMax)
+
+		for _, asset := range request.Path {
+			if asset.Code == "" && asset.Issuer == "" {
+				payWith = payWith.Through(b.NativeAsset())
+			} else {
+				payWith = payWith.Through(b.CreditAsset(asset.Code, asset.Issuer))
+			}
+		}
+
+		payWithMutator = &payWith
+	}
+
+	mutators := []interface{}{
+		b.Destination{destinationObject.AccountID},
 		b.CreditAmount{
 			request.AssetCode,
 			request.AssetIssuer,
 			request.Amount,
 		},
-	)
+	}
+
+	if payWithMutator != nil {
+		mutators = append(mutators, *payWithMutator)
+	}
+
+	operationMutator := b.Payment(mutators...)
 	if operationMutator.Err != nil {
 		log.WithFields(log.Fields{
 			"err": operationMutator.Err,
 		}).Error("Error creating operation")
-		server.Write(w, compliance.InternalServerError)
+		server.Write(w, protocols.InternalServerError)
 		return
 	}
 
-	memoBytes := sha256.Sum256([]byte(request.ExtraMemo))
-	var b32 [32]byte
-	copy(b32[:], memoBytes[0:32])
-	hash := xdr.Hash(b32)
-	memoMutator := &b.MemoHash{hash}
+	// Fetch Sender Info
+	fetchInfoRequest := compliance.FetchInfoRequest{Address: request.Sender}
+	resp, err := rh.Client.PostForm(
+		rh.Config.Callbacks.FetchInfo,
+		fetchInfoRequest.ToValues(),
+	)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"fetch_info": rh.Config.Callbacks.FetchInfo,
+			"err":        err,
+		}).Error("Error sending request to fetch_info server")
+		server.Write(w, protocols.InternalServerError)
+		return
+	}
+
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"fetch_info": rh.Config.Callbacks.FetchInfo,
+			"err":        err,
+		}).Error("Error reading fetch_info server response")
+		server.Write(w, protocols.InternalServerError)
+		return
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		log.WithFields(log.Fields{
+			"fetch_info": rh.Config.Callbacks.FetchInfo,
+			"status":     resp.StatusCode,
+			"body":       string(body),
+		}).Error("Error response from fetch_info server")
+		server.Write(w, protocols.InternalServerError)
+		return
+	}
+
+	memoPreimage := &memo.Memo{
+		Transaction: memo.Transaction{
+			SenderInfo: string(body),
+			Route:      request.Destination,
+			Extra:      request.ExtraMemo,
+		},
+	}
+
+	memoJSON := memoPreimage.Marshal()
+	memoHashBytes := sha256.Sum256(memoJSON)
+	memoMutator := &b.MemoHash{xdr.Hash(memoHashBytes)}
 
 	transaction, err := submitter.BuildTransaction(
 		request.Source,
@@ -85,7 +157,7 @@ func (rh *RequestHandler) HandlerSend(c web.C, w http.ResponseWriter, r *http.Re
 	_, err = xdr.Marshal(&txBytes, transaction)
 	if err != nil {
 		log.Error("Error mashaling transaction")
-		server.Write(w, compliance.InternalServerError)
+		server.Write(w, protocols.InternalServerError)
 		return
 	}
 
@@ -93,44 +165,47 @@ func (rh *RequestHandler) HandlerSend(c web.C, w http.ResponseWriter, r *http.Re
 
 	authData := compliance.AuthData{
 		Sender:   request.Sender,
-		NeedInfo: true,
+		NeedInfo: rh.Config.NeedsAuth,
 		Tx:       txBase64,
-		Memo:     request.ExtraMemo,
+		Memo:     string(memoJSON),
 	}
 
 	data, err := json.Marshal(authData)
 	if err != nil {
-		server.Write(w, compliance.InternalServerError)
+		log.Error("Error mashaling authData")
+		server.Write(w, protocols.InternalServerError)
 		return
 	}
 
-	sig, err := crypto.Sign(rh.Config.Keys.SigningSeed, data)
+	sig, err := rh.SignatureSignerVerifier.Sign(rh.Config.Keys.SigningSeed, data)
 	if err != nil {
-		server.Write(w, compliance.InternalServerError)
+		log.Error("Error signing authData")
+		server.Write(w, protocols.InternalServerError)
 		return
 	}
 
-	resp, err := http.PostForm(
-		*stellarToml.AuthServer,
-		url.Values{
-			"data": {string(data)},
-			"sig":  {sig},
-		},
+	authRequest := compliance.AuthRequest{
+		Data:      string(data),
+		Signature: sig,
+	}
+	resp, err = rh.Client.PostForm(
+		stellarToml.AuthServer,
+		authRequest.ToValues(),
 	)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"auth_server": stellarToml.AuthServer,
 			"err":         err,
 		}).Error("Error sending request to auth server")
-		server.Write(w, compliance.InternalServerError)
+		server.Write(w, protocols.InternalServerError)
 		return
 	}
 
 	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err = ioutil.ReadAll(resp.Body)
 	if err != nil {
 		log.Error("Error reading auth server response")
-		server.Write(w, compliance.InternalServerError)
+		server.Write(w, protocols.InternalServerError)
 		return
 	}
 
@@ -139,11 +214,23 @@ func (rh *RequestHandler) HandlerSend(c web.C, w http.ResponseWriter, r *http.Re
 			"status": resp.StatusCode,
 			"body":   string(body),
 		}).Error("Error response from auth server")
-		server.Write(w, compliance.InternalServerError)
+		server.Write(w, protocols.InternalServerError)
+		return
+	}
+
+	var authResponse compliance.AuthResponse
+	err = json.Unmarshal(body, &authResponse)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"status": resp.StatusCode,
+			"body":   string(body),
+		}).Error("Error unmarshalling auth response")
+		server.Write(w, protocols.InternalServerError)
 		return
 	}
 
 	response := compliance.SendResponse{
+		AuthResponse:   authResponse,
 		TransactionXdr: txBase64,
 	}
 	server.Write(w, &response)

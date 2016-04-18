@@ -13,6 +13,8 @@ import (
 	"github.com/stellar/gateway/bridge/config"
 	"github.com/stellar/gateway/horizon"
 	"github.com/stellar/gateway/mocks"
+	"github.com/stellar/gateway/net"
+	"github.com/stellar/gateway/test"
 	b "github.com/stellar/go-stellar-base/build"
 	"github.com/stretchr/testify/assert"
 )
@@ -20,18 +22,15 @@ import (
 func TestRequestHandlerAuthorize(t *testing.T) {
 	mockTransactionSubmitter := new(mocks.MockTransactionSubmitter)
 
-	IssuingAccountId := "GD4I7AFSLZGTDL34TQLWJOM2NHLIIOEKD5RHHZUW54HERBLSIRKUOXRR"
-	AuthorizingSeed := "SC37TBSIAYKIDQ6GTGLT2HSORLIHZQHBXVFI5P5K4Q5TSHRTRBK3UNWG"
-
 	config := config.Config{
 		Assets: []config.Asset{
-			config.Asset{"USD", "GD4I7AFSLZGTDL34TQLWJOM2NHLIIOEKD5RHHZUW54HERBLSIRKUOXRR"},
-			config.Asset{"EUR", "GD4I7AFSLZGTDL34TQLWJOM2NHLIIOEKD5RHHZUW54HERBLSIRKUOXRR"},
+			{Code: "USD", Issuer: "GD4I7AFSLZGTDL34TQLWJOM2NHLIIOEKD5RHHZUW54HERBLSIRKUOXRR"},
+			{Code: "EUR", Issuer: "GD4I7AFSLZGTDL34TQLWJOM2NHLIIOEKD5RHHZUW54HERBLSIRKUOXRR"},
 		},
-		Accounts: &config.Accounts{
-			IssuingAccountId: &IssuingAccountId,
+		Accounts: config.Accounts{
+			IssuingAccountID: "GD4I7AFSLZGTDL34TQLWJOM2NHLIIOEKD5RHHZUW54HERBLSIRKUOXRR",
 			// GBQXA3ABGQGTCLEVZIUTDRWWJOQD5LSAEDZAG7GMOGD2HBLWONGUVO4I
-			AuthorizingSeed: &AuthorizingSeed,
+			AuthorizingSeed: "SC37TBSIAYKIDQ6GTGLT2HSORLIHZQHBXVFI5P5K4Q5TSHRTRBK3UNWG",
 		},
 	}
 
@@ -41,37 +40,49 @@ func TestRequestHandlerAuthorize(t *testing.T) {
 
 	Convey("Given authorize request", t, func() {
 		Convey("When accountId is invalid", func() {
-			accountId := "GD3YBOYIUVLU"
+			accountID := "GD3YBOYIUVLU"
 			assetCode := "USD"
 
 			Convey("it should return error", func() {
-				statusCode, response := getResponse(testServer, url.Values{"account_id": {accountId}, "asset_code": {assetCode}})
+				statusCode, response := net.GetResponse(testServer, url.Values{"account_id": {accountID}, "asset_code": {assetCode}})
 				responseString := strings.TrimSpace(string(response))
 				assert.Equal(t, 400, statusCode)
-				expectedResponse := horizon.SubmitTransactionResponse{Error: horizon.AllowTrustInvalidAccountId}
-				assert.Equal(t, expectedResponse.Marshal(), []byte(responseString))
+				expected := test.StringToJSONMap(`{
+				  "code": "invalid_parameter",
+				  "message": "Invalid parameter.",
+				  "data": {
+				    "name": "account_id"
+				  }
+				}`)
+				assert.Equal(t, expected, test.StringToJSONMap(responseString))
 			})
 		})
 
 		Convey("When assetCode is invalid", func() {
-			accountId := "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632"
+			accountID := "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632"
 			assetCode := "GBP"
 
 			Convey("it should return error", func() {
-				statusCode, response := getResponse(testServer, url.Values{"account_id": {accountId}, "asset_code": {assetCode}})
+				statusCode, response := net.GetResponse(testServer, url.Values{"account_id": {accountID}, "asset_code": {assetCode}})
 				responseString := strings.TrimSpace(string(response))
 				assert.Equal(t, 400, statusCode)
-				expectedResponse := horizon.SubmitTransactionResponse{Error: horizon.AllowTrustAssetCodeNotAllowed}
-				assert.Equal(t, expectedResponse.Marshal(), []byte(responseString))
+				expected := test.StringToJSONMap(`{
+				  "code": "invalid_parameter",
+				  "message": "Invalid parameter.",
+				  "data": {
+				    "name": "asset_code"
+				  }
+				}`)
+				assert.Equal(t, expected, test.StringToJSONMap(responseString))
 			})
 		})
 
 		Convey("When params are valid", func() {
-			accountId := "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632"
+			accountID := "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632"
 			assetCode := "USD"
 
 			operation := b.AllowTrust(
-				b.Trustor{accountId},
+				b.Trustor{accountID},
 				b.Authorize{true},
 				b.AllowTrustAsset{assetCode},
 			)
@@ -79,7 +90,7 @@ func TestRequestHandlerAuthorize(t *testing.T) {
 			Convey("transaction fails", func() {
 				mockTransactionSubmitter.On(
 					"SubmitTransaction",
-					*config.Accounts.AuthorizingSeed,
+					config.Accounts.AuthorizingSeed,
 					operation,
 					nil,
 				).Return(
@@ -88,11 +99,14 @@ func TestRequestHandlerAuthorize(t *testing.T) {
 				).Once()
 
 				Convey("it should return server error", func() {
-					statusCode, response := getResponse(testServer, url.Values{"account_id": {accountId}, "asset_code": {assetCode}})
+					statusCode, response := net.GetResponse(testServer, url.Values{"account_id": {accountID}, "asset_code": {assetCode}})
 					responseString := strings.TrimSpace(string(response))
 					assert.Equal(t, 500, statusCode)
-					expectedResponse := horizon.SubmitTransactionResponse{Error: horizon.ServerError}
-					assert.Equal(t, expectedResponse.Marshal(), []byte(responseString))
+					expected := test.StringToJSONMap(`{
+					  "code": "internal_server_error",
+					  "message": "Internal Server Error, please try again."
+					}`)
+					assert.Equal(t, expected, test.StringToJSONMap(responseString))
 
 					mockTransactionSubmitter.AssertExpectations(t)
 				})
@@ -107,13 +121,13 @@ func TestRequestHandlerAuthorize(t *testing.T) {
 
 				mockTransactionSubmitter.On(
 					"SubmitTransaction",
-					*config.Accounts.AuthorizingSeed,
+					config.Accounts.AuthorizingSeed,
 					operation,
 					nil,
 				).Return(expectedSubmitResponse, nil).Once()
 
 				Convey("it should succeed", func() {
-					statusCode, response := getResponse(testServer, url.Values{"account_id": {accountId}, "asset_code": {assetCode}})
+					statusCode, response := net.GetResponse(testServer, url.Values{"account_id": {accountID}, "asset_code": {assetCode}})
 					var actualSubmitTransactionResponse horizon.SubmitTransactionResponse
 					json.Unmarshal(response, &actualSubmitTransactionResponse)
 					assert.Equal(t, 200, statusCode)

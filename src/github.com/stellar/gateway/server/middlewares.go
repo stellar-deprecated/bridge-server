@@ -4,6 +4,7 @@ import (
 	"net/http"
 )
 
+// StripTrailingSlashMiddleware strips trailing slash.
 // Credit goes to https://github.com/stellar/horizon
 func StripTrailingSlashMiddleware() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
@@ -23,6 +24,7 @@ func StripTrailingSlashMiddleware() func(next http.Handler) http.Handler {
 	}
 }
 
+// HeadersMiddleware sends headers required by servers
 func HeadersMiddleware() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
@@ -33,7 +35,8 @@ func HeadersMiddleware() func(next http.Handler) http.Handler {
 	}
 }
 
-func ApiKeyMiddleware(apiKey string) func(next http.Handler) http.Handler {
+// APIKeyMiddleware checks for apiKey in a request and writes http.StatusForbidden if it's incorrect.
+func APIKeyMiddleware(apiKey string) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
 			k := r.PostFormValue("apiKey")

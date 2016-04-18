@@ -4,23 +4,26 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/url"
+	"strings"
 
 	"github.com/stellar/gateway/protocols"
+	"github.com/stellar/go-stellar-base/keypair"
 )
 
+// SendRequest represents request sent to /send endpoint of compliance server
 type SendRequest struct {
 	// Source account ID
-	Source string `name:"source"`
+	Source string `name:"source" required:""`
 	// Sender address (like alice*stellar.org)
-	Sender string `name:"sender"`
+	Sender string `name:"sender" required:""`
 	// Destination address (like bob*stellar.org)
-	Destination string `name:"destination"`
+	Destination string `name:"destination" required:""`
 	// Amount destination should receive
-	Amount string `name:"amount"`
+	Amount string `name:"amount" required:""`
 	// Code of the asset destination should receive
-	AssetCode string `name:"asset_code"`
+	AssetCode string `name:"asset_code" required:""`
 	// Issuer of the asset destination should receive
-	AssetIssuer string `name:"asset_issuer"`
+	AssetIssuer string `name:"asset_issuer" required:""`
 	// Only for path_payment
 	SendMax string `name:"send_max"`
 	// Only for path_payment
@@ -29,33 +32,64 @@ type SendRequest struct {
 	SendAssetIssuer string `name:"send_asset_issuer"`
 	// path[n][asset_code] path[n][asset_issuer]
 	Path []protocols.Asset `name:"path"`
-	// Extra memo should contain sender KYC data
-	ExtraMemo string `name:"extra_memo"`
+	// Extra memo
+	ExtraMemo string `name:"extra_memo" required:""`
 
-	formRequest protocols.FormRequest
+	protocols.FormRequest
 }
 
-// Will populate SendRequest fields using http.Request.
+// FromRequest will populate request fields using http.Request.
 func (request *SendRequest) FromRequest(r *http.Request) {
-	request.formRequest.FromRequest(r, request)
+	request.FormRequest.FromRequest(r, request)
 }
 
-// Will create url.Values from SendRequest.
+// ToValues will create url.Values from request.
 func (request *SendRequest) ToValues() url.Values {
-	return request.formRequest.ToValues(request)
+	return request.FormRequest.ToValues(request)
 }
 
-// Validates if SendRequest fields are valid. Useful when checking if a request is correct.
-func (request *SendRequest) Validate() {
-	// TODO
+// Validate validates if request fields are valid. Useful when checking if a request is correct.
+func (request *SendRequest) Validate() error {
+	err := request.FormRequest.CheckRequired(request)
+	if err != nil {
+		return err
+	}
+
+	_, err = keypair.Parse(request.Source)
+	if err != nil {
+		return protocols.NewInvalidParameterError("source", request.Source)
+	}
+
+	if !validateStellarAddress(request.Sender) {
+		return protocols.NewInvalidParameterError("sender", request.Sender)
+	}
+
+	if !validateStellarAddress(request.Destination) {
+		return protocols.NewInvalidParameterError("destination", request.Destination)
+	}
+
+	_, err = keypair.Parse(request.AssetIssuer)
+	if err != nil {
+		return protocols.NewInvalidParameterError("asset_issuer", request.AssetIssuer)
+	}
+
+	return nil
 }
 
+func validateStellarAddress(address string) bool {
+	tokens := strings.Split(address, "*")
+	return len(tokens) == 2
+}
+
+// SendResponse represents response returned by /send endpoint
 type SendResponse struct {
 	protocols.SuccessResponse
+	AuthResponse `json:"auth_response"`
 	// xdr.Transaction base64-encoded. Sequence number of this transaction will be equal 0.
-	TransactionXdr string `json:"transaction_xdr"`
+	TransactionXdr string `json:"transaction_xdr,omitempty"`
 }
 
+// Marshal marshals SendResponse
 func (response *SendResponse) Marshal() []byte {
 	json, _ := json.MarshalIndent(response, "", "  ")
 	return json

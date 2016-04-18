@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"strconv"
 	"time"
 
 	"github.com/Sirupsen/logrus"
@@ -13,10 +14,13 @@ import (
 	"github.com/stellar/gateway/db"
 	"github.com/stellar/gateway/db/entities"
 	"github.com/stellar/gateway/horizon"
+	"github.com/stellar/gateway/net"
 	"github.com/stellar/gateway/protocols/compliance"
 )
 
+// PaymentListener is listening for a new payments received by ReceivingAccount
 type PaymentListener struct {
+	client        net.HTTPClientInterface
 	config        *config.Config
 	entityManager db.EntityManagerInterface
 	horizon       horizon.HorizonInterface
@@ -25,8 +29,9 @@ type PaymentListener struct {
 	now           func() time.Time
 }
 
-const HOOK_TIMEOUT = 10 * time.Second
+const hookTimeout = 10 * time.Second
 
+// NewPaymentListener creates a new PaymentListener
 func NewPaymentListener(
 	config *config.Config,
 	entityManager db.EntityManagerInterface,
@@ -34,6 +39,9 @@ func NewPaymentListener(
 	repository db.RepositoryInterface,
 	now func() time.Time,
 ) (pl PaymentListener, err error) {
+	pl.client = &http.Client{
+		Timeout: hookTimeout,
+	}
 	pl.config = config
 	pl.entityManager = entityManager
 	pl.horizon = horizon
@@ -45,10 +53,11 @@ func NewPaymentListener(
 	return
 }
 
+// Listen starts listening for new payments
 func (pl PaymentListener) Listen() (err error) {
-	accountId := *pl.config.Accounts.ReceivingAccountId
+	accountID := pl.config.Accounts.ReceivingAccountID
 
-	_, err = pl.horizon.LoadAccount(accountId)
+	_, err = pl.horizon.LoadAccount(accountID)
 	if err != nil {
 		return
 	}
@@ -71,12 +80,12 @@ func (pl PaymentListener) Listen() (err error) {
 			}
 
 			pl.log.WithFields(logrus.Fields{
-				"accountId": accountId,
+				"accountId": accountID,
 				"cursor":    cursorValue,
 			}).Info("Started listening for new payments")
 
 			err = pl.horizon.StreamPayments(
-				accountId,
+				accountID,
 				cursor,
 				pl.onPayment,
 			)
@@ -93,10 +102,27 @@ func (pl PaymentListener) Listen() (err error) {
 }
 
 func (pl PaymentListener) onPayment(payment horizon.PaymentResponse) (err error) {
-	pl.log.WithFields(logrus.Fields{"id": payment.Id}).Info("New payment")
+	pl.log.WithFields(logrus.Fields{"id": payment.ID}).Info("New received payment")
+
+	id, err := strconv.ParseInt(payment.ID, 10, 64)
+	if err != nil {
+		pl.log.WithFields(logrus.Fields{"err": err}).Error("Error converting ID to int64")
+		return err
+	}
+
+	existingPayment, err := pl.repository.GetReceivedPaymentByID(id)
+	if err != nil {
+		pl.log.WithFields(logrus.Fields{"err": err}).Error("Error checking if receive payment exists")
+		return err
+	}
+
+	if existingPayment != nil {
+		pl.log.WithFields(logrus.Fields{"id": payment.ID}).Info("Payment already exists")
+		return
+	}
 
 	dbPayment := entities.ReceivedPayment{
-		OperationId: payment.Id,
+		OperationID: payment.ID,
 		ProcessedAt: pl.now(),
 		PagingToken: payment.PagingToken,
 	}
@@ -112,7 +138,7 @@ func (pl PaymentListener) onPayment(payment horizon.PaymentResponse) (err error)
 		return
 	}
 
-	if payment.To != *pl.config.Accounts.ReceivingAccountId {
+	if payment.To != pl.config.Accounts.ReceivingAccountID {
 		dbPayment.Status = "Operation sent not received"
 		savePayment(&dbPayment)
 		return nil
@@ -130,18 +156,12 @@ func (pl PaymentListener) onPayment(payment horizon.PaymentResponse) (err error)
 		return err
 	}
 
-	if payment.Memo.Type == "" || payment.Memo.Value == "" {
-		dbPayment.Status = "Transaction does not have memo"
-		savePayment(&dbPayment)
-		return nil
-	}
-
 	var receiveResponse compliance.ReceiveResponse
 
 	// Request extra_memo from compliance server
-	if pl.config.Compliance != nil && payment.Memo.Type == "hash" {
-		resp, err := http.PostForm(
-			*pl.config.Compliance+"/receive",
+	if pl.config.Compliance != "" && payment.Memo.Type == "hash" {
+		resp, err := pl.client.PostForm(
+			pl.config.Compliance+"/receive",
 			url.Values{"memo": {string(payment.Memo.Value)}},
 		)
 		if err != nil {
@@ -171,19 +191,16 @@ func (pl PaymentListener) onPayment(payment horizon.PaymentResponse) (err error)
 		}
 	}
 
-	client := http.Client{
-		Timeout: HOOK_TIMEOUT,
-	}
-	resp, err := client.PostForm(
-		*pl.config.Hooks.Receive,
+	resp, err := pl.client.PostForm(
+		pl.config.Hooks.Receive,
 		url.Values{
-			"id":         {payment.Id},
+			"id":         {payment.ID},
 			"from":       {payment.From},
 			"amount":     {payment.Amount},
 			"asset_code": {payment.AssetCode},
 			"memo_type":  {payment.Memo.Type},
 			"memo":       {payment.Memo.Value},
-			"extra_memo": {receiveResponse.Memo},
+			"data":       {receiveResponse.Data},
 		},
 	)
 	if err != nil {

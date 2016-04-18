@@ -3,37 +3,44 @@ package compliance
 import (
 	"fmt"
 	log "github.com/Sirupsen/logrus"
+	"net/http"
 	"os"
 
+	"github.com/facebookgo/inject"
 	"github.com/stellar/gateway/compliance/config"
 	"github.com/stellar/gateway/compliance/handlers"
+	"github.com/stellar/gateway/crypto"
 	"github.com/stellar/gateway/db"
 	"github.com/stellar/gateway/db/drivers/mysql"
 	"github.com/stellar/gateway/db/drivers/postgres"
+	"github.com/stellar/gateway/protocols/federation"
+	"github.com/stellar/gateway/protocols/stellartoml"
 	"github.com/stellar/gateway/server"
 	"github.com/zenazn/goji/graceful"
 	"github.com/zenazn/goji/web"
 )
 
+// App is the application object
 type App struct {
-	config        config.Config
-	entityManager db.EntityManagerInterface
-	repository    db.RepositoryInterface
+	config         config.Config
+	requestHandler handlers.RequestHandler
 }
 
 // NewApp constructs an new App instance from the provided config.
 func NewApp(config config.Config, migrateFlag bool) (app *App, err error) {
+	var g inject.Graph
+
 	var driver db.Driver
 	switch config.Database.Type {
 	case "mysql":
-		driver = &mysql.MysqlDriver{}
+		driver = &mysql.Driver{}
 	case "postgres":
-		driver = &postgres.PostgresDriver{}
+		driver = &postgres.Driver{}
 	default:
-		return nil, fmt.Errorf("%s database has no driver.", config.Database.Type)
+		return nil, fmt.Errorf("%s database has no driver", config.Database.Type)
 	}
 
-	err = driver.Init(config.Database.Url)
+	err = driver.Init(config.Database.URL)
 	if err != nil {
 		return
 	}
@@ -53,26 +60,33 @@ func NewApp(config config.Config, migrateFlag bool) (app *App, err error) {
 		return
 	}
 
+	requestHandler := handlers.RequestHandler{}
+
+	err = g.Provide(
+		&inject.Object{Value: &requestHandler},
+		&inject.Object{Value: &config},
+		&inject.Object{Value: &entityManager},
+		&inject.Object{Value: &repository},
+		&inject.Object{Value: &crypto.SignerVerifier{}},
+		&inject.Object{Value: &stellartoml.Resolver{}},
+		&inject.Object{Value: &federation.Resolver{}},
+		&inject.Object{Value: &http.Client{}},
+	)
+
 	app = &App{
-		config:        config,
-		entityManager: entityManager,
-		repository:    repository,
+		config:         config,
+		requestHandler: requestHandler,
 	}
 	return
 }
 
+// Serve starts the server
 func (a *App) Serve() {
-	requestHandlers := &handlers.RequestHandler{
-		Config:        &a.config,
-		EntityManager: a.entityManager,
-		Repository:    a.repository,
-	}
-
 	// External endpoints
 	external := web.New()
 	external.Use(server.StripTrailingSlashMiddleware())
 	external.Use(server.HeadersMiddleware())
-	external.Post("/", requestHandlers.HandlerAuth)
+	external.Post("/", a.requestHandler.HandlerAuth)
 	externalPortString := fmt.Sprintf(":%d", *a.config.ExternalPort)
 	log.Println("Starting external server on", externalPortString)
 	go graceful.ListenAndServe(externalPortString, external)
@@ -81,10 +95,10 @@ func (a *App) Serve() {
 	internal := web.New()
 	internal.Use(server.StripTrailingSlashMiddleware())
 	internal.Use(server.HeadersMiddleware())
-	internal.Post("/send", requestHandlers.HandlerSend)
-	internal.Post("/receive", requestHandlers.HandlerReceive)
-	internal.Post("/allow_access", requestHandlers.HandlerAllowAccess)
-	internal.Post("/remove_access", requestHandlers.HandlerRemoveAccess)
+	internal.Post("/send", a.requestHandler.HandlerSend)
+	internal.Post("/receive", a.requestHandler.HandlerReceive)
+	internal.Post("/allow_access", a.requestHandler.HandlerAllowAccess)
+	internal.Post("/remove_access", a.requestHandler.HandlerRemoveAccess)
 	internalPortString := fmt.Sprintf(":%d", *a.config.InternalPort)
 	log.Println("Starting internal server on", internalPortString)
 	graceful.ListenAndServe(internalPortString, internal)

@@ -7,28 +7,33 @@ import (
 	"strings"
 
 	"github.com/jmoiron/sqlx"
+	// To load pq driver
 	_ "github.com/lib/pq"
 	"github.com/rubenv/sql-migrate"
 	"github.com/stellar/gateway/db/entities"
 )
 
-type PostgresDriver struct {
+// Driver implements Driver interface using Postgres connection
+type Driver struct {
 	database *sqlx.DB
 }
 
-func (d *PostgresDriver) Init(url string) (err error) {
+// Init initializes DB connection
+func (d *Driver) Init(url string) (err error) {
 	d.database, err = sqlx.Connect("postgres", url)
 	return
 }
 
+// MigrateUp migrates DB using migrate files
 // go-bindata -ignore .+\.go$ -pkg postgres -o bindata.go ./migrations
-func (d *PostgresDriver) MigrateUp(component string) (migrationsApplied int, err error) {
+func (d *Driver) MigrateUp(component string) (migrationsApplied int, err error) {
 	source := d.getAssetMigrationSource()
 	migrationsApplied, err = migrate.Exec(d.database.DB, "postgres", source, migrate.Up)
 	return
 }
 
-func (d *PostgresDriver) GetAuthorizedTransactionByMemo(memo string) (*entities.AuthorizedTransaction, error) {
+// GetAuthorizedTransactionByMemo returns authorized transaction by memo
+func (d *Driver) GetAuthorizedTransactionByMemo(memo string) (*entities.AuthorizedTransaction, error) {
 	var authorizedTransaction entities.AuthorizedTransaction
 	err := d.database.Get(&authorizedTransaction, "SELECT * FROM AuthorizedTransaction WHERE memo = :memo;", memo)
 	if err != nil {
@@ -37,20 +42,21 @@ func (d *PostgresDriver) GetAuthorizedTransactionByMemo(memo string) (*entities.
 	return &authorizedTransaction, nil
 }
 
-func (d *PostgresDriver) GetLastReceivedPayment() (*entities.ReceivedPayment, error) {
+// GetLastReceivedPayment returns the last received payment
+func (d *Driver) GetLastReceivedPayment() (*entities.ReceivedPayment, error) {
 	var receivedPayment entities.ReceivedPayment
 	err := d.database.Get(&receivedPayment, "SELECT * FROM ReceivedPayment ORDER BY id DESC LIMIT 1")
 	if err != nil {
 		if err.Error() == "sql: no rows in result set" {
 			return nil, nil
-		} else {
-			return nil, err
 		}
+		return nil, err
 	}
 	return &receivedPayment, nil
 }
 
-func (d *PostgresDriver) Insert(object entities.Entity) (id int64, err error) {
+// Insert inserts the entity to a DB
+func (d *Driver) Insert(object entities.Entity) (id int64, err error) {
 	value, tableName, err := getTypeData(object)
 
 	if err != nil {
@@ -68,7 +74,7 @@ func (d *PostgresDriver) Insert(object entities.Entity) (id int64, err error) {
 			continue
 		}
 
-		if tag == "id" && object.GetId() == nil {
+		if tag == "id" && object.GetID() == nil {
 			// To handle error:
 			// null value in column "id" violates not-null constraint
 			continue
@@ -101,21 +107,22 @@ func (d *PostgresDriver) Insert(object entities.Entity) (id int64, err error) {
 
 	if id == 0 {
 		// Not autoincrement
-		if object.GetId() == nil {
+		if object.GetID() == nil {
 			return 0, fmt.Errorf("Not autoincrement but ID nil")
 		}
-		id = *object.GetId()
+		id = *object.GetID()
 	}
 
 	if err == nil {
-		object.SetId(id)
+		object.SetID(id)
 		object.SetExists()
 	}
 
 	return
 }
 
-func (d *PostgresDriver) Update(object entities.Entity) (err error) {
+// Update updates the entity to a DB
+func (d *Driver) Update(object entities.Entity) (err error) {
 	value, tableName, err := getTypeData(object)
 
 	if err != nil {
@@ -149,12 +156,14 @@ func (d *PostgresDriver) Update(object entities.Entity) (err error) {
 	return
 }
 
-func (d *PostgresDriver) Delete(object entities.Entity) (err error) {
+// Delete delets the entity from a DB
+func (d *Driver) Delete(object entities.Entity) (err error) {
 	err = errors.New("Not implemented yet")
 	return
 }
 
-func (d *PostgresDriver) GetOne(object entities.Entity, where string, params ...interface{}) (entities.Entity, error) {
+// GetOne returns a single entity based on a seach conditions
+func (d *Driver) GetOne(object entities.Entity, where string, params ...interface{}) (entities.Entity, error) {
 	return nil, errors.New("Not implemented yet")
 }
 
@@ -175,7 +184,7 @@ func getTypeData(object interface{}) (typeValue reflect.Type, tableName string, 
 	return
 }
 
-func (d *PostgresDriver) getAssetMigrationSource() (source *migrate.AssetMigrationSource) {
+func (d *Driver) getAssetMigrationSource() (source *migrate.AssetMigrationSource) {
 	source = &migrate.AssetMigrationSource{
 		Asset:    Asset,
 		AssetDir: AssetDir,

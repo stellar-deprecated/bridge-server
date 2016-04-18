@@ -8,13 +8,16 @@ import (
 	"github.com/BurntSushi/toml"
 )
 
+// ResolverInterface helps mocking Resolver
 type ResolverInterface interface {
 	GetStellarToml(domain string) (stellarToml StellarToml, err error)
 	GetStellarTomlByAddress(address string) (stellarToml StellarToml, err error)
 }
 
+// Resolver resolves stellar.toml file
 type Resolver struct{}
 
+// GetStellarToml returns stellar.toml file for a given domain
 func (r *Resolver) GetStellarToml(domain string) (stellarToml StellarToml, err error) {
 	var resp *http.Response
 	resp, err = http.Get("https://www." + domain + "/.well-known/stellar.toml")
@@ -30,15 +33,8 @@ func (r *Resolver) GetStellarToml(domain string) (stellarToml StellarToml, err e
 	return
 }
 
+// GetStellarTomlByAddress returns stellar.toml file of a domain fetched from a given address
 func (r *Resolver) GetStellarTomlByAddress(address string) (stellarToml StellarToml, err error) {
-	// TESTING
-	// authServer := "http://localhost:8001"
-	// signingKey := "GCXR2UP4RIOADMJAVYXAFCFFLISC65CKY4HZBVTGD4TSGUHMCTFSXW5T"
-	// return StellarToml{
-	// 	AuthServer: &authServer,
-	// 	SigningKey: &signingKey,
-	// }, nil
-
 	tokens := strings.Split(address, "*")
 	if len(tokens) == 2 {
 		stellarToml, err = r.GetStellarToml(tokens[1])

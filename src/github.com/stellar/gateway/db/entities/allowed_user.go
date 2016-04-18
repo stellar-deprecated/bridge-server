@@ -4,28 +4,33 @@ import (
 	"time"
 )
 
+// AllowedUser represents allowed user
 type AllowedUser struct {
 	exists      bool
-	Id          *int64    `db:"id"`
+	ID          *int64    `db:"id"`
 	FiName      string    `db:"fi_name"`
 	FiDomain    string    `db:"fi_domain"`
 	FiPublicKey string    `db:"fi_public_key"`
-	UserId      string    `db:"user_id"`
+	UserID      string    `db:"user_id"`
 	AllowedAt   time.Time `db:"allowed_at"`
 }
 
-func (e *AllowedUser) GetId() *int64 {
-	return e.Id
+// GetID returns ID of the entity
+func (e *AllowedUser) GetID() *int64 {
+	return e.ID
 }
 
-func (e *AllowedUser) SetId(id int64) {
-	e.Id = &id
+// SetID sets ID of the entity
+func (e *AllowedUser) SetID(id int64) {
+	e.ID = &id
 }
 
+// IsNew returns true if the entity has not been persisted yet
 func (e *AllowedUser) IsNew() bool {
 	return !e.exists
 }
 
+// SetExists sets entity as persisted
 func (e *AllowedUser) SetExists() {
 	e.exists = true
 }

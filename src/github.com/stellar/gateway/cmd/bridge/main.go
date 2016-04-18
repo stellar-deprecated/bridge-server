@@ -35,10 +35,9 @@ func init() {
 }
 
 func run(cmd *cobra.Command, args []string) {
-	log.Print("Reading config_bridge.toml file")
 	err := viper.ReadInConfig()
 	if err != nil {
-		log.Fatal("Error reading config file: ", err)
+		log.Fatal("Error reading config_bridge.toml file: ", err)
 	}
 
 	var config config.Config
@@ -48,6 +47,10 @@ func run(cmd *cobra.Command, args []string) {
 	if err != nil {
 		log.Fatal(err.Error())
 		return
+	}
+
+	if config.LogFormat == "json" {
+		log.SetFormatter(&log.JSONFormatter{})
 	}
 
 	app, err = bridge.NewApp(config, migrateFlag)

@@ -6,42 +6,47 @@ import (
 	"reflect"
 	"strings"
 
+	// To load mysql driver
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
 	"github.com/rubenv/sql-migrate"
 	"github.com/stellar/gateway/db/entities"
 )
 
-type MysqlDriver struct {
+// Driver implements Driver interface using MySQL connection
+type Driver struct {
 	database *sqlx.DB
 }
 
-func (d *MysqlDriver) Init(url string) (err error) {
+// Init initializes DB connection
+func (d *Driver) Init(url string) (err error) {
 	d.database, err = sqlx.Connect("mysql", url)
 	return
 }
 
+// MigrateUp migrates DB using migrate files
 // go-bindata -ignore .+\.go$ -pkg mysql -o bindata.go ./migrations*
-func (d *MysqlDriver) MigrateUp(component string) (migrationsApplied int, err error) {
+func (d *Driver) MigrateUp(component string) (migrationsApplied int, err error) {
 	source := d.getAssetMigrationSource(component)
 	migrationsApplied, err = migrate.Exec(d.database.DB, "mysql", source, migrate.Up)
 	return
 }
 
-func (d *MysqlDriver) GetLastReceivedPayment() (*entities.ReceivedPayment, error) {
+// GetLastReceivedPayment returns the last received payment
+func (d *Driver) GetLastReceivedPayment() (*entities.ReceivedPayment, error) {
 	var receivedPayment entities.ReceivedPayment
 	err := d.database.Get(&receivedPayment, "SELECT * FROM ReceivedPayment ORDER BY id DESC LIMIT 1")
 	if err != nil {
 		if err.Error() == "sql: no rows in result set" {
 			return nil, nil
-		} else {
-			return nil, err
 		}
+		return nil, err
 	}
 	return &receivedPayment, nil
 }
 
-func (d *MysqlDriver) Insert(object entities.Entity) (id int64, err error) {
+// Insert inserts the entity to a DB
+func (d *Driver) Insert(object entities.Entity) (id int64, err error) {
 	value, tableName, err := getTypeData(object)
 
 	if err != nil {
@@ -86,21 +91,22 @@ func (d *MysqlDriver) Insert(object entities.Entity) (id int64, err error) {
 
 	if id == 0 {
 		// Not autoincrement
-		if object.GetId() == nil {
+		if object.GetID() == nil {
 			return 0, fmt.Errorf("Not autoincrement but ID nil")
 		}
-		id = *object.GetId()
+		id = *object.GetID()
 	}
 
 	if err == nil {
-		object.SetId(id)
+		object.SetID(id)
 		object.SetExists()
 	}
 
 	return
 }
 
-func (d *MysqlDriver) Update(object entities.Entity) (err error) {
+// Update updates the entity to a DB
+func (d *Driver) Update(object entities.Entity) (err error) {
 	value, tableName, err := getTypeData(object)
 
 	if err != nil {
@@ -138,7 +144,8 @@ func (d *MysqlDriver) Update(object entities.Entity) (err error) {
 	return
 }
 
-func (d *MysqlDriver) Delete(object entities.Entity) (err error) {
+// Delete delets the entity from a DB
+func (d *Driver) Delete(object entities.Entity) (err error) {
 	_, tableName, err := getTypeData(object)
 
 	if err != nil {
@@ -151,7 +158,8 @@ func (d *MysqlDriver) Delete(object entities.Entity) (err error) {
 	return
 }
 
-func (d *MysqlDriver) GetOne(object entities.Entity, where string, params ...interface{}) (entities.Entity, error) {
+// GetOne returns a single entity based on a seach conditions
+func (d *Driver) GetOne(object entities.Entity, where string, params ...interface{}) (entities.Entity, error) {
 	_, tableName, err := getTypeData(object)
 	if err != nil {
 		return nil, err
@@ -161,9 +169,8 @@ func (d *MysqlDriver) GetOne(object entities.Entity, where string, params ...int
 	if err != nil {
 		if err.Error() == "sql: no rows in result set" {
 			return nil, nil
-		} else {
-			return nil, err
 		}
+		return nil, err
 	}
 	object.SetExists() // Mark this entity as existing
 	return object, err
@@ -192,7 +199,7 @@ func getTypeData(object interface{}) (typeValue reflect.Type, tableName string, 
 	return
 }
 
-func (d *MysqlDriver) getAssetMigrationSource(component string) (source *migrate.AssetMigrationSource) {
+func (d *Driver) getAssetMigrationSource(component string) (source *migrate.AssetMigrationSource) {
 	source = &migrate.AssetMigrationSource{
 		Asset:    Asset,
 		AssetDir: AssetDir,

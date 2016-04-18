@@ -4,44 +4,47 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"net/http"
 
-	h "github.com/stellar/gateway/horizon"
+	"github.com/stellar/gateway/protocols"
+	"github.com/stellar/gateway/protocols/bridge"
 	"github.com/stellar/gateway/server"
 	b "github.com/stellar/go-stellar-base/build"
-	"github.com/stellar/go-stellar-base/keypair"
 )
 
+// Authorize implements /authorize endpoint
 func (rh *RequestHandler) Authorize(w http.ResponseWriter, r *http.Request) {
-	accountId := r.PostFormValue("account_id")
-	assetCode := r.PostFormValue("asset_code")
+	request := &bridge.AuthorizeRequest{}
+	request.FromRequest(r)
 
-	_, err := keypair.Parse(accountId)
+	err := request.Validate(rh.Config.Assets, rh.Config.Accounts.IssuingAccountID)
 	if err != nil {
-		log.Print("Invalid accountId parameter: ", accountId)
-		server.Write(w, h.NewErrorResponse(h.AllowTrustInvalidAccountId))
-		return
-	}
-
-	if !rh.isAssetAllowed(assetCode, *rh.Config.Accounts.IssuingAccountId) {
-		log.WithFields(log.Fields{"asset_code": assetCode}).Warn("Asset code not allowed")
-		server.Write(w, h.NewErrorResponse(h.AllowTrustAssetCodeNotAllowed))
+		errorResponse := err.(*protocols.ErrorResponse)
+		log.WithFields(errorResponse.LogData).Error(errorResponse.Error())
+		server.Write(w, errorResponse)
 		return
 	}
 
 	operationMutator := b.AllowTrust(
-		b.Trustor{accountId},
+		b.Trustor{request.AccountID},
 		b.Authorize{true},
-		b.AllowTrustAsset{assetCode},
+		b.AllowTrustAsset{request.AssetCode},
 	)
 
 	submitResponse, err := rh.TransactionSubmitter.SubmitTransaction(
-		*rh.Config.Accounts.AuthorizingSeed,
+		rh.Config.Accounts.AuthorizingSeed,
 		operationMutator,
 		nil,
 	)
 
 	if err != nil {
 		log.WithFields(log.Fields{"err": err}).Error("Error submitting transaction")
-		server.Write(w, h.NewErrorResponse(h.ServerError))
+		server.Write(w, protocols.InternalServerError)
+		return
+	}
+
+	errorResponse := bridge.ErrorFromHorizonResponse(submitResponse)
+	if errorResponse != nil {
+		log.WithFields(errorResponse.LogData).Error(errorResponse.Error())
+		server.Write(w, errorResponse)
 		return
 	}
 

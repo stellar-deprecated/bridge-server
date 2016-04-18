@@ -10,7 +10,8 @@ import (
 	"strconv"
 	"strings"
 
-	h "github.com/stellar/gateway/horizon"
+	"github.com/stellar/gateway/protocols"
+	"github.com/stellar/gateway/protocols/bridge"
 	"github.com/stellar/gateway/protocols/compliance"
 	"github.com/stellar/gateway/server"
 	b "github.com/stellar/go-stellar-base/build"
@@ -18,47 +19,32 @@ import (
 	"github.com/stellar/go-stellar-base/xdr"
 )
 
+// Payment implements /payment endpoint
 func (rh *RequestHandler) Payment(w http.ResponseWriter, r *http.Request) {
-	source := r.PostFormValue("source")
-	sourceKeypair, err := keypair.Parse(source)
+	request := &bridge.PaymentRequest{}
+	request.FromRequest(r)
+
+	err := request.Validate()
 	if err != nil {
-		log.WithFields(log.Fields{"source": source}).Print("Invalid source parameter")
-		server.Write(w, h.NewErrorResponse(h.PaymentInvalidSource))
+		errorResponse := err.(*protocols.ErrorResponse)
+		log.WithFields(errorResponse.LogData).Error(errorResponse.Error())
+		server.Write(w, errorResponse)
 		return
 	}
 
-	// TODO switch to protocols.FormRequest
-	sender := r.PostFormValue("sender")
-	destination := r.PostFormValue("destination")
-	amount := r.PostFormValue("amount")
-	assetCode := r.PostFormValue("asset_code")
-	assetIssuer := r.PostFormValue("asset_issuer")
-	memoType := r.PostFormValue("memo_type")
-	memo := r.PostFormValue("memo")
-	sendMax := r.PostFormValue("send_max")
-	sendAssetCode := r.PostFormValue("send_asset_code")
-	sendAssetIssuer := r.PostFormValue("send_asset_issuer")
-	extraMemo := r.PostFormValue("extra_memo")
+	sourceKeypair, _ := keypair.Parse(request.Source)
 
-	if extraMemo != "" && rh.Config.Compliance != nil {
+	if request.ExtraMemo != "" && rh.Config.Compliance != "" {
 		// Compliance server part
-		request := &compliance.SendRequest{
-			Source:      sourceKeypair.Address(),
-			Sender:      sender,
-			Destination: destination,
-			Amount:      amount,
-			AssetCode:   assetCode,
-			AssetIssuer: assetIssuer,
-			ExtraMemo:   extraMemo,
-		}
+		sendRequest := request.ToComplianceSendRequest()
 
 		resp, err := rh.Client.PostForm(
-			*rh.Config.Compliance+"/send",
-			request.ToValues(),
+			rh.Config.Compliance+"/send",
+			sendRequest.ToValues(),
 		)
 		if err != nil {
 			log.WithFields(log.Fields{"err": err}).Error("Error sending request to compliance server")
-			server.Write(w, h.NewErrorResponse(h.ServerError))
+			server.Write(w, protocols.InternalServerError)
 			return
 		}
 
@@ -66,7 +52,7 @@ func (rh *RequestHandler) Payment(w http.ResponseWriter, r *http.Request) {
 		body, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
 			log.Error("Error reading compliance server response")
-			server.Write(w, h.NewErrorResponse(h.ServerError))
+			server.Write(w, protocols.InternalServerError)
 			return
 		}
 
@@ -75,7 +61,7 @@ func (rh *RequestHandler) Payment(w http.ResponseWriter, r *http.Request) {
 				"status": resp.StatusCode,
 				"body":   string(body),
 			}).Error("Error response from compliance server")
-			server.Write(w, h.NewErrorResponse(h.ServerError))
+			server.Write(w, protocols.InternalServerError)
 			return
 		}
 
@@ -83,7 +69,21 @@ func (rh *RequestHandler) Payment(w http.ResponseWriter, r *http.Request) {
 		err = json.Unmarshal(body, &complianceSendResponse)
 		if err != nil {
 			log.Error("Error unmarshalling from compliance server")
-			server.Write(w, h.NewErrorResponse(h.ServerError))
+			server.Write(w, protocols.InternalServerError)
+			return
+		}
+
+		if complianceSendResponse.AuthResponse.InfoStatus == compliance.AuthStatusPending ||
+			complianceSendResponse.AuthResponse.TxStatus == compliance.AuthStatusPending {
+			log.WithFields(log.Fields{"response": complianceSendResponse}).Info("Compliance response pending")
+			server.Write(w, bridge.NewPaymentPendingError(complianceSendResponse.AuthResponse.Pending))
+			return
+		}
+
+		if complianceSendResponse.AuthResponse.InfoStatus == compliance.AuthStatusDenied ||
+			complianceSendResponse.AuthResponse.TxStatus == compliance.AuthStatusDenied {
+			log.WithFields(log.Fields{"response": complianceSendResponse}).Info("Compliance response denied")
+			server.Write(w, bridge.PaymentDenied)
 			return
 		}
 
@@ -91,50 +91,46 @@ func (rh *RequestHandler) Payment(w http.ResponseWriter, r *http.Request) {
 		err = xdr.SafeUnmarshalBase64(complianceSendResponse.TransactionXdr, &tx)
 		if err != nil {
 			log.Error("Error unmarshalling transaction returned by compliance server")
-			server.Write(w, h.NewErrorResponse(h.ServerError))
+			server.Write(w, protocols.InternalServerError)
 			return
 		}
 
-		submitResponse, err := rh.TransactionSubmitter.SignAndSubmitRawTransaction(source, &tx)
+		submitResponse, err := rh.TransactionSubmitter.SignAndSubmitRawTransaction(request.Source, &tx)
 		if err != nil {
 			log.WithFields(log.Fields{"err": err}).Error("Error submitting transaction")
-			server.Write(w, h.NewErrorResponse(h.ServerError))
+			server.Write(w, protocols.InternalServerError)
 			return
 		}
 
 		server.Write(w, &submitResponse)
 	} else {
 		// Payment without compliance server
-		destinationObject, _, err := rh.FederationResolver.Resolve(destination)
+		destinationObject, _, err := rh.FederationResolver.Resolve(request.Destination)
 		if err != nil {
-			log.WithFields(log.Fields{"destination": destination}).Print("Cannot resolve address")
-			server.Write(w, h.NewErrorResponse(h.PaymentCannotResolveDestination))
+			log.WithFields(log.Fields{"destination": request.Destination, "err": err}).Print("Cannot resolve address")
+			server.Write(w, bridge.PaymentCannotResolveDestination)
 			return
 		}
 
-		_, err = keypair.Parse(destinationObject.AccountId)
+		_, err = keypair.Parse(destinationObject.AccountID)
 		if err != nil {
-			log.WithFields(log.Fields{"AccountId": destinationObject.AccountId}).Print("Invalid AccountId in destination")
-			server.Write(w, h.NewErrorResponse(h.PaymentInvalidDestination))
+			log.WithFields(log.Fields{"AccountId": destinationObject.AccountID}).Print("Invalid AccountId in destination")
+			server.Write(w, protocols.NewInvalidParameterError("destination", request.Destination))
 			return
 		}
 
 		var payWithMutator *b.PayWithPath
 
-		if sendMax != "" {
+		if request.SendMax != "" {
 			// Path payment
 			var sendAsset b.Asset
-			if sendAssetCode != "" && sendAssetIssuer != "" {
-				sendAsset = b.CreditAsset(sendAssetCode, sendAssetIssuer)
-			} else if sendAssetCode == "" && sendAssetIssuer == "" {
+			if request.SendAssetCode == "" && request.SendAssetIssuer == "" {
 				sendAsset = b.NativeAsset()
 			} else {
-				log.Print("Missing send asset param.")
-				server.Write(w, h.NewErrorResponse(h.PaymentMissingParamAsset))
-				return
+				sendAsset = b.CreditAsset(request.SendAssetCode, request.SendAssetIssuer)
 			}
 
-			payWith := b.PayWith(sendAsset, sendMax)
+			payWith := b.PayWith(sendAsset, request.SendMax)
 
 			for i := 0; ; i++ {
 				codeFieldName := fmt.Sprintf("path[%d][asset_code]", i)
@@ -160,17 +156,10 @@ func (rh *RequestHandler) Payment(w http.ResponseWriter, r *http.Request) {
 
 		var operationBuilder interface{}
 
-		if assetCode != "" && assetIssuer != "" {
-			issuerKeypair, err := keypair.Parse(assetIssuer)
-			if err != nil {
-				log.WithFields(log.Fields{"asset_issuer": assetIssuer}).Print("Invalid asset_issuer parameter")
-				server.Write(w, h.NewErrorResponse(h.PaymentInvalidIssuer))
-				return
-			}
-
+		if request.AssetCode != "" && request.AssetIssuer != "" {
 			mutators := []interface{}{
-				b.Destination{destinationObject.AccountId},
-				b.CreditAmount{assetCode, issuerKeypair.Address(), amount},
+				b.Destination{destinationObject.AccountID},
+				b.CreditAmount{request.AssetCode, request.AssetIssuer, request.Amount},
 			}
 
 			if payWithMutator != nil {
@@ -178,10 +167,10 @@ func (rh *RequestHandler) Payment(w http.ResponseWriter, r *http.Request) {
 			}
 
 			operationBuilder = b.Payment(mutators...)
-		} else if assetCode == "" && assetIssuer == "" {
+		} else {
 			mutators := []interface{}{
-				b.Destination{destinationObject.AccountId},
-				b.NativeAmount{amount},
+				b.Destination{destinationObject.AccountID},
+				b.NativeAmount{request.Amount},
 			}
 
 			if payWithMutator != nil {
@@ -189,34 +178,27 @@ func (rh *RequestHandler) Payment(w http.ResponseWriter, r *http.Request) {
 			}
 
 			// Check if destination account exist
-			_, err = rh.Horizon.LoadAccount(destinationObject.AccountId)
+			_, err = rh.Horizon.LoadAccount(destinationObject.AccountID)
 			if err != nil {
 				log.WithFields(log.Fields{"error": err}).Error("Error loading account")
 				operationBuilder = b.CreateAccount(mutators...)
 			} else {
 				operationBuilder = b.Payment(mutators...)
 			}
-		} else {
-			log.Print("Missing asset param.")
-			server.Write(w, h.NewErrorResponse(h.PaymentMissingParamAsset))
-			return
 		}
 
-		if !(((memoType == "") && (memo == "")) || ((memoType != "") && (memo != ""))) {
-			log.Print("Missing one of memo params.")
-			server.Write(w, h.NewErrorResponse(h.PaymentMissingParamMemo))
-			return
-		}
+		memoType := request.MemoType
+		memo := request.Memo
 
-		if destinationObject.MemoType != nil {
-			if memoType != "" {
+		if destinationObject.MemoType != "" {
+			if request.MemoType != "" {
 				log.Print("Memo given in request but federation returned memo fields.")
-				server.Write(w, h.NewErrorResponse(h.PaymentCannotUseMemo))
+				server.Write(w, bridge.PaymentCannotUseMemo)
 				return
 			}
 
-			memoType = *destinationObject.MemoType
-			memo = *destinationObject.Memo
+			memoType = destinationObject.MemoType
+			memo = destinationObject.Memo
 		}
 
 		var memoMutator interface{}
@@ -227,7 +209,7 @@ func (rh *RequestHandler) Payment(w http.ResponseWriter, r *http.Request) {
 			id, err := strconv.ParseUint(memo, 10, 64)
 			if err != nil {
 				log.WithFields(log.Fields{"memo": memo}).Print("Cannot convert memo_id value to uint64")
-				server.Write(w, h.NewErrorResponse(h.PaymentInvalidMemo))
+				server.Write(w, protocols.NewInvalidParameterError("memo", request.Memo))
 				return
 			}
 			memoMutator = b.MemoID{id}
@@ -237,7 +219,7 @@ func (rh *RequestHandler) Payment(w http.ResponseWriter, r *http.Request) {
 			memoBytes, err := hex.DecodeString(memo)
 			if err != nil || len(memoBytes) != 32 {
 				log.WithFields(log.Fields{"memo": memo}).Print("Cannot decode hash memo value")
-				server.Write(w, h.NewErrorResponse(h.PaymentInvalidMemo))
+				server.Write(w, protocols.NewInvalidParameterError("memo", request.Memo))
 				return
 			}
 			var b32 [32]byte
@@ -246,26 +228,26 @@ func (rh *RequestHandler) Payment(w http.ResponseWriter, r *http.Request) {
 			memoMutator = &b.MemoHash{hash}
 		default:
 			log.Print("Not supported memo type: ", memoType)
-			server.Write(w, h.NewErrorResponse(h.PaymentInvalidMemo))
+			server.Write(w, protocols.NewInvalidParameterError("memo", request.Memo))
 			return
 		}
 
 		accountResponse, err := rh.Horizon.LoadAccount(sourceKeypair.Address())
 		if err != nil {
 			log.WithFields(log.Fields{"error": err}).Error("Cannot load source account")
-			server.Write(w, h.NewErrorResponse(h.PaymentSourceNotExist))
+			server.Write(w, bridge.PaymentSourceNotExist)
 			return
 		}
 
 		sequenceNumber, err := strconv.ParseUint(accountResponse.SequenceNumber, 10, 64)
 		if err != nil {
 			log.WithFields(log.Fields{"error": err}).Error("Cannot convert SequenceNumber")
-			server.Write(w, h.NewErrorResponse(h.ServerError))
+			server.Write(w, protocols.InternalServerError)
 			return
 		}
 
 		transactionMutators := []b.TransactionMutator{
-			b.SourceAccount{source},
+			b.SourceAccount{request.Source},
 			b.Sequence{sequenceNumber + 1},
 			b.Network{rh.Config.NetworkPassphrase},
 			operationBuilder.(b.TransactionMutator),
@@ -283,29 +265,42 @@ func (rh *RequestHandler) Payment(w http.ResponseWriter, r *http.Request) {
 			// create_account and payment errors separately
 			switch {
 			case tx.Err.Error() == "Asset code length is invalid":
-				server.Write(w, h.NewErrorResponse(h.PaymentMalformedAssetCode))
+				server.Write(
+					w,
+					protocols.NewInvalidParameterError("asset_code", request.AssetCode),
+				)
 			case strings.Contains(tx.Err.Error(), "cannot parse amount"):
-				server.Write(w, h.NewErrorResponse(h.PaymentInvalidAmount))
+				server.Write(
+					w,
+					protocols.NewInvalidParameterError("amount", request.Amount),
+				)
 			default:
 				log.WithFields(log.Fields{"err": tx.Err}).Print("Transaction builder error")
-				server.Write(w, h.NewErrorResponse(h.ServerError))
+				server.Write(w, protocols.InternalServerError)
 			}
 			return
 		}
 
-		txe := tx.Sign(source)
+		txe := tx.Sign(request.Source)
 		txeB64, err := txe.Base64()
 
 		if err != nil {
 			log.WithFields(log.Fields{"error": err}).Error("Cannot encode transaction envelope")
-			server.Write(w, h.NewErrorResponse(h.ServerError))
+			server.Write(w, protocols.InternalServerError)
 			return
 		}
 
 		submitResponse, err := rh.Horizon.SubmitTransaction(txeB64)
 		if err != nil {
 			log.WithFields(log.Fields{"error": err}).Error("Error submitting transaction")
-			server.Write(w, h.NewErrorResponse(h.ServerError))
+			server.Write(w, protocols.InternalServerError)
+			return
+		}
+
+		errorResponse := bridge.ErrorFromHorizonResponse(submitResponse)
+		if errorResponse != nil {
+			log.WithFields(errorResponse.LogData).Error(errorResponse.Error())
+			server.Write(w, errorResponse)
 			return
 		}
 

@@ -5,16 +5,30 @@ import (
 	"net/http"
 	"net/url"
 	"reflect"
+
+	"github.com/facebookgo/structtag"
 )
 
+// Asset represents asset in responses
 type Asset struct {
 	Code   string `name:"asset_code"`
 	Issuer string `name:"asset_issuer"`
 }
 
-type FormRequest struct{}
+// FormRequest allows transforming http.Request url.Values from/to request structs
+type FormRequest struct {
+	HTTPRequest *http.Request
+}
 
+const (
+	pathCodeField   = "path[%d][asset_code]"
+	pathIssuerField = "path[%d][asset_issuer]"
+)
+
+// FromRequest transforms http.Request to request struct object
 func (request *FormRequest) FromRequest(r *http.Request, destination interface{}) {
+	request.HTTPRequest = r
+
 	rvalue := reflect.ValueOf(destination).Elem()
 	typ := rvalue.Type()
 	for i := 0; i < rvalue.NumField(); i++ {
@@ -26,8 +40,8 @@ func (request *FormRequest) FromRequest(r *http.Request, destination interface{}
 			var path []Asset
 
 			for i := 0; i < 5; i++ {
-				codeFieldName := fmt.Sprintf("path[%d][asset_code]", i)
-				issuerFieldName := fmt.Sprintf("path[%d][asset_issuer]", i)
+				codeFieldName := fmt.Sprintf(pathCodeField, i)
+				issuerFieldName := fmt.Sprintf(pathIssuerField, i)
 
 				// If the element does not exist in PostForm break the loop
 				if _, exists := r.PostForm[codeFieldName]; !exists {
@@ -54,6 +68,31 @@ func (request *FormRequest) FromRequest(r *http.Request, destination interface{}
 	return
 }
 
+// CheckRequired checks whether all fields marked as required have value
+func (request *FormRequest) CheckRequired(destination interface{}) error {
+	rvalue := reflect.ValueOf(destination).Elem()
+	typ := rvalue.Type()
+	for i := 0; i < rvalue.NumField(); i++ {
+		required, _, err := structtag.Extract("required", string(typ.Field(i).Tag))
+
+		if err != nil {
+			return NewInternalServerError(
+				"Error extracting tag using structtag",
+				map[string]interface{}{"error": err},
+			)
+		}
+
+		if required {
+			name := typ.Field(i).Tag.Get("name")
+			if request.HTTPRequest.PostFormValue(name) == "" {
+				return NewMissingParameter(name)
+			}
+		}
+	}
+	return nil
+}
+
+// ToValues transforms request object to url.Values
 func (request *FormRequest) ToValues(object interface{}) (values url.Values) {
 	values = make(map[string][]string)
 	rvalue := reflect.ValueOf(object).Elem()
@@ -74,16 +113,18 @@ func (request *FormRequest) ToValues(object interface{}) (values url.Values) {
 		case []Asset:
 			assets := rvalue.Field(i).Interface().([]Asset)
 			for i, asset := range assets {
-				values.Set(fmt.Sprintf("path[%d][asset_code]", i), asset.Code)
-				values.Set(fmt.Sprintf("path[%d][asset_issuer]", i), asset.Issuer)
+				values.Set(fmt.Sprintf(pathCodeField, i), asset.Code)
+				values.Set(fmt.Sprintf(pathIssuerField, i), asset.Issuer)
 			}
 		}
 	}
 	return
 }
 
+// SuccessResponse is embedded in all success responses and implements server.Response interface
 type SuccessResponse struct{}
 
+// HTTPStatus returns http.StatusOK
 func (response *SuccessResponse) HTTPStatus() int {
 	return http.StatusOK
 }

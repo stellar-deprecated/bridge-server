@@ -7,53 +7,59 @@ import (
 	"github.com/stellar/go-stellar-base/keypair"
 )
 
+// Config contains config params of the bridge server
 type Config struct {
 	Port              *int
-	Horizon           *string
-	Compliance        *string
-	ApiKey            string `mapstructure:"api_key"`
+	Horizon           string
+	Compliance        string
+	LogFormat         string `mapstructure:"log_format"`
+	APIKey            string `mapstructure:"api_key"`
 	NetworkPassphrase string `mapstructure:"network_passphrase"`
 	Assets            []Asset
 	Database          struct {
 		Type string
-		Url  string
+		URL  string
 	}
-	Accounts *Accounts
-	Hooks    *Hooks
+	Accounts
+	Hooks
 }
 
+// Asset represents credit asset
 type Asset struct {
 	Code   string
 	Issuer string
 }
 
+// Accounts contains values of `accounts` config group
 type Accounts struct {
-	AuthorizingSeed    *string `mapstructure:"authorizing_seed"`
-	BaseSeed           *string `mapstructure:"base_seed"`
-	IssuingAccountId   *string `mapstructure:"issuing_account_id"`
-	ReceivingAccountId *string `mapstructure:"receiving_account_id"`
+	AuthorizingSeed    string `mapstructure:"authorizing_seed"`
+	BaseSeed           string `mapstructure:"base_seed"`
+	IssuingAccountID   string `mapstructure:"issuing_account_id"`
+	ReceivingAccountID string `mapstructure:"receiving_account_id"`
 }
 
+// Hooks contains values of `hooks` config group
 type Hooks struct {
-	Receive *string
-	Error   *string
+	Receive string
+	Error   string
 }
 
+// Validate validates config and returns error if any of config values is incorrect
 func (c *Config) Validate() (err error) {
 	if c.Port == nil {
 		err = errors.New("port param is required")
 		return
 	}
 
-	if c.Horizon == nil {
+	if c.Horizon == "" {
 		err = errors.New("horizon param is required")
 		return
-	} else {
-		_, err = url.Parse(*c.Horizon)
-		if err != nil {
-			err = errors.New("Cannot parse horizon param")
-			return
-		}
+	}
+
+	_, err = url.Parse(c.Horizon)
+	if err != nil {
+		err = errors.New("Cannot parse horizon param")
+		return
 	}
 
 	if c.NetworkPassphrase == "" {
@@ -61,8 +67,8 @@ func (c *Config) Validate() (err error) {
 		return
 	}
 
-	var dbUrl *url.URL
-	dbUrl, err = url.Parse(c.Database.Url)
+	var dbURL *url.URL
+	dbURL, err = url.Parse(c.Database.URL)
 	if err != nil {
 		err = errors.New("Cannot parse database.url param")
 		return
@@ -71,10 +77,10 @@ func (c *Config) Validate() (err error) {
 	switch c.Database.Type {
 	case "mysql":
 		// Add `parseTime=true` param to mysql url
-		query := dbUrl.Query()
+		query := dbURL.Query()
 		query.Set("parseTime", "true")
-		dbUrl.RawQuery = query.Encode()
-		c.Database.Url = dbUrl.String()
+		dbURL.RawQuery = query.Encode()
+		c.Database.URL = dbURL.String()
 	case "postgres":
 		break
 	case "":
@@ -85,55 +91,51 @@ func (c *Config) Validate() (err error) {
 		return
 	}
 
-	if c.Accounts != nil {
-		if c.Accounts.AuthorizingSeed != nil {
-			_, err = keypair.Parse(*c.Accounts.AuthorizingSeed)
-			if err != nil {
-				err = errors.New("accounts.authorizing_seed is invalid")
-				return
-			}
-		}
-
-		if c.Accounts.BaseSeed != nil {
-			_, err = keypair.Parse(*c.Accounts.BaseSeed)
-			if err != nil {
-				err = errors.New("accounts.base_seed is invalid")
-				return
-			}
-		}
-
-		if c.Accounts.IssuingAccountId != nil {
-			_, err = keypair.Parse(*c.Accounts.IssuingAccountId)
-			if err != nil {
-				err = errors.New("accounts.issuing_account_id is invalid")
-				return
-			}
-		}
-
-		if c.Accounts.ReceivingAccountId != nil {
-			_, err = keypair.Parse(*c.Accounts.ReceivingAccountId)
-			if err != nil {
-				err = errors.New("accounts.receiving_account_id is invalid")
-				return
-			}
+	if c.Accounts.AuthorizingSeed != "" {
+		_, err = keypair.Parse(c.Accounts.AuthorizingSeed)
+		if err != nil {
+			err = errors.New("accounts.authorizing_seed is invalid")
+			return
 		}
 	}
 
-	if c.Hooks != nil {
-		if c.Hooks.Receive != nil {
-			_, err = url.Parse(*c.Hooks.Receive)
-			if err != nil {
-				err = errors.New("Cannot parse hooks.receive param")
-				return
-			}
+	if c.Accounts.BaseSeed != "" {
+		_, err = keypair.Parse(c.Accounts.BaseSeed)
+		if err != nil {
+			err = errors.New("accounts.base_seed is invalid")
+			return
 		}
+	}
 
-		if c.Hooks.Error != nil {
-			_, err = url.Parse(*c.Hooks.Error)
-			if err != nil {
-				err = errors.New("Cannot parse hooks.error param")
-				return
-			}
+	if c.Accounts.IssuingAccountID != "" {
+		_, err = keypair.Parse(c.Accounts.IssuingAccountID)
+		if err != nil {
+			err = errors.New("accounts.issuing_account_id is invalid")
+			return
+		}
+	}
+
+	if c.Accounts.ReceivingAccountID != "" {
+		_, err = keypair.Parse(c.Accounts.ReceivingAccountID)
+		if err != nil {
+			err = errors.New("accounts.receiving_account_id is invalid")
+			return
+		}
+	}
+
+	if c.Hooks.Receive != "" {
+		_, err = url.Parse(c.Hooks.Receive)
+		if err != nil {
+			err = errors.New("Cannot parse hooks.receive param")
+			return
+		}
+	}
+
+	if c.Hooks.Error != "" {
+		_, err = url.Parse(c.Hooks.Error)
+		if err != nil {
+			err = errors.New("Cannot parse hooks.error param")
+			return
 		}
 	}
 

@@ -16,35 +16,40 @@ import (
 	"github.com/stellar/go-stellar-base/xdr"
 )
 
+// PaymentHandler is a function that is called when a new payment is received
 type PaymentHandler func(PaymentResponse) error
 
+// HorizonInterface allows mocking Horizon struct object
 type HorizonInterface interface {
-	LoadAccount(accountId string) (response AccountResponse, err error)
+	LoadAccount(accountID string) (response AccountResponse, err error)
 	LoadMemo(p *PaymentResponse) (err error)
-	StreamPayments(accountId string, cursor *string, onPaymentHandler PaymentHandler) (err error)
+	StreamPayments(accountID string, cursor *string, onPaymentHandler PaymentHandler) (err error)
 	SubmitTransaction(txeBase64 string) (response SubmitTransactionResponse, err error)
 }
 
+// Horizon implements methods to get (or submit) data from Horizon server
 type Horizon struct {
-	ServerUrl string
+	ServerURL string
 	log       *logrus.Entry
 }
 
-const SUBMIT_TIMEOUT = 30 * time.Second
+const submitTimeout = 30 * time.Second
 
-func New(serverUrl string) (horizon Horizon) {
-	horizon.ServerUrl = serverUrl
+// New creates a new Horizon instance
+func New(serverURL string) (horizon Horizon) {
+	horizon.ServerURL = serverURL
 	horizon.log = logrus.WithFields(logrus.Fields{
 		"service": "Horizon",
 	})
 	return
 }
 
-func (h *Horizon) LoadAccount(accountId string) (response AccountResponse, err error) {
+// LoadAccount loads a single account from Horizon server
+func (h *Horizon) LoadAccount(accountID string) (response AccountResponse, err error) {
 	h.log.WithFields(logrus.Fields{
-		"accountId": accountId,
+		"accountID": accountID,
 	}).Info("Loading account")
-	resp, err := http.Get(h.ServerUrl + "/accounts/" + accountId)
+	resp, err := http.Get(h.ServerURL + "/accounts/" + accountID)
 	if err != nil {
 		return
 	}
@@ -57,7 +62,7 @@ func (h *Horizon) LoadAccount(accountId string) (response AccountResponse, err e
 
 	if resp.StatusCode != 200 {
 		h.log.WithFields(logrus.Fields{
-			"accountId": accountId,
+			"accountID": accountID,
 		}).Error("Account does not exist")
 		err = fmt.Errorf("StatusCode indicates error: %s", body)
 		return
@@ -69,11 +74,12 @@ func (h *Horizon) LoadAccount(accountId string) (response AccountResponse, err e
 	}
 
 	h.log.WithFields(logrus.Fields{
-		"accountId": accountId,
+		"accountID": accountID,
 	}).Info("Account loaded")
 	return
 }
 
+// LoadMemo loads memo for a transaction in PaymentResponse
 func (h *Horizon) LoadMemo(p *PaymentResponse) (err error) {
 	res, err := http.Get(p.Links.Transaction.Href)
 	if err != nil {
@@ -83,8 +89,9 @@ func (h *Horizon) LoadMemo(p *PaymentResponse) (err error) {
 	return json.NewDecoder(res.Body).Decode(&p.Memo)
 }
 
-func (h *Horizon) StreamPayments(accountId string, cursor *string, onPaymentHandler PaymentHandler) (err error) {
-	url := h.ServerUrl + "/accounts/" + accountId + "/payments"
+// StreamPayments streams incoming payments
+func (h *Horizon) StreamPayments(accountID string, cursor *string, onPaymentHandler PaymentHandler) (err error) {
+	url := h.ServerURL + "/accounts/" + accountID + "/payments"
 	if cursor != nil {
 		url += "?cursor=" + *cursor
 	}
@@ -149,14 +156,15 @@ func (h *Horizon) StreamPayments(accountId string, cursor *string, onPaymentHand
 	return nil
 }
 
+// SubmitTransaction submits a transaction to Stellar network via Horizon server
 func (h *Horizon) SubmitTransaction(txeBase64 string) (response SubmitTransactionResponse, err error) {
 	v := url.Values{}
 	v.Set("tx", txeBase64)
 
 	client := http.Client{
-		Timeout: SUBMIT_TIMEOUT,
+		Timeout: submitTimeout,
 	}
-	resp, err := client.PostForm(h.ServerUrl+"/transactions", v)
+	resp, err := client.PostForm(h.ServerURL+"/transactions", v)
 	if err != nil {
 		return
 	}
@@ -184,90 +192,6 @@ func (h *Horizon) SubmitTransaction(txeBase64 string) (response SubmitTransactio
 			"envelope": response.Extras.EnvelopeXdr,
 			"result":   response.Extras.ResultXdr,
 		}).Info("Error response from horizon")
-	}
-
-	// Decode errors
-	if response.Ledger == nil && response.Extras != nil {
-		var txResult xdr.TransactionResult
-		txResult, err = unmarshalTransactionResult(response.Extras.ResultXdr)
-
-		if err != nil {
-			h.log.Error("Cannot decode transaction result")
-			return
-		}
-
-		transactionResult := txResult.Result.Code
-		var operationsResult *xdr.OperationResult
-		if txResult.Result.Results != nil {
-			operationsResultsSlice := *txResult.Result.Results
-			if len(operationsResultsSlice) > 0 {
-				operationsResult = &operationsResultsSlice[0]
-			}
-		}
-
-		var error *SubmitTransactionResponseError
-
-		if transactionResult != xdr.TransactionResultCodeTxSuccess &&
-			transactionResult != xdr.TransactionResultCodeTxFailed {
-			switch transactionResult {
-			case xdr.TransactionResultCodeTxBadSeq:
-				error = TransactionBadSequence
-			case xdr.TransactionResultCodeTxBadAuth:
-				error = TransactionBadAuth
-			case xdr.TransactionResultCodeTxInsufficientBalance:
-				error = TransactionInsufficientBalance
-			case xdr.TransactionResultCodeTxNoAccount:
-				error = TransactionNoAccount
-			case xdr.TransactionResultCodeTxInsufficientFee:
-				error = TransactionInsufficientFee
-			case xdr.TransactionResultCodeTxBadAuthExtra:
-				error = TransactionBadAuthExtra
-			default:
-				error = ServerError
-			}
-		} else if operationsResult != nil {
-			if operationsResult.Tr.AllowTrustResult != nil {
-				switch operationsResult.Tr.AllowTrustResult.Code {
-				case xdr.AllowTrustResultCodeAllowTrustMalformed:
-					error = AllowTrustMalformed
-				case xdr.AllowTrustResultCodeAllowTrustNoTrustLine:
-					error = AllowTrustNoTrustline
-				case xdr.AllowTrustResultCodeAllowTrustTrustNotRequired:
-					error = AllowTrustTrustNotRequired
-				case xdr.AllowTrustResultCodeAllowTrustCantRevoke:
-					error = AllowTrustCantRevoke
-				default:
-					error = ServerError
-				}
-			} else if operationsResult.Tr.PaymentResult != nil {
-				switch operationsResult.Tr.PaymentResult.Code {
-				case xdr.PaymentResultCodePaymentMalformed:
-					error = PaymentMalformed
-				case xdr.PaymentResultCodePaymentUnderfunded:
-					error = PaymentUnderfunded
-				case xdr.PaymentResultCodePaymentSrcNoTrust:
-					error = PaymentSrcNoTrust
-				case xdr.PaymentResultCodePaymentSrcNotAuthorized:
-					error = PaymentSrcNotAuthorized
-				case xdr.PaymentResultCodePaymentNoDestination:
-					error = PaymentNoDestination
-				case xdr.PaymentResultCodePaymentNoTrust:
-					error = PaymentNoTrust
-				case xdr.PaymentResultCodePaymentNotAuthorized:
-					error = PaymentNotAuthorized
-				case xdr.PaymentResultCodePaymentLineFull:
-					error = PaymentLineFull
-				case xdr.PaymentResultCodePaymentNoIssuer:
-					error = PaymentNoIssuer
-				default:
-					error = ServerError
-				}
-			}
-		} else {
-			error = ServerError
-		}
-
-		response.Error = error
 	}
 
 	return

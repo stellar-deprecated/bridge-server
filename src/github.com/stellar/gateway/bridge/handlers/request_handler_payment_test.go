@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -15,21 +16,22 @@ import (
 	"github.com/stellar/gateway/horizon"
 	"github.com/stellar/gateway/mocks"
 	"github.com/stellar/gateway/net"
-	// "github.com/stellar/gateway/protocols/compliance"
+	"github.com/stellar/gateway/protocols/compliance"
 	"github.com/stellar/gateway/protocols/federation"
 	"github.com/stellar/gateway/protocols/stellartoml"
+	"github.com/stellar/gateway/test"
+	"github.com/stellar/go-stellar-base/xdr"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
 
 func TestRequestHandlerPayment(t *testing.T) {
-	complianceUrl := "http://compliance"
 	c := &config.Config{
 		NetworkPassphrase: "Test SDF Network ; September 2015",
-		Compliance:        &complianceUrl,
+		Compliance:        "http://compliance",
 	}
 	mockHorizon := new(mocks.MockHorizon)
-	mockHttpClient := new(mocks.MockHttpClient)
+	mockHTTPClient := new(mocks.MockHTTPClient)
 	mockTransactionSubmitter := new(mocks.MockTransactionSubmitter)
 	mockFederationResolver := new(mocks.MockFederationResolver)
 	mockStellartomlResolver := new(mocks.MockStellartomlResolver)
@@ -42,7 +44,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 		&inject.Object{Value: &requestHandler},
 		&inject.Object{Value: c},
 		&inject.Object{Value: mockHorizon},
-		&inject.Object{Value: mockHttpClient},
+		&inject.Object{Value: mockHTTPClient},
 		&inject.Object{Value: mockTransactionSubmitter},
 		&inject.Object{Value: mockFederationResolver},
 		&inject.Object{Value: mockStellartomlResolver},
@@ -60,36 +62,55 @@ func TestRequestHandlerPayment(t *testing.T) {
 
 	Convey("Given payment request", t, func() {
 		Convey("When source is invalid", func() {
-			source := "SDRAS7XIQNX25UDCCX725R4EYGBFYGJE4HJ2A3DFCWJIHMRSMS7CXX43"
+			params := url.Values{
+				"source":      {"SDRAS7XIQNX25UDCCX725R4EYGBFYGJE4HJ2A3DFCWJIHMRSMS7CXX43"},
+				"destination": {"GBABZMS7MEDWKWSHOMUKAWGIOE5UA4XLVPUHRHVMUW2DUVEZXLH5OIET"},
+				"amount":      {"20.0"},
+			}
 
 			Convey("it should return error", func() {
-				statusCode, response := getResponse(testServer, url.Values{"source": {source}})
+				statusCode, response := net.GetResponse(testServer, params)
 				responseString := strings.TrimSpace(string(response))
 				assert.Equal(t, 400, statusCode)
-				expectedResponse := horizon.SubmitTransactionResponse{Error: horizon.PaymentInvalidSource}
-				assert.Equal(t, expectedResponse.Marshal(), []byte(responseString))
+				expected := test.StringToJSONMap(`{
+  "code": "invalid_parameter",
+  "message": "Invalid parameter.",
+  "data": {
+    "name": "source"
+  }
+}`)
+				assert.Equal(t, expected, test.StringToJSONMap(responseString))
 			})
 		})
 
 		Convey("When destination is invalid", func() {
-			source := "SDRAS7XIQNX25UDCCX725R4EYGBFYGJE4HJ2A3DFCWJIHMRSMS7CXX42"
-			destination := "GD3YBOYIUVLU"
+			params := url.Values{
+				"source":      {"SDRAS7XIQNX25UDCCX725R4EYGBFYGJE4HJ2A3DFCWJIHMRSMS7CXX42"},
+				"destination": {"GD3YBOYIUVLU"},
+				"amount":      {"20.0"},
+			}
 
 			mockFederationResolver.On(
 				"Resolve",
 				"GD3YBOYIUVLU",
 			).Return(
-				federation.Response{AccountId: "GD3YBOYIUVLU"},
+				federation.Response{AccountID: "GD3YBOYIUVLU"},
 				stellartoml.StellarToml{},
 				nil,
 			).Once()
 
 			Convey("it should return error", func() {
-				statusCode, response := getResponse(testServer, url.Values{"destination": {destination}, "source": {source}})
+				statusCode, response := net.GetResponse(testServer, params)
 				responseString := strings.TrimSpace(string(response))
 				assert.Equal(t, 400, statusCode)
-				expectedResponse := horizon.SubmitTransactionResponse{Error: horizon.PaymentInvalidDestination}
-				assert.Equal(t, expectedResponse.Marshal(), []byte(responseString))
+				expected := test.StringToJSONMap(`{
+  "code": "invalid_parameter",
+  "message": "Invalid parameter.",
+  "data": {
+    "name": "destination"
+  }
+}`)
+				assert.Equal(t, expected, test.StringToJSONMap(responseString))
 			})
 		})
 
@@ -97,6 +118,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 			params := url.Values{
 				"source":      {"SDRAS7XIQNX25UDCCX725R4EYGBFYGJE4HJ2A3DFCWJIHMRSMS7CXX42"},
 				"destination": {"bob*stellar.org"},
+				"amount":      {"20.0"},
 			}
 
 			Convey("When FederationResolver returns error", func() {
@@ -110,11 +132,14 @@ func TestRequestHandlerPayment(t *testing.T) {
 				).Once()
 
 				Convey("it should return error", func() {
-					statusCode, response := getResponse(testServer, params)
+					statusCode, response := net.GetResponse(testServer, params)
 					responseString := strings.TrimSpace(string(response))
 					assert.Equal(t, 400, statusCode)
-					expectedResponse := horizon.SubmitTransactionResponse{Error: horizon.PaymentCannotResolveDestination}
-					assert.Equal(t, expectedResponse.Marshal(), []byte(responseString))
+					expected := test.StringToJSONMap(`{
+  "code": "cannot_resolve_destination",
+  "message": "Cannot resolve federated Stellar address."
+}`)
+					assert.Equal(t, expected, test.StringToJSONMap(responseString))
 				})
 			})
 
@@ -130,7 +155,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 					"Resolve",
 					"bob*stellar.org",
 				).Return(
-					federation.Response{AccountId: "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632"},
+					federation.Response{AccountID: "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632"},
 					stellartoml.StellarToml{},
 					nil,
 				).Once()
@@ -154,7 +179,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 
 				var ledger uint64
 				ledger = 1988728
-				horizonResponse := horizon.SubmitTransactionResponse{&ledger, nil, nil}
+				horizonResponse := horizon.SubmitTransactionResponse{&ledger, nil}
 
 				mockHorizon.On(
 					"SubmitTransaction",
@@ -162,7 +187,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 				).Return(horizonResponse, nil).Once()
 
 				Convey("it should return success", func() {
-					statusCode, response := getResponse(testServer, validParams)
+					statusCode, response := net.GetResponse(testServer, validParams)
 					responseString := strings.TrimSpace(string(response))
 
 					expectedResponse, err := json.MarshalIndent(horizonResponse, "", "  ")
@@ -183,17 +208,14 @@ func TestRequestHandlerPayment(t *testing.T) {
 					"amount":      {"20"},
 				}
 
-				memoType := "text"
-				memo := "125"
-
 				mockFederationResolver.On(
 					"Resolve",
 					"bob*stellar.org",
 				).Return(
 					federation.Response{
-						AccountId: "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632",
-						MemoType:  &memoType,
-						Memo:      &memo,
+						AccountID: "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632",
+						MemoType:  "text",
+						Memo:      "125",
 					},
 					stellartoml.StellarToml{},
 					nil,
@@ -218,7 +240,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 
 				var ledger uint64
 				ledger = 1988728
-				horizonResponse := horizon.SubmitTransactionResponse{&ledger, nil, nil}
+				horizonResponse := horizon.SubmitTransactionResponse{&ledger, nil}
 
 				mockHorizon.On(
 					"SubmitTransaction",
@@ -226,7 +248,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 				).Return(horizonResponse, nil).Once()
 
 				Convey("it should return success", func() {
-					statusCode, response := getResponse(testServer, validParams)
+					statusCode, response := net.GetResponse(testServer, validParams)
 					responseString := strings.TrimSpace(string(response))
 
 					expectedResponse, err := json.MarshalIndent(horizonResponse, "", "  ")
@@ -240,35 +262,36 @@ func TestRequestHandlerPayment(t *testing.T) {
 			})
 		})
 
-		Convey("When assetIssuer is invalid", func() {
-			source := "SDRAS7XIQNX25UDCCX725R4EYGBFYGJE4HJ2A3DFCWJIHMRSMS7CXX42"
-			destination := "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632"
-			assetCode := "USD"
-			assetIssuer := "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN631"
+		Convey("When asset_issuer is invalid", func() {
+			params := url.Values{
+				"source":       {"SDRAS7XIQNX25UDCCX725R4EYGBFYGJE4HJ2A3DFCWJIHMRSMS7CXX42"},
+				"destination":  {"GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632"},
+				"asset_code":   {"USD"},
+				"asset_issuer": {"GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN631"},
+				"amount":       {"100.0"},
+			}
 
 			mockFederationResolver.On(
 				"Resolve",
 				"GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632",
 			).Return(
-				federation.Response{AccountId: "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632"},
+				federation.Response{AccountID: "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632"},
 				stellartoml.StellarToml{},
 				nil,
 			).Once()
 
 			Convey("it should return error", func() {
-				statusCode, response := getResponse(
-					testServer,
-					url.Values{
-						"source":       {source},
-						"destination":  {destination},
-						"asset_code":   {assetCode},
-						"asset_issuer": {assetIssuer},
-					},
-				)
+				statusCode, response := net.GetResponse(testServer, params)
 				responseString := strings.TrimSpace(string(response))
 				assert.Equal(t, 400, statusCode)
-				expectedResponse := horizon.SubmitTransactionResponse{Error: horizon.PaymentInvalidIssuer}
-				assert.Equal(t, expectedResponse.Marshal(), []byte(responseString))
+				expected := test.StringToJSONMap(`{
+  "code": "invalid_parameter",
+  "message": "Invalid parameter.",
+  "data": {
+    "name": "asset_issuer"
+  }
+}`)
+				assert.Equal(t, expected, test.StringToJSONMap(responseString))
 			})
 		})
 
@@ -284,7 +307,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 				"Resolve",
 				"GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632",
 			).Return(
-				federation.Response{AccountId: "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632"},
+				federation.Response{AccountID: "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632"},
 				stellartoml.StellarToml{},
 				nil,
 			).Once()
@@ -300,7 +323,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 					nil,
 				).Once()
 
-				statusCode, response := getResponse(
+				statusCode, response := net.GetResponse(
 					testServer,
 					url.Values{
 						"source":       {source},
@@ -312,8 +335,14 @@ func TestRequestHandlerPayment(t *testing.T) {
 				)
 				responseString := strings.TrimSpace(string(response))
 				assert.Equal(t, 400, statusCode)
-				expectedResponse := horizon.SubmitTransactionResponse{Error: horizon.PaymentMalformedAssetCode}
-				assert.Equal(t, expectedResponse.Marshal(), []byte(responseString))
+				expected := test.StringToJSONMap(`{
+  "code": "invalid_parameter",
+  "message": "Invalid parameter.",
+  "data": {
+    "name": "asset_code"
+  }
+}`)
+				assert.Equal(t, expected, test.StringToJSONMap(responseString))
 			})
 		})
 
@@ -329,7 +358,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 				"Resolve",
 				"GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632",
 			).Return(
-				federation.Response{AccountId: "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632"},
+				federation.Response{AccountID: "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632"},
 				stellartoml.StellarToml{},
 				nil,
 			).Once()
@@ -345,7 +374,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 			).Once()
 
 			Convey("it should return error", func() {
-				statusCode, response := getResponse(
+				statusCode, response := net.GetResponse(
 					testServer,
 					url.Values{
 						"source":       {source},
@@ -357,8 +386,14 @@ func TestRequestHandlerPayment(t *testing.T) {
 				)
 				responseString := strings.TrimSpace(string(response))
 				assert.Equal(t, 400, statusCode)
-				expectedResponse := horizon.SubmitTransactionResponse{Error: horizon.PaymentInvalidAmount}
-				assert.Equal(t, expectedResponse.Marshal(), []byte(responseString))
+				expected := test.StringToJSONMap(`{
+  "code": "invalid_parameter",
+  "message": "Invalid parameter.",
+  "data": {
+    "name": "amount"
+  }
+}`)
+				assert.Equal(t, expected, test.StringToJSONMap(responseString))
 			})
 		})
 
@@ -376,7 +411,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 				"Resolve",
 				"GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632",
 			).Return(
-				federation.Response{AccountId: "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632"},
+				federation.Response{AccountID: "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632"},
 				stellartoml.StellarToml{},
 				nil,
 			).Once()
@@ -384,40 +419,64 @@ func TestRequestHandlerPayment(t *testing.T) {
 			Convey("When memo is set", func() {
 				Convey("only `memo` param is set", func() {
 					validParams.Add("memo", "test")
-					statusCode, response := getResponse(testServer, validParams)
+					statusCode, response := net.GetResponse(testServer, validParams)
 					responseString := strings.TrimSpace(string(response))
 					assert.Equal(t, 400, statusCode)
-					expectedResponse := horizon.SubmitTransactionResponse{Error: horizon.PaymentMissingParamMemo}
-					assert.Equal(t, expectedResponse.Marshal(), []byte(responseString))
+					expected := test.StringToJSONMap(`{
+  "code": "missing_parameter",
+  "message": "Required parameter is missing.",
+  "data": {
+    "name": "memo_type"
+  }
+}`)
+					assert.Equal(t, expected, test.StringToJSONMap(responseString))
 				})
 
 				Convey("only `memo_type` param is set", func() {
 					validParams.Add("memo_type", "id")
-					statusCode, response := getResponse(testServer, validParams)
+					statusCode, response := net.GetResponse(testServer, validParams)
 					responseString := strings.TrimSpace(string(response))
 					assert.Equal(t, 400, statusCode)
-					expectedResponse := horizon.SubmitTransactionResponse{Error: horizon.PaymentMissingParamMemo}
-					assert.Equal(t, expectedResponse.Marshal(), []byte(responseString))
+					expected := test.StringToJSONMap(`{
+  "code": "missing_parameter",
+  "message": "Required parameter is missing.",
+  "data": {
+    "name": "memo"
+  }
+}`)
+					assert.Equal(t, expected, test.StringToJSONMap(responseString))
 				})
 
 				Convey("memo_type=hash to long", func() {
 					validParams.Add("memo_type", "hash")
 					validParams.Add("memo", "012345678901234567890123456789012345678901234567890123456789012")
-					statusCode, response := getResponse(testServer, validParams)
+					statusCode, response := net.GetResponse(testServer, validParams)
 					responseString := strings.TrimSpace(string(response))
 					assert.Equal(t, 400, statusCode)
-					expectedResponse := horizon.SubmitTransactionResponse{Error: horizon.PaymentInvalidMemo}
-					assert.Equal(t, expectedResponse.Marshal(), []byte(responseString))
+					expected := test.StringToJSONMap(`{
+  "code": "invalid_parameter",
+  "message": "Invalid parameter.",
+  "data": {
+    "name": "memo"
+  }
+}`)
+					assert.Equal(t, expected, test.StringToJSONMap(responseString))
 				})
 
 				Convey("unsupported memo_type", func() {
 					validParams.Add("memo_type", "return_hash")
 					validParams.Add("memo", "0123456789")
-					statusCode, response := getResponse(testServer, validParams)
+					statusCode, response := net.GetResponse(testServer, validParams)
 					responseString := strings.TrimSpace(string(response))
 					assert.Equal(t, 400, statusCode)
-					expectedResponse := horizon.SubmitTransactionResponse{Error: horizon.PaymentInvalidMemo}
-					assert.Equal(t, expectedResponse.Marshal(), []byte(responseString))
+					expected := test.StringToJSONMap(`{
+  "code": "invalid_parameter",
+  "message": "Invalid parameter.",
+  "data": {
+    "name": "memo"
+  }
+}`)
+					assert.Equal(t, expected, test.StringToJSONMap(responseString))
 				})
 
 				Convey("memo is attached to the transaction", func() {
@@ -433,7 +492,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 
 					var ledger uint64
 					ledger = 1988727
-					horizonResponse := horizon.SubmitTransactionResponse{&ledger, nil, nil}
+					horizonResponse := horizon.SubmitTransactionResponse{&ledger, nil}
 
 					mockHorizon.On(
 						"SubmitTransaction",
@@ -442,7 +501,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 
 					validParams.Add("memo_type", "id")
 					validParams.Add("memo", "123")
-					statusCode, response := getResponse(testServer, validParams)
+					statusCode, response := net.GetResponse(testServer, validParams)
 					responseString := strings.TrimSpace(string(response))
 
 					expectedResponse, err := json.MarshalIndent(horizonResponse, "", "  ")
@@ -467,7 +526,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 
 					var ledger uint64
 					ledger = 1988727
-					horizonResponse := horizon.SubmitTransactionResponse{&ledger, nil, nil}
+					horizonResponse := horizon.SubmitTransactionResponse{&ledger, nil}
 
 					mockHorizon.On(
 						"SubmitTransaction",
@@ -476,7 +535,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 
 					validParams.Add("memo_type", "hash")
 					validParams.Add("memo", "02003AD420744CDEB8E524DEB65F38CB5095D30D000000000000000000000000")
-					statusCode, response := getResponse(testServer, validParams)
+					statusCode, response := net.GetResponse(testServer, validParams)
 					responseString := strings.TrimSpace(string(response))
 
 					expectedResponse, err := json.MarshalIndent(horizonResponse, "", "  ")
@@ -496,11 +555,14 @@ func TestRequestHandlerPayment(t *testing.T) {
 				).Return(horizon.AccountResponse{}, errors.New("Not found")).Once()
 
 				Convey("it should return error", func() {
-					statusCode, response := getResponse(testServer, validParams)
+					statusCode, response := net.GetResponse(testServer, validParams)
 					responseString := strings.TrimSpace(string(response))
 					assert.Equal(t, 400, statusCode)
-					expectedResponse := horizon.SubmitTransactionResponse{Error: horizon.PaymentSourceNotExist}
-					assert.Equal(t, expectedResponse.Marshal(), []byte(responseString))
+					expected := test.StringToJSONMap(`{
+  "code": "source_not_exist",
+  "message": "Source account does not exist."
+}`)
+					assert.Equal(t, expected, test.StringToJSONMap(responseString))
 				})
 			})
 
@@ -517,13 +579,9 @@ func TestRequestHandlerPayment(t *testing.T) {
 
 				horizonResponse := horizon.SubmitTransactionResponse{
 					nil,
-					&horizon.SubmitTransactionResponseError{
-						Status: 400,
-						Code:   "transaction_failed",
-					},
 					&horizon.SubmitTransactionResponseExtras{
 						EnvelopeXdr: "envelope",
-						ResultXdr:   "result",
+						ResultXdr:   "AAAAAAAAAAD////7AAAAAA==", // tx_bad_seq
 					},
 				}
 
@@ -533,16 +591,15 @@ func TestRequestHandlerPayment(t *testing.T) {
 				).Return(horizonResponse, nil).Once()
 
 				Convey("it should return error", func() {
-					statusCode, response := getResponse(testServer, validParams)
+					statusCode, response := net.GetResponse(testServer, validParams)
 					responseString := strings.TrimSpace(string(response))
 
-					expectedResponse, err := json.MarshalIndent(horizonResponse, "", "  ")
-					if err != nil {
-						panic(err)
-					}
-
 					assert.Equal(t, 400, statusCode)
-					assert.Equal(t, string(expectedResponse), responseString)
+					expected := test.StringToJSONMap(`{
+  "code": "transaction_bad_seq",
+  "message": "Bad Sequence. Please, try again."
+}`)
+					assert.Equal(t, expected, test.StringToJSONMap(responseString))
 				})
 			})
 
@@ -573,7 +630,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 
 				var ledger uint64
 				ledger = 1988727
-				horizonResponse := horizon.SubmitTransactionResponse{&ledger, nil, nil}
+				horizonResponse := horizon.SubmitTransactionResponse{&ledger, nil}
 
 				mockHorizon.On(
 					"SubmitTransaction",
@@ -581,7 +638,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 				).Return(horizonResponse, nil).Once()
 
 				Convey("it should return success", func() {
-					statusCode, response := getResponse(testServer, validParams)
+					statusCode, response := net.GetResponse(testServer, validParams)
 					responseString := strings.TrimSpace(string(response))
 
 					expectedResponse, err := json.MarshalIndent(horizonResponse, "", "  ")
@@ -607,7 +664,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 
 				var ledger uint64
 				ledger = 1988727
-				horizonResponse := horizon.SubmitTransactionResponse{&ledger, nil, nil}
+				horizonResponse := horizon.SubmitTransactionResponse{&ledger, nil}
 
 				mockHorizon.On(
 					"SubmitTransaction",
@@ -615,7 +672,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 				).Return(horizonResponse, nil).Once()
 
 				Convey("it should return success", func() {
-					statusCode, response := getResponse(testServer, validParams)
+					statusCode, response := net.GetResponse(testServer, validParams)
 					responseString := strings.TrimSpace(string(response))
 
 					expectedResponse, err := json.MarshalIndent(horizonResponse, "", "  ")
@@ -656,7 +713,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 				"Resolve",
 				"GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632",
 			).Return(
-				federation.Response{AccountId: "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632"},
+				federation.Response{AccountID: "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632"},
 				stellartoml.StellarToml{},
 				nil,
 			).Once()
@@ -674,7 +731,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 			Convey("transaction success (send native)", func() {
 				var ledger uint64
 				ledger = 1988727
-				horizonResponse := horizon.SubmitTransactionResponse{&ledger, nil, nil}
+				horizonResponse := horizon.SubmitTransactionResponse{&ledger, nil}
 
 				mockHorizon.On(
 					"SubmitTransaction",
@@ -682,7 +739,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 				).Return(horizonResponse, nil).Once()
 
 				Convey("it should return success", func() {
-					statusCode, response := getResponse(testServer, validParams)
+					statusCode, response := net.GetResponse(testServer, validParams)
 					responseString := strings.TrimSpace(string(response))
 
 					expectedResponse, err := json.MarshalIndent(horizonResponse, "", "  ")
@@ -701,7 +758,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 
 				var ledger uint64
 				ledger = 1988727
-				horizonResponse := horizon.SubmitTransactionResponse{&ledger, nil, nil}
+				horizonResponse := horizon.SubmitTransactionResponse{&ledger, nil}
 
 				mockHorizon.On(
 					"SubmitTransaction",
@@ -709,7 +766,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 				).Return(horizonResponse, nil).Once()
 
 				Convey("it should return success", func() {
-					statusCode, response := getResponse(testServer, validParams)
+					statusCode, response := net.GetResponse(testServer, validParams)
 					responseString := strings.TrimSpace(string(response))
 
 					expectedResponse, err := json.MarshalIndent(horizonResponse, "", "  ")
@@ -735,7 +792,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 
 				var ledger uint64
 				ledger = 1988727
-				horizonResponse := horizon.SubmitTransactionResponse{&ledger, nil, nil}
+				horizonResponse := horizon.SubmitTransactionResponse{&ledger, nil}
 
 				mockHorizon.On(
 					"SubmitTransaction",
@@ -743,7 +800,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 				).Return(horizonResponse, nil).Once()
 
 				Convey("it should return success", func() {
-					statusCode, response := getResponse(testServer, validParams)
+					statusCode, response := net.GetResponse(testServer, validParams)
 					responseString := strings.TrimSpace(string(response))
 
 					expectedResponse, err := json.MarshalIndent(horizonResponse, "", "  ")
@@ -759,25 +816,25 @@ func TestRequestHandlerPayment(t *testing.T) {
 	})
 
 	Convey("Given payment compliance request", t, func() {
-		Convey("When params are correct", func() {
+		Convey("When params are valid", func() {
 			params := url.Values{
 				// GAW77Z6GPWXSODJOMF5L5BMX6VMYGEJRKUNBC2CZ725JTQZORK74HQQD
 				"source":       {"SARMR3N465GTEHQLR3TSHDD7FHFC2I22ECFLYCHAZDEJWBVED66RW7FQ"},
-				"sender":       {"alice*stellar.org"},
-				"destination":  {"bob*stellar.org"},
+				"sender":       {"alice*stellar.org"}, // GAW77Z6GPWXSODJOMF5L5BMX6VMYGEJRKUNBC2CZ725JTQZORK74HQQD
+				"destination":  {"bob*stellar.org"},   // GAMVF7G4GJC4A7JMFJWLUAEIBFQD5RT3DCB5DC5TJDEKQBBACQ4JZVEE
 				"amount":       {"20"},
 				"asset_code":   {"USD"},
-				"asset_issuer": {"GCF3WVYTHF75PEG6622G5G6KU26GOSDQPDHSCJ3DQD7VONH4EYVDOGKJ"},
+				"asset_issuer": {"GAMVF7G4GJC4A7JMFJWLUAEIBFQD5RT3DCB5DC5TJDEKQBBACQ4JZVEE"},
 				"extra_memo":   {"hello world"},
 			}
 
 			Convey("it should return error when compliance server returns error", func() {
-				mockHttpClient.On(
+				mockHTTPClient.On(
 					"PostForm",
 					"http://compliance/send",
 					mock.AnythingOfType("url.Values"),
 				).Return(
-					net.BuildHttpResponse(400, "error"),
+					net.BuildHTTPResponse(400, "error"),
 					nil,
 				).Run(func(args mock.Arguments) {
 					values := args.Get(1).(url.Values)
@@ -788,39 +845,162 @@ func TestRequestHandlerPayment(t *testing.T) {
 					assert.Equal(t, values.Encode(), params.Encode())
 				}).Once()
 
-				statusCode, response := getResponse(testServer, params)
+				statusCode, response := net.GetResponse(testServer, params)
 				responseString := strings.TrimSpace(string(response))
 				assert.Equal(t, 500, statusCode)
-				expectedResponse := horizon.SubmitTransactionResponse{Error: horizon.ServerError}
-				assert.Equal(t, expectedResponse.Marshal(), []byte(responseString))
+				expected := test.StringToJSONMap(`{
+  "code": "internal_server_error",
+  "message": "Internal Server Error, please try again."
+}`)
+				assert.Equal(t, expected, test.StringToJSONMap(responseString))
 			})
 
-			// Convey("it should submit transaction when compliance server returns success", func() {
-			// 	complianceResponse := compliance.SendResponse{
-			// 		TransactionXdr: "AAAAALYGRy91n6qDiQbE2utm2q3y08aIcIMkXTk7mJJ+QsL3AAAAZAAihMUAAADEAAAAAAAAAAEAAAAYMSBhbW91bnQgPiA1NS0xMTk5MTE5OTEyAAAAAQAAAAEAAAAAtgZHL3WfqoOJBsTa62barfLTxohwgyRdOTuYkn5CwvcAAAABAAAAALYGRy91n6qDiQbE2utm2q3y08aIcIMkXTk7mJJ+QsL3AAAAAVVTRAAAAAAAbLWrwunL5+YfOqVjiuffegKXvZPJjDPhYM6naeifvQcAAAAAAJiWgAAAAAAAAAABfkLC9wAAAEBoDhM7OnYfhzhpL1NFEqJSThHKZW7GRRxLooTFSbIq9OaQmzX2TzGSnlCwxcHcdYT4+9UTA4iZw0HOBwhBZ6YL",
-			// 	}
+			Convey("it should return denied when compliance server returns denied", func() {
+				mockHTTPClient.On(
+					"PostForm",
+					"http://compliance/send",
+					mock.AnythingOfType("url.Values"),
+				).Return(
+					net.BuildHTTPResponse(200, "{\"auth_response\": {\"tx_status\": \"denied\"}}"),
+					nil,
+				).Run(func(args mock.Arguments) {
+					values := args.Get(1).(url.Values)
+					// bridge server does not send source seed to compliance
+					assert.Equal(t, []string{"GAW77Z6GPWXSODJOMF5L5BMX6VMYGEJRKUNBC2CZ725JTQZORK74HQQD"}, values["source"])
+					values.Del("source")
+					params.Del("source")
+					assert.Equal(t, values.Encode(), params.Encode())
+				}).Once()
 
-			// 	mockHttpClient.On(
-			// 		"PostForm",
-			// 		"http://compliance/send",
-			// 		mock.AnythingOfType("url.Values"),
-			// 	).Return(
-			// 		net.BuildHttpResponse(200, string(complianceResponse.Marshal())),
-			// 		nil,
-			// 	).Run(func(args mock.Arguments) {
-			// 		values := args.Get(1).(url.Values)
-			// 		assert.Equal(t, []string{"GAW77Z6GPWXSODJOMF5L5BMX6VMYGEJRKUNBC2CZ725JTQZORK74HQQD"}, values["source"])
-			// 		values.Del("source")
-			// 		params.Del("source")
-			// 		assert.Equal(t, values.Encode(), params.Encode())
-			// 	}).Once()
+				statusCode, response := net.GetResponse(testServer, params)
+				responseString := strings.TrimSpace(string(response))
+				assert.Equal(t, 403, statusCode)
+				expected := test.StringToJSONMap(`{
+  "code": "denied",
+  "message": "Transaction denied by destination."
+}`)
+				assert.Equal(t, expected, test.StringToJSONMap(responseString))
+			})
 
-			// 	statusCode, response := getResponse(testServer, params)
-			// 	responseString := strings.TrimSpace(string(response))
-			// 	assert.Equal(t, 200, statusCode)
-			// 	expectedResponse := horizon.SubmitTransactionResponse{Error: horizon.ServerError}
-			// 	assert.Equal(t, expectedResponse.Marshal(), []byte(responseString))
-			// })
+			Convey("it should return pending when compliance server returns pending", func() {
+				mockHTTPClient.On(
+					"PostForm",
+					"http://compliance/send",
+					mock.AnythingOfType("url.Values"),
+				).Return(
+					net.BuildHTTPResponse(200, "{\"auth_response\": {\"info_status\": \"pending\", \"pending\": 3600}}"),
+					nil,
+				).Run(func(args mock.Arguments) {
+					values := args.Get(1).(url.Values)
+					// bridge server does not send source seed to compliance
+					assert.Equal(t, []string{"GAW77Z6GPWXSODJOMF5L5BMX6VMYGEJRKUNBC2CZ725JTQZORK74HQQD"}, values["source"])
+					values.Del("source")
+					params.Del("source")
+					assert.Equal(t, values.Encode(), params.Encode())
+				}).Once()
+
+				statusCode, response := net.GetResponse(testServer, params)
+				responseString := strings.TrimSpace(string(response))
+				assert.Equal(t, 202, statusCode)
+				expected := test.StringToJSONMap(`{
+  "code": "pending",
+  "message": "Transaction pending. Repeat your request after given time.",
+  "data": {
+    "pending": 3600
+  }
+}`)
+				assert.Equal(t, expected, test.StringToJSONMap(responseString))
+			})
+
+			Convey("it should submit transaction when compliance server returns success", func() {
+				memoBytes, _ := hex.DecodeString("b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9")
+				var hashXdr xdr.Hash
+				copy(hashXdr[:], memoBytes[:])
+				memo, _ := xdr.NewMemo(xdr.MemoTypeMemoHash, hashXdr)
+
+				sourceBytes, _ := hex.DecodeString("2dffe7c67daf270d2e617abe8597f559831131551a116859feba99c32e8abfc3")
+				var sourceXdr xdr.Uint256
+				copy(sourceXdr[:], sourceBytes[:])
+
+				destinationBytes, _ := hex.DecodeString("1952fcdc3245c07d2c2a6cba008809603ec67b1883d18bb348c8a8042014389c")
+				var destinationXdr xdr.Uint256
+				copy(destinationXdr[:], destinationBytes[:])
+
+				issuerBytes, _ := hex.DecodeString("1952fcdc3245c07d2c2a6cba008809603ec67b1883d18bb348c8a8042014389c")
+				var issuerXdr xdr.Uint256
+				copy(issuerXdr[:], issuerBytes[:])
+
+				expectedTx := &xdr.Transaction{
+					SourceAccount: xdr.AccountId{
+						Type:    xdr.CryptoKeyTypeKeyTypeEd25519,
+						Ed25519: &sourceXdr,
+					},
+					Fee:    100,
+					SeqNum: 0,
+					Memo:   memo,
+					Operations: []xdr.Operation{
+						{
+							Body: xdr.OperationBody{
+								Type: xdr.OperationTypePayment,
+								PaymentOp: &xdr.PaymentOp{
+									Destination: xdr.AccountId{
+										Type:    xdr.CryptoKeyTypeKeyTypeEd25519,
+										Ed25519: &destinationXdr,
+									},
+									Amount: 200000000,
+									Asset: xdr.Asset{
+										Type: xdr.AssetTypeAssetTypeCreditAlphanum4,
+										AlphaNum4: &xdr.AssetAlphaNum4{
+											AssetCode: [4]byte{'U', 'S', 'D', 0},
+											Issuer: xdr.AccountId{
+												Type:    xdr.CryptoKeyTypeKeyTypeEd25519,
+												Ed25519: &issuerXdr,
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				}
+
+				complianceResponse := compliance.SendResponse{
+					TransactionXdr: "AAAAAC3/58Z9rycNLmF6voWX9VmDETFVGhFoWf66mcMuir/DAAAAZAAAAAAAAAAAAAAAAAAAAAO5TSe5k00+CKUuUtfafav6xITv43pTgO6QiPes4u/N6QAAAAEAAAAAAAAAAQAAAAAZUvzcMkXAfSwqbLoAiAlgPsZ7GIPRi7NIyKgEIBQ4nAAAAAFVU0QAAAAAABlS/NwyRcB9LCpsugCICWA+xnsYg9GLs0jIqAQgFDicAAAAAAvrwgAAAAAA",
+				}
+
+				mockHTTPClient.On(
+					"PostForm",
+					"http://compliance/send",
+					mock.AnythingOfType("url.Values"),
+				).Return(
+					net.BuildHTTPResponse(200, string(complianceResponse.Marshal())),
+					nil,
+				).Run(func(args mock.Arguments) {
+					values := args.Get(1).(url.Values)
+					assert.Equal(t, []string{"GAW77Z6GPWXSODJOMF5L5BMX6VMYGEJRKUNBC2CZ725JTQZORK74HQQD"}, values["source"])
+					values.Del("source")
+					params.Del("source")
+					assert.Equal(t, values.Encode(), params.Encode())
+				}).Once()
+
+				var ledger uint64
+				ledger = 1988727
+				horizonResponse := horizon.SubmitTransactionResponse{&ledger, nil}
+
+				mockTransactionSubmitter.On(
+					"SignAndSubmitRawTransaction",
+					params.Get("source"),
+					mock.AnythingOfType("*xdr.Transaction"),
+				).Run(func(args mock.Arguments) {
+					tx := args.Get(1).(*xdr.Transaction)
+					assert.Equal(t, *tx, *expectedTx)
+				}).Return(horizonResponse, nil).Once()
+
+				statusCode, response := net.GetResponse(testServer, params)
+				responseString := strings.TrimSpace(string(response))
+				assert.Equal(t, 200, statusCode)
+				assert.Equal(t, horizonResponse.Marshal(), []byte(responseString))
+			})
 		})
 	})
 }
