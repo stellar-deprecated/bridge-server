@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -15,6 +16,7 @@ import (
 	"github.com/stellar/gateway/protocols/bridge"
 	"github.com/stellar/gateway/protocols/compliance"
 	"github.com/stellar/gateway/server"
+	"github.com/stellar/go-stellar-base/amount"
 	b "github.com/stellar/go-stellar-base/build"
 	"github.com/stellar/go-stellar-base/keypair"
 	"github.com/stellar/go-stellar-base/xdr"
@@ -300,6 +302,22 @@ func (rh *RequestHandler) Payment(w http.ResponseWriter, r *http.Request) {
 		log.WithFields(errorResponse.LogData).Error(errorResponse.Error())
 		server.Write(w, errorResponse)
 		return
+	}
+
+	// Path payment send amount
+	if submitResponse.ResultXdr != nil {
+		var transactionResult xdr.TransactionResult
+		reader := strings.NewReader(*submitResponse.ResultXdr)
+		b64r := base64.NewDecoder(base64.StdEncoding, reader)
+		_, err := xdr.Unmarshal(b64r, &transactionResult)
+
+		if err == nil && transactionResult.Result.Code == xdr.TransactionResultCodeTxSuccess {
+			operationResult := (*transactionResult.Result.Results)[0]
+			if operationResult.Tr.PathPaymentResult != nil {
+				sendAmount := operationResult.Tr.PathPaymentResult.SendAmount()
+				submitResponse.SendAmount = amount.String(sendAmount)
+			}
+		}
 	}
 
 	server.Write(w, &submitResponse)

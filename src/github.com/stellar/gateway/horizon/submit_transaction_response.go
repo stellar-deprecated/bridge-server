@@ -8,7 +8,7 @@ import (
 type SubmitTransactionResponse struct {
 	Hash       string                           `json:"hash,omitempty"`
 	SendAmount string                           `json:"send_amount,omitempty"` // Path payment only.
-	ResultXdr  string                           `json:"result_xdr,omitempty"`  // Only success response.
+	ResultXdr  *string                          `json:"result_xdr,omitempty"`  // Only success response.
 	Ledger     *uint64                          `json:"ledger"`
 	Extras     *SubmitTransactionResponseExtras `json:"extras,omitempty"`
 }

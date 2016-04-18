@@ -815,10 +815,12 @@ func TestRequestHandlerPayment(t *testing.T) {
 
 				var ledger uint64
 				ledger = 1988727
+				resultXdr := "AAAAAAAAAGQAAAAAAAAAAQAAAAAAAAACAAAAAAAAAAEAAAAAC8RjSvPMPWeQWzLq8JEM0BQNo0TfJQN/RwkCeJ+rT+YAAAAAAAAAAwAAAAFaQVIAAAAAAGDBYXf7bGrEkzodp+6aowtAynuEqzKzZRZKO2ftxMtDAAAAAa9EDYAAAAABVVNEAAAAAABstavC6cvn5h86pWOK5996Ape9k8mMM+Fgzqdp6J+9BwAAAAAeMEigAAAAAOj2P+n5SvD0Amrc4BYc6Zo8n6i6idQPeJdfwuvX+FVbAAAAAVpBUgAAAAAAYMFhd/tsasSTOh2n7pqjC0DKe4SrMrNlFko7Z+3Ey0MAAAABr0QNgAAAAAA="
 				horizonResponse := horizon.SubmitTransactionResponse{
-					Hash:   "be2765c309ab6911fe3938de0053672ef541290333a59dfb750f07919e9d6fec",
-					Ledger: &ledger,
-					Extras: nil,
+					Hash:      "be2765c309ab6911fe3938de0053672ef541290333a59dfb750f07919e9d6fec",
+					Ledger:    &ledger,
+					ResultXdr: &resultXdr,
+					Extras:    nil,
 				}
 
 				mockHorizon.On(
@@ -833,7 +835,9 @@ func TestRequestHandlerPayment(t *testing.T) {
 					assert.Equal(t, 200, statusCode)
 					expected := test.StringToJSONMap(`{
 					  "hash": "be2765c309ab6911fe3938de0053672ef541290333a59dfb750f07919e9d6fec",
-					  "ledger": 1988727
+					  "ledger": 1988727,
+					  "send_amount": "50.6480800",
+					  "result_xdr": "AAAAAAAAAGQAAAAAAAAAAQAAAAAAAAACAAAAAAAAAAEAAAAAC8RjSvPMPWeQWzLq8JEM0BQNo0TfJQN/RwkCeJ+rT+YAAAAAAAAAAwAAAAFaQVIAAAAAAGDBYXf7bGrEkzodp+6aowtAynuEqzKzZRZKO2ftxMtDAAAAAa9EDYAAAAABVVNEAAAAAABstavC6cvn5h86pWOK5996Ape9k8mMM+Fgzqdp6J+9BwAAAAAeMEigAAAAAOj2P+n5SvD0Amrc4BYc6Zo8n6i6idQPeJdfwuvX+FVbAAAAAVpBUgAAAAAAYMFhd/tsasSTOh2n7pqjC0DKe4SrMrNlFko7Z+3Ey0MAAAABr0QNgAAAAAA="
 					}`)
 					assert.Equal(t, expected, test.StringToJSONMap(responseString))
 				})
