@@ -2,8 +2,8 @@
 
 This suite consists of the following apps:
 
-* [`bridge`](./blob/master/readme_bridge.md) - builds, submits and monitors transaction in Stellar network,
-* [`compliance`](./blob/master/readme_compliance.md) - helper server for using [Compliance protocol](https://www.stellar.org/developers/learn/integration-guides/compliance-protocol.html).
+* [`bridge`](https://github.com/stellar/bridge-server/blob/master/readme_bridge.md) - builds, submits and monitors transaction in Stellar network,
+* [`compliance`](https://github.com/stellar/bridge-server/blob/master/readme_compliance.md) - helper server for using [Compliance protocol](https://www.stellar.org/developers/learn/integration-guides/compliance-protocol.html).
 
 More information about each server can be found in corresponding README file.
 
