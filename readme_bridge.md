@@ -42,7 +42,7 @@ The `config_bridge.toml` file must be present in a working directory. Config fil
   * `issuing_account_id` - The account ID of the issuing account.
   * `receiving_account_id` - The account ID that receives incoming payments. The `receive hook` will be called when a payment is received by this account.
 * `hooks`
-  * `receive` - URL of the webhook where requests will be sent when a new payment is sent to the receiving account. **WARNING** The bridge server can send multiple requests to this webhook for a single payment! You need to be prepared for it. See: [Security](#security).
+  * `receive` - URL of the webhook where requests will be sent when a new payment is sent to the receiving account. The bridge server will keep calling the receive hook indefinitely until 200 OK status is returned by it. **WARNING** The bridge server can send multiple requests to this webhook for a single payment! You need to be prepared for it. See: [Security](#security).
   * `error` - URL of the webhook where requests will be sent when there is an error with an incoming payment
 * `log_format` - set to `json` for JSON logs
 
