@@ -87,6 +87,10 @@ func (r BuilderRequest) Process() error {
 
 // Validate validates if the request is correct.
 func (r BuilderRequest) Validate() error {
+	if !protocols.IsValidAccountID(r.Source) {
+		return protocols.NewInvalidParameterError("source", r.Source)
+	}
+
 	for _, operation := range r.Operations {
 		err := operation.Body.Validate()
 		if err != nil {
