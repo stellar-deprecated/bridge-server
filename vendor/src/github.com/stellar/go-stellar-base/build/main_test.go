@@ -57,3 +57,59 @@ func ExamplePathPayment() {
 	fmt.Printf("tx base64: %s", txeB64)
 	// Output: tx base64: AAAAADZY/nWY0gx6beMpf4S8Ur0qHsjA8fbFtBzBx1cbQzHwAAAAZAAAAAAAAAABAAAAAAAAAAAAAAABAAAAAAAAAAIAAAABRVVSAAAAAACflO2Jhs1DJkFfo7YvGZeKqpze+F4ENZde22bePZeubwAAAAA7msoAAAAAAEc9q5pbnyO0BDkT4FXgGhPGAj7kCKVbS4PDJS8D1pVCAAAAAVVTRAAAAAAALSRpLtCLv2eboZlEiHDSGR6Hb+zZL92fbSdNpObeE0EAAAAAHc1lAAAAAAIAAAAAAAAAAUJUQwAAAAAADpyeqirBMAJpPzwvuVrLqxHz5shND7/OFUvopGIhupYAAAAAAAAAARtDMfAAAABA5xuIJu/KGKQRuDrdkzNsR4HjT6wX464SHZ/yvYwVb/AkAyyfeMLDNhgKbBxQMWc3Uo5fTst1UHldC+jYNeAhCQ==
 }
+
+// ExampleChangeTrust creates and signs a simple transaction with ChangeTrust operation, and then
+// encodes it into a base64 string capable of being submitted to stellar-core.
+func ExampleChangeTrust() {
+	seed := "SDOTALIMPAM2IV65IOZA7KZL7XWZI5BODFXTRVLIHLQZQCKK57PH5F3H"
+	tx := Transaction(
+		SourceAccount{seed},
+		Sequence{1},
+		Trust("USD", "GAWSI2JO2CF36Z43UGMUJCDQ2IMR5B3P5TMS7XM7NUTU3JHG3YJUDQXA", Limit("100.25")),
+	)
+
+	txe := tx.Sign(seed)
+	txeB64, _ := txe.Base64()
+
+	fmt.Printf("tx base64: %s", txeB64)
+	// Output: tx base64: AAAAADZY/nWY0gx6beMpf4S8Ur0qHsjA8fbFtBzBx1cbQzHwAAAAZAAAAAAAAAABAAAAAAAAAAAAAAABAAAAAAAAAAYAAAABVVNEAAAAAAAtJGku0Iu/Z5uhmUSIcNIZHodv7Nkv3Z9tJ02k5t4TQQAAAAA7wO+gAAAAAAAAAAEbQzHwAAAAQOIy19X38Y3jcFzvhDsmXu6iDzrzb4iwfS2NAq9GGAFiRJUGoFX85vKtlNcXzQppF4X8oIMNPEb74fuZE/N+GAE=
+}
+
+// ExampleChangeTrustMaxLimit creates and signs a simple transaction with ChangeTrust operation (maximum limit), and then
+// encodes it into a base64 string capable of being submitted to stellar-core.
+func ExampleChangeTrustMaxLimit() {
+	seed := "SDOTALIMPAM2IV65IOZA7KZL7XWZI5BODFXTRVLIHLQZQCKK57PH5F3H"
+	tx := Transaction(
+		SourceAccount{seed},
+		Sequence{1},
+		Trust("USD", "GAWSI2JO2CF36Z43UGMUJCDQ2IMR5B3P5TMS7XM7NUTU3JHG3YJUDQXA"),
+	)
+
+	txe := tx.Sign(seed)
+	txeB64, _ := txe.Base64()
+
+	fmt.Printf("tx base64: %s", txeB64)
+	// Output: tx base64: AAAAADZY/nWY0gx6beMpf4S8Ur0qHsjA8fbFtBzBx1cbQzHwAAAAZAAAAAAAAAABAAAAAAAAAAAAAAABAAAAAAAAAAYAAAABVVNEAAAAAAAtJGku0Iu/Z5uhmUSIcNIZHodv7Nkv3Z9tJ02k5t4TQX//////////AAAAAAAAAAEbQzHwAAAAQJQC6R3RqNaw5rOmaxqpAE0lD5onM/njn9I2RVlhtS2SGi2Z7xm65USYVWXTJFVqTCfTwwu+QXFcOuqgJjVtHAk=
+}
+
+// ExampleRemoveTrust creates and signs a simple transaction with ChangeTrust operation (remove trust), and then
+// encodes it into a base64 string capable of being submitted to stellar-core.
+func ExampleRemoveTrust() {
+	seed := "SDOTALIMPAM2IV65IOZA7KZL7XWZI5BODFXTRVLIHLQZQCKK57PH5F3H"
+	operationSource := "GCVJCNUHSGKOTBBSXZJ7JJZNOSE2YDNGRLIDPMQDUEQWJQSE6QZSDPNU"
+	tx := Transaction(
+		SourceAccount{seed},
+		Sequence{1},
+		RemoveTrust(
+			"USD",
+			"GAWSI2JO2CF36Z43UGMUJCDQ2IMR5B3P5TMS7XM7NUTU3JHG3YJUDQXA",
+			SourceAccount{operationSource},
+		),
+	)
+
+	txe := tx.Sign(seed)
+	txeB64, _ := txe.Base64()
+
+	fmt.Printf("tx base64: %s", txeB64)
+	// Output: tx base64: AAAAADZY/nWY0gx6beMpf4S8Ur0qHsjA8fbFtBzBx1cbQzHwAAAAZAAAAAAAAAABAAAAAAAAAAAAAAABAAAAAQAAAACqkTaHkZTphDK+U/SnLXSJrA2mitA3sgOhIWTCRPQzIQAAAAYAAAABVVNEAAAAAAAtJGku0Iu/Z5uhmUSIcNIZHodv7Nkv3Z9tJ02k5t4TQQAAAAAAAAAAAAAAAAAAAAEbQzHwAAAAQD5FeGBEwJyeauK+WKfcxYBeKw62EtCqvC0p9Z+1cY32fKQ+5Jz9uE1LaDsHW5NurtStKcUTiG5j2qNDf1QpYgw=
+}

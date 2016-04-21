@@ -20,42 +20,24 @@ func (rh *RequestHandler) Builder(w http.ResponseWriter, r *http.Request) {
 	err := decoder.Decode(&request)
 	if err != nil {
 		log.WithFields(log.Fields{"err": err}).Error("Error decoding request")
-		server.Write(w, protocols.InternalServerError)
+		server.Write(w, protocols.InvalidParameterError)
 		return
 	}
 
-	// err = request.Validate()
-	// if err != nil {
-	// 	errorResponse := err.(*protocols.ErrorResponse)
-	// 	log.WithFields(errorResponse.LogData).Error(errorResponse.Error())
-	// 	server.Write(w, errorResponse)
-	// 	return
-	// }
+	err = request.Process()
+	if err != nil {
+		errorResponse := err.(*protocols.ErrorResponse)
+		log.WithFields(errorResponse.LogData).Error(errorResponse.Error())
+		server.Write(w, errorResponse)
+		return
+	}
 
-	var operationsData []bridge.OperationData
-	for i, operation := range request.Operations {
-		switch operation.Type {
-		case bridge.OperationTypeCreateAccount:
-			var createAccount bridge.CreateAccountOperationData
-			err = json.Unmarshal(operation.Data, &createAccount)
-			operationsData = append(operationsData, createAccount)
-		case bridge.OperationTypePayment:
-			var payment bridge.PaymentOperationData
-			err = json.Unmarshal(operation.Data, &payment)
-			operationsData = append(operationsData, payment)
-		default:
-			errorResponse := protocols.NewInvalidParameterError("operations["+strconv.Itoa(i)+"][type]", string(operation.Type))
-			log.WithFields(errorResponse.LogData).Error(errorResponse.Error())
-			server.Write(w, errorResponse)
-			return
-		}
-
-		if err != nil {
-			errorResponse := protocols.NewInvalidParameterError("operations["+strconv.Itoa(i)+"][data]", "")
-			log.WithFields(errorResponse.LogData).Error(errorResponse.Error())
-			server.Write(w, errorResponse)
-			return
-		}
+	err = request.Validate()
+	if err != nil {
+		errorResponse := err.(*protocols.ErrorResponse)
+		log.WithFields(errorResponse.LogData).Error(errorResponse.Error())
+		server.Write(w, errorResponse)
+		return
 	}
 
 	sequenceNumber, err := strconv.ParseUint(request.SequenceNumber, 10, 64)
@@ -69,19 +51,25 @@ func (rh *RequestHandler) Builder(w http.ResponseWriter, r *http.Request) {
 	mutators := []b.TransactionMutator{
 		b.SourceAccount{request.Source},
 		b.Sequence{sequenceNumber},
-		b.Network{"TODO change"},
+		b.Network{rh.Config.NetworkPassphrase},
 	}
 
-	for _, operationData := range operationsData {
-		mutators = append(mutators, operationData.ToTransactionMutator())
+	for _, operation := range request.Operations {
+		mutators = append(mutators, operation.Body.ToTransactionMutator())
 	}
 
 	tx := b.Transaction(mutators...)
-	// TODO check tx.Err
+
+	if tx.Err != nil {
+		log.WithFields(log.Fields{"err": err, "request": request}).Error("TransactionBuilder returned error")
+		server.Write(w, protocols.InternalServerError)
+		return
+	}
+
 	txe := tx.Sign(request.Signers...)
 	txeB64, err := txe.Base64()
 	if err != nil {
-		log.WithFields(log.Fields{"err": err}).Error("Error encoding transaction envelope")
+		log.WithFields(log.Fields{"err": err, "request": request}).Error("Error encoding transaction envelope")
 		server.Write(w, protocols.InternalServerError)
 		return
 	}

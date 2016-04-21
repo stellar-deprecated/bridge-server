@@ -71,6 +71,112 @@ Then you can start the server:
 
 `Content-Type` of requests data should be `application/x-www-form-urlencoded`.
 
+### POST /builder
+
+Builds a transaction from a given request. `Content-Type` of this request should be `application/json`. Check [List of operations](https://www.stellar.org/developers/learn/concepts/list-of-operations.html) doc to learn more about how each operation looks like.
+
+#### Request
+
+Check example request below (remove comments before submitting it to the `bridge` server):
+
+```json
+{
+  // Transaction source account
+  "source": "GBDCOZD7CHY26KS6ABEZPIJAMS2G7GP3YSTJ6DIRIQ6YUU77ZAPI2LVT",
+  // Sequence number
+  "sequence_number": "123",
+  // List of operations in this transaction
+  "operations": [
+    // First operation
+    {
+      // Operation type
+      "type": "create_account",
+      // Operation body
+      "body": {
+        // Don't send source field if operation source account is equal to transaction source account
+        "source": "GBDCOZD7CHY26KS6ABEZPIJAMS2G7GP3YSTJ6DIRIQ6YUU77ZAPI2LVT",
+        "destination": "GBDCOZD7CHY26KS6ABEZPIJAMS2G7GP3YSTJ6DIRIQ6YUU77ZAPI2LVT",
+        "starting_balance": "50"
+      }
+    },
+    // Second operation
+    {
+      "type": "payment",
+      "body": {
+        "source": "GBDCOZD7CHY26KS6ABEZPIJAMS2G7GP3YSTJ6DIRIQ6YUU77ZAPI2LVT",
+        "destination": "GBDCOZD7CHY26KS6ABEZPIJAMS2G7GP3YSTJ6DIRIQ6YUU77ZAPI2LVT",
+        "amount": "1050",
+        "asset": {
+          "code": "USD",
+          "issuer": "GBDCOZD7CHY26KS6ABEZPIJAMS2G7GP3YSTJ6DIRIQ6YUU77ZAPI2LVT"
+        }
+      }
+    },
+    {
+      "type": "path_payment",
+      "body": {
+        "source": "GBDCOZD7CHY26KS6ABEZPIJAMS2G7GP3YSTJ6DIRIQ6YUU77ZAPI2LVT",
+        "destination": "GBDCOZD7CHY26KS6ABEZPIJAMS2G7GP3YSTJ6DIRIQ6YUU77ZAPI2LVT",
+        "destination_amount": "10",
+        "send_max": "1050",
+        "send_asset": {
+          "code": "USD",
+          "issuer": "GBDCOZD7CHY26KS6ABEZPIJAMS2G7GP3YSTJ6DIRIQ6YUU77ZAPI2LVT"
+        },
+        "destination_asset": {
+          "code": "EUR",
+          "issuer": "GBDCOZD7CHY26KS6ABEZPIJAMS2G7GP3YSTJ6DIRIQ6YUU77ZAPI2LVT"
+        },
+        "path": [
+	        {}, // Native asset
+      		{
+              "code": "ZAR",
+              "issuer": "GBNIVKJTD2SMAXB5ALPBZ7CHRYYLCO5XSH55H6TI3Z37P7SCRXQVESG2"
+            }
+        ]
+      }
+    },
+    {
+      "type": "change_trust",
+      "body": {
+        "source": "GBDCOZD7CHY26KS6ABEZPIJAMS2G7GP3YSTJ6DIRIQ6YUU77ZAPI2LVT",
+        "asset": {
+          "code": "USD",
+          "issuer": "GBDCOZD7CHY26KS6ABEZPIJAMS2G7GP3YSTJ6DIRIQ6YUU77ZAPI2LVT"
+        }
+      }
+    },
+    {
+      "type": "allow_trust",
+      "body": {
+        "source": "GBDCOZD7CHY26KS6ABEZPIJAMS2G7GP3YSTJ6DIRIQ6YUU77ZAPI2LVT",
+        "trustor": "GBDCOZD7CHY26KS6ABEZPIJAMS2G7GP3YSTJ6DIRIQ6YUU77ZAPI2LVT",
+        "asset_code": "USD",
+        "authorize": true
+      }
+    }
+  ],
+  // Array of signers
+  "signers": ["SDOTALIMPAM2IV65IOZA7KZL7XWZI5BODFXTRVLIHLQZQCKK57PH5F3H"]
+}
+```
+
+Assets are represented by a JSON object with two fields: `code` and `issuer`. Empty JSON object represents [native asset](https://www.stellar.org/developers/learn/concepts/assets.html#lumens-xlm-).
+
+#### Response
+
+When transaction can be successfully built it will return a JSON object with a single `transaction_envelope` field that will contain base64-encoded `TransactionEnvelope` XDR object:
+
+```json
+{
+    "transaction_envelope": "AAAAAEYnZH8R8a8qXgBJl6EgZLRvmfvEpp8NEUQ9i..."
+}
+```
+
+In case of error it will return one of the following errors:
+* [`InternalServerError`](./blob/master/src/github.com/stellar/gateway/protocols/errors.go)
+* [`InvalidParameterError`](./blob/master/src/github.com/stellar/gateway/protocols/errors.go)
+
 ### POST /payment
 
 Builds and submits a transaction with a single [`payment`](https://www.stellar.org/developers/learn/concepts/list-of-operations.html#payment), [`path_payment`](https://www.stellar.org/developers/learn/concepts/list-of-operations.html#path-payment) or [`create_account`](https://www.stellar.org/developers/learn/concepts/list-of-operations.html#create-account) (when sending native asset to account that does not exist) operation built from following parameters.

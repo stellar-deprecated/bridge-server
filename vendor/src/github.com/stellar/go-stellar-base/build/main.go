@@ -8,6 +8,9 @@
 package build
 
 import (
+	"math"
+
+	"github.com/stellar/go-stellar-base/amount"
 	"github.com/stellar/go-stellar-base/network"
 	"github.com/stellar/go-stellar-base/xdr"
 )
@@ -34,6 +37,9 @@ var (
 	DefaultNetwork = TestNetwork
 )
 
+// Amount is a mutator capable of setting the amount
+type Amount string
+
 // Asset is struct used in path_payment mutators
 type Asset struct {
 	Code   string
@@ -52,12 +58,12 @@ type Authorize struct {
 	Value bool
 }
 
-// Helper method to create native Asset object
+// NativeAsset is a helper method to create native Asset object
 func NativeAsset() Asset {
 	return Asset{Native: true}
 }
 
-// Helper method to create credit Asset object
+// CreditAsset is a helper method to create credit Asset object
 func CreditAsset(code, issuer string) Asset {
 	return Asset{code, issuer, false}
 }
@@ -85,6 +91,12 @@ type MemoHash struct {
 	Value xdr.Hash
 }
 
+// Limit is a mutator that sets a limit on the change_trust operation
+type Limit Amount
+
+// MaxLimit represents the maximum value that can be passed as trutline Limit
+var MaxLimit = Limit(amount.String(math.MaxInt64))
+
 // MemoID is a mutator that sets a memo on the mutated transaction of type
 // MEMO_ID.
 type MemoID struct {
@@ -109,18 +121,20 @@ type NativeAmount struct {
 	Amount string
 }
 
-// PathSend is a mutator that configures a path_payment's send asset and max amount
+// PayWithPath is a mutator that configures a path_payment's send asset and max amount
 type PayWithPath struct {
 	Asset
 	MaxAmount string
 	Path      []Asset
 }
 
+// Through appends a new asset to the path
 func (pathSend PayWithPath) Through(asset Asset) PayWithPath {
 	pathSend.Path = append(pathSend.Path, asset)
 	return pathSend
 }
 
+// PayWith is a helper to create PayWithPath struct
 func PayWith(sendAsset Asset, maxAmount string) PayWithPath {
 	return PayWithPath{
 		Asset:     sendAsset,

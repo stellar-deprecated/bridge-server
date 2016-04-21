@@ -2,6 +2,7 @@ package bridge
 
 import (
 	"encoding/json"
+	"strconv"
 
 	"github.com/stellar/gateway/protocols"
 	b "github.com/stellar/go-stellar-base/build"
@@ -43,70 +44,70 @@ type BuilderRequest struct {
 	Signers        []string
 }
 
-// Operation contains
+// Process parses operations and creates OperationBody object for each operation
+func (r BuilderRequest) Process() error {
+	var err error
+	for i, operation := range r.Operations {
+		var operationBody OperationBody
+
+		switch operation.Type {
+		case OperationTypeCreateAccount:
+			var createAccount CreateAccountOperationBody
+			err = json.Unmarshal(operation.RawBody, &createAccount)
+			operationBody = createAccount
+		case OperationTypePayment:
+			var payment PaymentOperationBody
+			err = json.Unmarshal(operation.RawBody, &payment)
+			operationBody = payment
+		case OperationTypePathPayment:
+			var pathPayment PathPaymentOperationBody
+			err = json.Unmarshal(operation.RawBody, &pathPayment)
+			operationBody = pathPayment
+		case OperationTypeChangeTrust:
+			var changeTrust ChangeTrustOperationBody
+			err = json.Unmarshal(operation.RawBody, &changeTrust)
+			operationBody = changeTrust
+		case OperationTypeAllowTrust:
+			var allowTrust AllowTrustOperationBody
+			err = json.Unmarshal(operation.RawBody, &allowTrust)
+			operationBody = allowTrust
+		default:
+			return protocols.NewInvalidParameterError("operations["+strconv.Itoa(i)+"][type]", string(operation.Type))
+		}
+
+		if err != nil {
+			return protocols.NewInvalidParameterError("operations["+strconv.Itoa(i)+"][body]", "")
+		}
+
+		r.Operations[i].Body = operationBody
+	}
+
+	return nil
+}
+
+// Validate validates if the request is correct.
+func (r BuilderRequest) Validate() error {
+	for _, operation := range r.Operations {
+		err := operation.Body.Validate()
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// Operation struct contains operation type and body
 type Operation struct {
-	Type OperationType
-	Data json.RawMessage // delay parsing until we know operation type
+	Type    OperationType
+	RawBody json.RawMessage `json:"body"` // Delay parsing until we know operation type
+	Body    OperationBody   `json:"-"`    // Created during processing stage
 }
 
-// OperationData interface is a common interface for builder operations
-type OperationData interface {
+// OperationBody interface is a common interface for builder operations
+type OperationBody interface {
 	ToTransactionMutator() b.TransactionMutator
-}
-
-// CreateAccountOperationData represents create_account operation
-type CreateAccountOperationData struct {
-	Source          *string
-	Destination     string
-	StartingBalance string `json:"starting_balance"`
-}
-
-// ToTransactionMutator returns go-stellar-base TransactionMutator
-func (op CreateAccountOperationData) ToTransactionMutator() b.TransactionMutator {
-	mutators := []interface{}{
-		b.Destination{op.Destination},
-		b.NativeAmount{op.StartingBalance},
-	}
-
-	if op.Source != nil {
-		mutators = append(mutators, b.SourceAccount{*op.Source})
-	}
-
-	return b.CreateAccount(mutators...)
-}
-
-// PaymentOperationData represents payment operation
-type PaymentOperationData struct {
-	Source      *string
-	Destination string
-	Amount      string
-	AssetCode   *string `json:"asset_code"`
-	AssetIssuer *string `json:"asset_issuer"`
-}
-
-// ToTransactionMutator returns go-stellar-base TransactionMutator
-func (op PaymentOperationData) ToTransactionMutator() b.TransactionMutator {
-	mutators := []interface{}{
-		b.Destination{op.Destination},
-	}
-
-	if op.AssetCode != nil && op.AssetIssuer != nil {
-		mutators = append(
-			mutators,
-			b.CreditAmount{*op.AssetCode, *op.AssetIssuer, op.Amount},
-		)
-	} else {
-		mutators = append(
-			mutators,
-			b.NativeAmount{op.Amount},
-		)
-	}
-
-	if op.Source != nil {
-		mutators = append(mutators, b.SourceAccount{*op.Source})
-	}
-
-	return b.Payment(mutators...)
+	Validate() error
 }
 
 // BuilderResponse represents response returned by /builder endpoint of bridge server
