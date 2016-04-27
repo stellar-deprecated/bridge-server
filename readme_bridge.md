@@ -128,13 +128,61 @@ Check example request below (remove comments before submitting it to the `bridge
           "issuer": "GBDCOZD7CHY26KS6ABEZPIJAMS2G7GP3YSTJ6DIRIQ6YUU77ZAPI2LVT"
         },
         "path": [
-	        {}, // Native asset
-      		{
+          {}, // Native asset
+          {
               "code": "ZAR",
               "issuer": "GBNIVKJTD2SMAXB5ALPBZ7CHRYYLCO5XSH55H6TI3Z37P7SCRXQVESG2"
             }
         ]
       }
+    },
+    {
+        "type": "manage_offer",
+        "body": {
+          "selling": {
+            "code": "EUR",
+            "issuer": "GDOJMKTDLGGLROSSM5BV5MXIAQ3JZHASQFUV55WBJ45AFOUXSVVFGPTJ"
+          },
+          "buying": {
+            "code": "USD",
+            "issuer": "GACETOPHMOLSZLG5IQ3D6KQDKCAAYUYTTQHIEY6IGZE4VOBDD2YY6YAO"
+          },
+          "amount": "123456",
+          "price": "2.93850088",
+          "offer_id": "100"
+        }
+    },
+    {
+        "type": "create_passive_offer",
+        "body": {
+          "selling": {
+            "code": "EUR",
+            "issuer": "GDOJMKTDLGGLROSSM5BV5MXIAQ3JZHASQFUV55WBJ45AFOUXSVVFGPTJ"
+          },
+          "buying": {
+            "code": "USD",
+            "issuer": "GACETOPHMOLSZLG5IQ3D6KQDKCAAYUYTTQHIEY6IGZE4VOBDD2YY6YAO"
+          },
+          "amount": "123456",
+          "price": "2.93850088"
+        }
+    },
+    {
+        "type": "set_options",
+        "body": {
+          "inflation_dest": "GBMPZVOMJ67WQBTBCVURDKTGL4557272EGQMAJCXPSMLOE63XPLL6SVA",
+          "set_flags": [1, 2],
+          "clear_flags": [4],
+          "master_weight": 100,
+          "low_threshold": 1,
+          "medium_threshold": 2,
+          "high_threshold": 3,
+          "home_domain": "stellar.org",
+          "signer": {
+            "public_key": "GA6VMJJQM2QBPPIXK2UVTAOS4XSSSAKSCOGFQE55IMRBQR65GIVDTTQV",
+            "weight": 5
+          }
+        }
     },
     {
       "type": "change_trust",
@@ -154,6 +202,23 @@ Check example request below (remove comments before submitting it to the `bridge
         "asset_code": "USD",
         "authorize": true
       }
+    },
+    {
+        "type": "account_merge",
+        "body": {
+          "destination": "GBLH67TQHRNRLERQEIQJDNBV2DSWPHAPP43MBIF7DVKA7X55APUNS4LL"
+        }
+    },
+    {
+        "type": "inflation",
+        "body": {}
+    },
+    {
+        "type": "manage_data",
+        "body": {
+          "name": "test_data",
+          "data": "AQIDBAUG"
+        }
     }
   ],
   // Array of signers
