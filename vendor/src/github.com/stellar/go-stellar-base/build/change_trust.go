@@ -14,7 +14,7 @@ func ChangeTrust(muts ...interface{}) (result ChangeTrustBuilder) {
 }
 
 // ChangeTrustMutator is a interface that wraps the
-// MutatePayment operation.  types may implement this interface to
+// MutateChangeTrust operation.  types may implement this interface to
 // specify how they modify an xdr.ChangeTrustOp object
 type ChangeTrustMutator interface {
 	MutateChangeTrust(*xdr.ChangeTrustOp) error
@@ -53,7 +53,7 @@ func (m Asset) MutateChangeTrust(o *xdr.ChangeTrustOp) (err error) {
 		return errors.New("Native asset not allowed")
 	}
 
-	o.Line, err = createAlphaNumAsset(m.Code, m.Issuer)
+	o.Line, err = m.ToXdrObject()
 	return
 }
 

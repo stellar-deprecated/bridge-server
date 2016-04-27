@@ -11,10 +11,10 @@ type SetOptionsOperationBody struct {
 	InflationDest   *string           `json:"inflation_dest"`
 	SetFlags        *[]int            `json:"set_flags"`
 	ClearFlags      *[]int            `json:"clear_flags"`
-	MasterWeight    *uint             `json:"master_flags"`
-	LowThreshold    *uint             `json:"low_threshold"`
-	MediumThreshold *uint             `json:"medium_threshold"`
-	HighThreshold   *uint             `json:"high_threshold"`
+	MasterWeight    *uint32           `json:"master_weight"`
+	LowThreshold    *uint32           `json:"low_threshold"`
+	MediumThreshold *uint32           `json:"medium_threshold"`
+	HighThreshold   *uint32           `json:"high_threshold"`
 	HomeDomain      *string           `json:"home_domain"`
 	Signer          *SetOptionsSigner `json:"signer"`
 }
@@ -22,7 +22,7 @@ type SetOptionsOperationBody struct {
 // SetOptionsSigner is a struct that representing signer in SetOptions operation body
 type SetOptionsSigner struct {
 	PublicKey string `json:"public_key"`
-	Weight    uint   `json:"weight"`
+	Weight    uint32 `json:"weight"`
 }
 
 // ToTransactionMutator returns go-stellar-base TransactionMutator
@@ -66,7 +66,10 @@ func (op SetOptionsOperationBody) ToTransactionMutator() b.TransactionMutator {
 	}
 
 	if op.Signer != nil {
-		mutators = append(mutators, b.Signer(op.Signer))
+		mutators = append(mutators, b.Signer{
+			PublicKey: op.Signer.PublicKey,
+			Weight:    op.Signer.Weight,
+		})
 	}
 
 	return b.SetOptions(mutators...)
@@ -79,7 +82,7 @@ func (op SetOptionsOperationBody) Validate() error {
 	}
 
 	if op.Signer != nil {
-		if !protocols.IsValidAccountID(*op.Signer.PublicKey) {
+		if !protocols.IsValidAccountID(op.Signer.PublicKey) {
 			return protocols.NewInvalidParameterError("signer.public_key", op.Signer.PublicKey)
 		}
 	}

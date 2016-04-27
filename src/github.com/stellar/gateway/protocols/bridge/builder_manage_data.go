@@ -27,7 +27,7 @@ func (op ManageDataOperationBody) ToTransactionMutator() b.TransactionMutator {
 	}
 
 	if op.Source != nil {
-		builder.mutate(b.SourceAccount{*op.Source})
+		builder.Mutate(b.SourceAccount{*op.Source})
 	}
 
 	return builder

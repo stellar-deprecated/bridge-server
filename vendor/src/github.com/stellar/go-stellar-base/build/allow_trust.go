@@ -13,7 +13,7 @@ func AllowTrust(muts ...interface{}) (result AllowTrustBuilder) {
 }
 
 // AllowTrustMutator is a interface that wraps the
-// MutatePayment operation.  types may implement this interface to
+// MutateAllowTrust operation.  types may implement this interface to
 // specify how they modify an xdr.AllowTrustOp object
 type AllowTrustMutator interface {
 	MutateAllowTrust(*xdr.AllowTrustOp) error

@@ -67,6 +67,11 @@ func (r BuilderRequest) Process() error {
 			var manageOffer ManageOfferOperationBody
 			err = json.Unmarshal(operation.RawBody, &manageOffer)
 			operationBody = manageOffer
+		case OperationTypeCreatePassiveOffer:
+			var manageOffer ManageOfferOperationBody
+			err = json.Unmarshal(operation.RawBody, &manageOffer)
+			manageOffer.PassiveOffer = true
+			operationBody = manageOffer
 		case OperationTypeSetOptions:
 			var setOptions SetOptionsOperationBody
 			err = json.Unmarshal(operation.RawBody, &setOptions)
@@ -87,12 +92,16 @@ func (r BuilderRequest) Process() error {
 			var inflation InflationOperationBody
 			err = json.Unmarshal(operation.RawBody, &inflation)
 			operationBody = inflation
+		case OperationTypeManageData:
+			var manageData ManageDataOperationBody
+			err = json.Unmarshal(operation.RawBody, &manageData)
+			operationBody = manageData
 		default:
 			return protocols.NewInvalidParameterError("operations["+strconv.Itoa(i)+"][type]", string(operation.Type))
 		}
 
 		if err != nil {
-			return protocols.NewInvalidParameterError("operations["+strconv.Itoa(i)+"][body]", "")
+			return protocols.NewInvalidParameterError("operations["+strconv.Itoa(i)+"][body]", "", map[string]interface{}{"err": err})
 		}
 
 		r.Operations[i].Body = operationBody
@@ -105,6 +114,12 @@ func (r BuilderRequest) Process() error {
 func (r BuilderRequest) Validate() error {
 	if !protocols.IsValidAccountID(r.Source) {
 		return protocols.NewInvalidParameterError("source", r.Source)
+	}
+
+	for i, signer := range r.Signers {
+		if !protocols.IsValidAccountID(signer) {
+			return protocols.NewInvalidParameterError("signers["+strconv.Itoa(i)+"]", signer)
+		}
 	}
 
 	for _, operation := range r.Operations {

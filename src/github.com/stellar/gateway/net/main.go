@@ -2,6 +2,7 @@ package net
 
 import (
 	"bytes"
+	"encoding/json"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -27,6 +28,29 @@ func GetResponse(testServer *httptest.Server, values url.Values) (int, []byte) {
 	if err != nil {
 		panic(err)
 	}
+	response, err := ioutil.ReadAll(res.Body)
+	res.Body.Close()
+	if err != nil {
+		panic(err)
+	}
+	return res.StatusCode, response
+}
+
+// JSONGetResponse is used in tests
+func JSONGetResponse(testServer *httptest.Server, data map[string]interface{}) (int, []byte) {
+	j, err := json.Marshal(data)
+	if err != nil {
+		panic(err)
+	}
+	req, err := http.NewRequest("POST", testServer.URL, bytes.NewBuffer(j))
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	res, err := client.Do(req)
+	if err != nil {
+		panic(err)
+	}
+
 	response, err := ioutil.ReadAll(res.Body)
 	res.Body.Close()
 	if err != nil {

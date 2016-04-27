@@ -140,32 +140,17 @@ func (m PayWithPath) MutatePayment(o interface{}) (err error) {
 	var xdrAsset xdr.Asset
 
 	for _, asset := range m.Path {
-		switch {
-		case asset.Native:
-			xdrAsset, err = xdr.NewAsset(xdr.AssetTypeAssetTypeNative, nil)
-			path = append(path, xdrAsset)
-		case !asset.Native:
-			xdrAsset, err = createAlphaNumAsset(asset.Code, asset.Issuer)
-			path = append(path, xdrAsset)
-		default:
-			err = errors.New("Unknown Asset type")
-		}
-
+		xdrAsset, err = asset.ToXdrObject()
 		if err != nil {
 			return err
 		}
+
+		path = append(path, xdrAsset)
 	}
 
 	pathPaymentOp.Path = path
 
 	// Asset
-	switch {
-	case m.Asset.Native:
-		pathPaymentOp.SendAsset, err = xdr.NewAsset(xdr.AssetTypeAssetTypeNative, nil)
-	case !m.Asset.Native:
-		pathPaymentOp.SendAsset, err = createAlphaNumAsset(m.Asset.Code, m.Asset.Issuer)
-	default:
-		err = errors.New("Unknown Asset type")
-	}
+	pathPaymentOp.SendAsset, err = m.Asset.ToXdrObject()
 	return
 }
