@@ -5,7 +5,7 @@ import (
 	b "github.com/stellar/go-stellar-base/build"
 )
 
-// AllowTrustOperationBody represents create_account operation
+// AllowTrustOperationBody represents allow_trust operation
 type AllowTrustOperationBody struct {
 	Source    *string
 	AssetCode string `json:"asset_code"`

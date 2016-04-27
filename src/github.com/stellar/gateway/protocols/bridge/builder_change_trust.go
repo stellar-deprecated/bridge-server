@@ -5,7 +5,7 @@ import (
 	b "github.com/stellar/go-stellar-base/build"
 )
 
-// ChangeTrustOperationBody represents create_account operation
+// ChangeTrustOperationBody represents change_trust operation
 type ChangeTrustOperationBody struct {
 	Source *string
 	Asset  protocols.Asset

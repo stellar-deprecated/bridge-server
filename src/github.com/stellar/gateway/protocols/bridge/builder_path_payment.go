@@ -7,7 +7,7 @@ import (
 	b "github.com/stellar/go-stellar-base/build"
 )
 
-// PathPaymentOperationBody represents payment operation
+// PathPaymentOperationBody represents path_payment operation
 type PathPaymentOperationBody struct {
 	Source *string
 

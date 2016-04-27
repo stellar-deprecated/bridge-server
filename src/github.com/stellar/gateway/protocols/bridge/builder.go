@@ -63,6 +63,14 @@ func (r BuilderRequest) Process() error {
 			var pathPayment PathPaymentOperationBody
 			err = json.Unmarshal(operation.RawBody, &pathPayment)
 			operationBody = pathPayment
+		case OperationTypeManageOffer:
+			var manageOffer ManageOfferOperationBody
+			err = json.Unmarshal(operation.RawBody, &manageOffer)
+			operationBody = manageOffer
+		case OperationTypeSetOptions:
+			var setOptions SetOptionsOperationBody
+			err = json.Unmarshal(operation.RawBody, &setOptions)
+			operationBody = setOptions
 		case OperationTypeChangeTrust:
 			var changeTrust ChangeTrustOperationBody
 			err = json.Unmarshal(operation.RawBody, &changeTrust)
@@ -71,6 +79,14 @@ func (r BuilderRequest) Process() error {
 			var allowTrust AllowTrustOperationBody
 			err = json.Unmarshal(operation.RawBody, &allowTrust)
 			operationBody = allowTrust
+		case OperationTypeAccountMerge:
+			var accountMerge AccountMergeOperationBody
+			err = json.Unmarshal(operation.RawBody, &accountMerge)
+			operationBody = accountMerge
+		case OperationTypeInflation:
+			var inflation InflationOperationBody
+			err = json.Unmarshal(operation.RawBody, &inflation)
+			operationBody = inflation
 		default:
 			return protocols.NewInvalidParameterError("operations["+strconv.Itoa(i)+"][type]", string(operation.Type))
 		}
