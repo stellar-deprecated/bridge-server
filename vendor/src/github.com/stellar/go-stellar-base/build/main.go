@@ -8,6 +8,10 @@
 package build
 
 import (
+	"errors"
+	"math"
+
+	"github.com/stellar/go-stellar-base/amount"
 	"github.com/stellar/go-stellar-base/network"
 	"github.com/stellar/go-stellar-base/xdr"
 )
@@ -34,11 +38,45 @@ var (
 	DefaultNetwork = TestNetwork
 )
 
+// Amount is a mutator capable of setting the amount
+type Amount string
+
 // Asset is struct used in path_payment mutators
 type Asset struct {
 	Code   string
 	Issuer string
 	Native bool
+}
+
+// ToXdrObject creates xdr.Asset object from build.Asset object
+func (a Asset) ToXdrObject() (xdr.Asset, error) {
+	if a.Native {
+		return xdr.NewAsset(xdr.AssetTypeAssetTypeNative, nil)
+	}
+
+	var issuer xdr.AccountId
+	err := setAccountId(a.Issuer, &issuer)
+	if err != nil {
+		return xdr.Asset{}, err
+	}
+
+	length := len(a.Code)
+	switch {
+	case length >= 1 && length <= 4:
+		var codeArray [4]byte
+		byteArray := []byte(a.Code)
+		copy(codeArray[:], byteArray[0:length])
+		asset := xdr.AssetAlphaNum4{codeArray, issuer}
+		return xdr.NewAsset(xdr.AssetTypeAssetTypeCreditAlphanum4, asset)
+	case length >= 5 && length <= 12:
+		var codeArray [12]byte
+		byteArray := []byte(a.Code)
+		copy(codeArray[:], byteArray[0:length])
+		asset := xdr.AssetAlphaNum12{codeArray, issuer}
+		return xdr.NewAsset(xdr.AssetTypeAssetTypeCreditAlphanum12, asset)
+	default:
+		return xdr.Asset{}, errors.New("Asset code length is invalid")
+	}
 }
 
 // AllowTrustAsset is a mutator capable of setting the asset on
@@ -52,12 +90,12 @@ type Authorize struct {
 	Value bool
 }
 
-// Helper method to create native Asset object
+// NativeAsset is a helper method to create native Asset object
 func NativeAsset() Asset {
 	return Asset{Native: true}
 }
 
-// Helper method to create credit Asset object
+// CreditAsset is a helper method to create credit Asset object
 func CreditAsset(code, issuer string) Asset {
 	return Asset{code, issuer, false}
 }
@@ -79,11 +117,26 @@ type Destination struct {
 	AddressOrSeed string
 }
 
+// InflationDest is a mutator capable of setting the inflation destination
+type InflationDest string
+
+// HomeDomain is a mutator capable of setting home domain of the account
+type HomeDomain string
+
 // MemoHash is a mutator that sets a memo on the mutated transaction of type
 // MEMO_HASH.
 type MemoHash struct {
 	Value xdr.Hash
 }
+
+// Limit is a mutator that sets a limit on the change_trust operation
+type Limit Amount
+
+// MasterWeight is a mutator that sets account's master weight
+type MasterWeight uint32
+
+// MaxLimit represents the maximum value that can be passed as trutline Limit
+var MaxLimit = Limit(amount.String(math.MaxInt64))
 
 // MemoID is a mutator that sets a memo on the mutated transaction of type
 // MEMO_ID.
@@ -109,23 +162,38 @@ type NativeAmount struct {
 	Amount string
 }
 
-// PathSend is a mutator that configures a path_payment's send asset and max amount
+// OfferID is a mutator that sets offer ID on offer operations
+type OfferID uint64
+
+// PayWithPath is a mutator that configures a path_payment's send asset and max amount
 type PayWithPath struct {
 	Asset
 	MaxAmount string
 	Path      []Asset
 }
 
+// Through appends a new asset to the path
 func (pathSend PayWithPath) Through(asset Asset) PayWithPath {
 	pathSend.Path = append(pathSend.Path, asset)
 	return pathSend
 }
 
+// PayWith is a helper to create PayWithPath struct
 func PayWith(sendAsset Asset, maxAmount string) PayWithPath {
 	return PayWithPath{
 		Asset:     sendAsset,
 		MaxAmount: maxAmount,
 	}
+}
+
+// Price is a mutator that sets price on offer operations
+type Price string
+
+// Rate is a mutator that sets selling/buying asset and price on offer operations
+type Rate struct {
+	Selling Asset
+	Buying  Asset
+	Price
 }
 
 // Sequence is a mutator that sets the sequence number on a transaction
@@ -139,10 +207,29 @@ type Sign struct {
 	Seed string
 }
 
+// SetFlag is a mutator capable of setting account flags
+type SetFlag int32
+
+// ClearFlag is a mutator capable of clearing account flags
+type ClearFlag int32
+
+// Signer is a mutator capable of adding, updating and deleting account signer
+type Signer struct {
+	PublicKey string
+	Weight    uint32
+}
+
 // SourceAccount is a mutator capable of setting the source account on
 // an xdr.Operation and an xdr.Transaction
 type SourceAccount struct {
 	AddressOrSeed string
+}
+
+// Thresholds is a mutator capable of setting account thresholds
+type Thresholds struct {
+	Low    *uint32
+	Medium *uint32
+	High   *uint32
 }
 
 // Trustor is a mutator capable of setting the trustor on

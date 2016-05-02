@@ -43,6 +43,7 @@ var _ = Describe("Horizon", func() {
 			Expect(err).To(BeNil())
 			Expect(account.ID).To(Equal("GBRPYHIL2CI3FNQ4BXLFMNDLFJUNPU2HY3ZMFSHONUCEOASW7QC7OX2H"))
 			Expect(account.PT).To(Equal("1"))
+			Expect(account.GetNativeBalance()).To(Equal("948522307.6146000"))
 		})
 
 		It("failure response", func() {

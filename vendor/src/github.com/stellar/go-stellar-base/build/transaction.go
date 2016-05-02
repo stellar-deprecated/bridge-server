@@ -99,6 +99,18 @@ func (b *TransactionBuilder) Sign(signers ...string) (result TransactionEnvelope
 //
 // ------------------------------------------------------------
 
+// MutateTransaction for AccountMergeBuilder causes the underylying Destination
+// to be added to the operation list for the provided transaction
+func (m AccountMergeBuilder) MutateTransaction(o *TransactionBuilder) error {
+	if m.Err != nil {
+		return m.Err
+	}
+
+	m.O.Body, m.Err = xdr.NewOperationBody(xdr.OperationTypeAccountMerge, m.Destination)
+	o.TX.Operations = append(o.TX.Operations, m.O)
+	return m.Err
+}
+
 // MutateTransaction for AllowTrustBuilder causes the underylying AllowTrustOp
 // to be added to the operation list for the provided transaction
 func (m AllowTrustBuilder) MutateTransaction(o *TransactionBuilder) error {
@@ -107,6 +119,19 @@ func (m AllowTrustBuilder) MutateTransaction(o *TransactionBuilder) error {
 	}
 
 	m.O.Body, m.Err = xdr.NewOperationBody(xdr.OperationTypeAllowTrust, m.AT)
+	o.TX.Operations = append(o.TX.Operations, m.O)
+	return m.Err
+}
+
+// MutateTransaction for ChangeTrustBuilder causes the underylying
+// CreateAccountOp to be added to the operation list for the provided
+// transaction
+func (m ChangeTrustBuilder) MutateTransaction(o *TransactionBuilder) error {
+	if m.Err != nil {
+		return m.Err
+	}
+
+	m.O.Body, m.Err = xdr.NewOperationBody(xdr.OperationTypeChangeTrust, m.CT)
 	o.TX.Operations = append(o.TX.Operations, m.O)
 	return m.Err
 }
@@ -137,6 +162,19 @@ func (m Defaults) MutateTransaction(o *TransactionBuilder) error {
 	return nil
 }
 
+// MutateTransaction for InflationBuilder causes the underylying
+// InflationOp to be added to the operation list for the provided
+// transaction
+func (m InflationBuilder) MutateTransaction(o *TransactionBuilder) error {
+	if m.Err != nil {
+		return m.Err
+	}
+
+	m.O.Body, m.Err = xdr.NewOperationBody(xdr.OperationTypeInflation, nil)
+	o.TX.Operations = append(o.TX.Operations, m.O)
+	return m.Err
+}
+
 // MutateTransaction for ManageDataBuilder causes the underylying
 // ManageData to be added to the operation list for the provided
 // transaction
@@ -147,6 +185,24 @@ func (m ManageDataBuilder) MutateTransaction(o *TransactionBuilder) error {
 
 	m.O.Body, m.Err = xdr.NewOperationBody(xdr.OperationTypeManageData, m.MD)
 	o.TX.Operations = append(o.TX.Operations, m.O)
+	return m.Err
+}
+
+// MutateTransaction for ManageOfferBuilder causes the underylying
+// ManageData to be added to the operation list for the provided
+// transaction
+func (m ManageOfferBuilder) MutateTransaction(o *TransactionBuilder) error {
+	if m.Err != nil {
+		return m.Err
+	}
+
+	if m.PassiveOffer {
+		m.O.Body, m.Err = xdr.NewOperationBody(xdr.OperationTypeCreatePassiveOffer, m.PO)
+		o.TX.Operations = append(o.TX.Operations, m.O)
+	} else {
+		m.O.Body, m.Err = xdr.NewOperationBody(xdr.OperationTypeManageOffer, m.MO)
+		o.TX.Operations = append(o.TX.Operations, m.O)
+	}
 	return m.Err
 }
 
@@ -197,11 +253,24 @@ func (m PaymentBuilder) MutateTransaction(o *TransactionBuilder) error {
 		m.O.Body, m.Err = xdr.NewOperationBody(xdr.OperationTypePathPayment, m.PP)
 		o.TX.Operations = append(o.TX.Operations, m.O)
 		return m.Err
-	} else {
-		m.O.Body, m.Err = xdr.NewOperationBody(xdr.OperationTypePayment, m.P)
-		o.TX.Operations = append(o.TX.Operations, m.O)
+	}
+
+	m.O.Body, m.Err = xdr.NewOperationBody(xdr.OperationTypePayment, m.P)
+	o.TX.Operations = append(o.TX.Operations, m.O)
+	return m.Err
+}
+
+// MutateTransaction for SetOptionsBuilder causes the underylying
+// SetOptionsOp to be added to the operation list for the provided
+// transaction
+func (m SetOptionsBuilder) MutateTransaction(o *TransactionBuilder) error {
+	if m.Err != nil {
 		return m.Err
 	}
+
+	m.O.Body, m.Err = xdr.NewOperationBody(xdr.OperationTypeSetOptions, m.SO)
+	o.TX.Operations = append(o.TX.Operations, m.O)
+	return m.Err
 }
 
 // MutateTransaction for Sequence sets the SeqNum on the transaction.

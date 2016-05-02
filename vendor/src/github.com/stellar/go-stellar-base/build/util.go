@@ -13,6 +13,10 @@ func setAccountId(addressOrSeed string, aid *xdr.AccountId) error {
 		return err
 	}
 
+	if aid == nil {
+		return errors.New("aid is nil in setAccountId")
+	}
+
 	return aid.SetAddress(kp.Address())
 }
 

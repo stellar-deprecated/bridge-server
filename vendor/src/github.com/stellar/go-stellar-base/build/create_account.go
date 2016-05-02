@@ -15,7 +15,7 @@ func CreateAccount(muts ...interface{}) (result CreateAccountBuilder) {
 }
 
 // CreateAccountMutator is a interface that wraps the
-// MutatePayment operation.  types may implement this interface to
+// MutateCreateAccount operation.  types may implement this interface to
 // specify how they modify an xdr.PaymentOp object
 type CreateAccountMutator interface {
 	MutateCreateAccount(*xdr.CreateAccountOp) error

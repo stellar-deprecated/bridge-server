@@ -7,12 +7,39 @@ import (
 	"reflect"
 
 	"github.com/facebookgo/structtag"
+	"github.com/stellar/go-stellar-base/build"
 )
 
-// Asset represents asset in responses
+// Asset represents native or credit asset
 type Asset struct {
-	Code   string `name:"asset_code"`
-	Issuer string `name:"asset_issuer"`
+	Code   string `name:"asset_code" json:"code"`
+	Issuer string `name:"asset_issuer" json:"issuer"`
+}
+
+// ToBaseAsset transforms Asset to github.com/stellar/go-stellar-base/build.Asset
+func (a Asset) ToBaseAsset() build.Asset {
+	if a.Code == "" && a.Issuer == "" {
+		return build.NativeAsset()
+	}
+	return build.CreditAsset(a.Code, a.Issuer)
+}
+
+// String returns string representation of this asset
+func (a Asset) String() string {
+	return fmt.Sprintf("%+v", a)
+}
+
+// Validate checks if asset params are correct.
+func (a Asset) Validate() bool {
+	if a.Code != "" && a.Issuer != "" {
+		// Credit
+		return IsValidAssetCode(a.Code) && IsValidAccountID(a.Issuer)
+	} else if a.Code == "" && a.Issuer == "" {
+		// Native
+		return true
+	} else {
+		return false
+	}
 }
 
 // FormRequest allows transforming http.Request url.Values from/to request structs

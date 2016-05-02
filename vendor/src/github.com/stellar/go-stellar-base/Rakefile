@@ -1,5 +1,6 @@
 require 'bundler'
 Bundler.setup()
+require 'pry'
 
 namespace :xdr do
 

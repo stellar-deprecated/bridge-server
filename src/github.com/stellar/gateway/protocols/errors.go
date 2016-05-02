@@ -26,13 +26,20 @@ func NewInternalServerError(logMessage string, logData map[string]interface{}) *
 }
 
 // NewInvalidParameterError creates and returns a new InvalidParameterError
-func NewInvalidParameterError(name, value string) *ErrorResponse {
+func NewInvalidParameterError(name, value string, additionalLogData ...map[string]interface{}) *ErrorResponse {
+	logData := map[string]interface{}{"name": name, "value": value}
+	if len(additionalLogData) == 1 {
+		for k, v := range additionalLogData[0] {
+			logData[k] = v
+		}
+	}
+
 	return &ErrorResponse{
 		Status:  InvalidParameterError.Status,
 		Code:    InvalidParameterError.Code,
 		Message: InvalidParameterError.Message,
 		Data:    map[string]interface{}{"name": name},
-		LogData: map[string]interface{}{"name": name, "value": value},
+		LogData: logData,
 	}
 }
 

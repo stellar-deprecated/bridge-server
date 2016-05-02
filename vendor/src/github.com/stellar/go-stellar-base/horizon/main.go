@@ -5,8 +5,6 @@ import (
 	"net/http"
 	"net/url"
 	"sync"
-
-	res "github.com/stellar/go-stellar-base/horizon/response"
 )
 
 // DefaultTestNetClient is a default client to connect to test network
@@ -18,7 +16,7 @@ var DefaultPublicNetClient = &Client{URL: "https://horizon.stellar.org"}
 // HorizonError struct contains the problem returned by Horizon
 type Error struct {
 	Response *http.Response
-	Problem  res.Problem
+	Problem  Problem
 }
 
 func (herror *Error) Error() string {
@@ -41,7 +39,7 @@ type Client struct {
 }
 
 // LoadAccount loads the account state from horizon. err can be either error object or horizon.Error object.
-func (c *Client) LoadAccount(accountId string) (account res.Account, err error) {
+func (c *Client) LoadAccount(accountId string) (account Account, err error) {
 	c.initHttpClient()
 	resp, err := c.Client.Get(c.URL + "/accounts/" + accountId)
 	if err != nil {
@@ -53,7 +51,7 @@ func (c *Client) LoadAccount(accountId string) (account res.Account, err error) 
 }
 
 // SubmitTransaction submits a transaction to the network. err can be either error object or horizon.Error object.
-func (c *Client) SubmitTransaction(transactionEnvelopeXdr string) (response res.TransactionSuccess, err error) {
+func (c *Client) SubmitTransaction(transactionEnvelopeXdr string) (response TransactionSuccess, err error) {
 	v := url.Values{}
 	v.Set("tx", transactionEnvelopeXdr)
 
