@@ -145,11 +145,11 @@ Will response with `200 OK` if removed. Any other status is an error.
 
 ## Callbacks
 
-The Compliance server will send callback request to URLs you define in config file. `Content-Type` of requests data will be `application/x-www-form-urlencoded`.
+The Compliance server will send callback request to URLs you define in the config file. `Content-Type` of requests data will be `application/x-www-form-urlencoded`.
 
 ### `callbacks.sanctions`
 
-If set in config file, this callback will be called when sanctions checks need to be performed.
+If set in the config file, this callback will be called when sanctions checks need to be performed. If not set the compliance server will act as if the sanction check passes.
 
 #### Request
 
@@ -172,7 +172,7 @@ Respond with one of the following status codes:
 
 Any other status code will be considered an error.
 
-When `202 Accepted` is returned the response body should contain JSON object with `pending` field which represents estimated number of seconds needed for processing. For example, the following response will mean to request this callback in an hour:
+When `202 Accepted` is returned the response body should contain JSON object with a `pending` field which represents the estimated number of seconds needed for processing. For example, the following response means to try the payment again in an hour.
 
 ```json
 {"pending": 3600}
@@ -180,7 +180,7 @@ When `202 Accepted` is returned the response body should contain JSON object wit
 
 ### `callbacks.ask_user`
 
-If set in config file, this callback will be called when the sender needs your customer KYC info to send a payment.
+If set in the config file, this callback will be called when the sender needs your customer KYC info to send a payment. If not set then the customer information won't be given to the other FI.
 
 #### Request
 
@@ -197,13 +197,13 @@ The customer information that is exchanged between FIs is flexible but the typic
 #### Response
 
 Respond with one of the following status codes:
-* `200 OK` when your customer has allowed to share his/her KYC and the payment should be proceeded,
-* `202 Accepted` when your callback needs some time for processing,
-* `403 Forbidden` when your customer has denied to share his/her KYC and the payment should be proceeded.
+* `200 OK` when your customer has allowed sharing his/her compliance information with the requesting FI.
+* `202 Accepted` when your callback needs some time for processing, ie to ask the customer.
+* `403 Forbidden` when your customer has denied sharing his/her compliance information with the requesting FI.
 
 Any other status code will be considered an error.
 
-When `202 Accepted` is returned the response body should contain JSON object with `pending` field which represents estimated number of seconds needed for processing. For example, the following response will mean to request this callback in an hour:
+When `202 Accepted` is returned the response body should contain JSON object with `pending` field which represents estimated number of seconds needed for processing. For example, the following response means to try the payment again in an hour:
 
 ```json
 {"pending": 3600}
@@ -211,7 +211,7 @@ When `202 Accepted` is returned the response body should contain JSON object wit
 
 ### `callbacks.fetch_info`
 
-This callback should return KYC information of your customer identified by `address`.
+This callback should return the compliance information of your customer identified by `address`.
 
 #### Request
 
@@ -221,7 +221,7 @@ name | description
 
 #### Response
 
-This callback should return `200 OK` status code and JSON object with the customer KYC info:
+This callback should return `200 OK` status code and JSON object with the customer compliance info:
 
 ```json
 {
