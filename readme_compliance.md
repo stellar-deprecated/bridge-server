@@ -31,7 +31,7 @@ The `config_compliance.toml` file must be present in a working directory. Config
 * `callbacks`
   * `sanctions` - Callback that performs sanctions check. Read [Callbacks](#callbacks) section.
   * `ask_user` - Callback that asks user for permission for reading their data. Read [Callbacks](#callbacks) section.
-  * `fetch_info` - Callback that returns user data.
+  * `fetch_info` - Callback that returns user data. Read [Callbacks](#callbacks) section.
 * `log_format` - set to `json` for JSON logs
 
 Check [`config-example.toml`](./config-example.toml).
@@ -142,6 +142,96 @@ name |  | description
 #### Response
 
 Will response with `200 OK` if removed. Any other status is an error.
+
+## Callbacks
+
+The Compliance server will send callback request to URLs you define in config file. `Content-Type` of requests data will be `application/x-www-form-urlencoded`.
+
+### `callbacks.sanctions`
+
+If set in config file, this callback will be called when sanctions checks need to be performed.
+
+#### Request
+
+name | description
+--- | ---
+`data` | Stringified [AuthData](https://github.com/stellar/bridge-server/blob/master/src/github.com/stellar/gateway/protocols/compliance/auth.go#L34) JSON
+
+The customer information that is exchanged between FIs is flexible but the typical fields are:
+
+* Full Name
+* Date of birth
+* Physical address
+
+#### Response
+
+Respond with one of the following status codes:
+* `200 OK` when sender/receiver is allowed and the payment should be proceeded,
+* `202 Accepted` when your callback needs some time for processing,
+* `403 Forbidden` when sender/receiver is denied.
+
+Any other status code will be considered an error.
+
+When `202 Accepted` is returned the response body should contain JSON object with `pending` field which represents estimated number of seconds needed for processing. For example, the following response will mean to request this callback in an hour:
+
+```json
+{"pending": 3600}
+```
+
+### `callbacks.ask_user`
+
+If set in config file, this callback will be called when the sender needs your customer KYC info to send a payment.
+
+#### Request
+
+name | description
+--- | ---
+`data` | Stringified [AuthData](https://github.com/stellar/bridge-server/blob/master/src/github.com/stellar/gateway/protocols/compliance/auth.go#L34) JSON
+
+The customer information that is exchanged between FIs is flexible but the typical fields are:
+
+* Full Name
+* Date of birth
+* Physical address
+
+#### Response
+
+Respond with one of the following status codes:
+* `200 OK` when your customer has allowed to share his/her KYC and the payment should be proceeded,
+* `202 Accepted` when your callback needs some time for processing,
+* `403 Forbidden` when your customer has denied to share his/her KYC and the payment should be proceeded.
+
+Any other status code will be considered an error.
+
+When `202 Accepted` is returned the response body should contain JSON object with `pending` field which represents estimated number of seconds needed for processing. For example, the following response will mean to request this callback in an hour:
+
+```json
+{"pending": 3600}
+```
+
+### `callbacks.fetch_info`
+
+This callback should return KYC information of your customer identified by `address`.
+
+#### Request
+
+name | description
+--- | ---
+`address` | Stellar address (ex. `alice*acme.com`) of the user.
+
+#### Response
+
+This callback should return `200 OK` status code and JSON object with the customer KYC info:
+
+```json
+{
+	"name": "John Doe",
+	"address": "User physical address",
+	"date_of_birth": "1990-01-01"
+}
+```
+
+Any other status code will be considered an error.
 
 ## Building
 
