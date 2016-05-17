@@ -155,7 +155,7 @@ If set in the config file, this callback will be called when sanctions checks ne
 
 name | description
 --- | ---
-`data` | Stringified [AuthData](https://github.com/stellar/bridge-server/blob/master/src/github.com/stellar/gateway/protocols/compliance/auth.go#L34) JSON
+`sender` | Sender info JSON
 
 The customer information that is exchanged between FIs is flexible but the typical fields are:
 
@@ -166,7 +166,7 @@ The customer information that is exchanged between FIs is flexible but the typic
 #### Response
 
 Respond with one of the following status codes:
-* `200 OK` when sender/receiver is allowed and the payment should be proceeded,
+* `200 OK` when sender/receiver is allowed and the payment should be processed,
 * `202 Accepted` when your callback needs some time for processing,
 * `403 Forbidden` when sender/receiver is denied.
 
@@ -186,9 +186,13 @@ If set in the config file, this callback will be called when the sender needs yo
 
 name | description
 --- | ---
-`data` | Stringified [AuthData](https://github.com/stellar/bridge-server/blob/master/src/github.com/stellar/gateway/protocols/compliance/auth.go#L34) JSON
+`amount` | Payment amount
+`asset_code` | Payment asset code
+`asset_issuer` | Payment asset issuer
+`sender` | Sender info JSON
+`note` | Note attached to the payment
 
-The customer information that is exchanged between FIs is flexible but the typical fields are:
+The customer information (`sender`) that is exchanged between FIs is flexible but the typical fields are:
 
 * Full Name
 * Date of birth

@@ -219,10 +219,26 @@ func TestRequestHandlerAuth(t *testing.T) {
 			FetchInfo: "http://fetch_info",
 		}
 
+		memoPreimage := memo.Memo{
+			Transaction: memo.Transaction{
+				Route:      "bob*acme.com",
+				Note:       "Happy birthday",
+				SenderInfo: "senderInfoJson",
+				Extra:      "extra",
+			},
+		}
+
 		Convey("When all params are valid (NeedInfo = `false`)", func() {
+			authData := compliance.AuthData{
+				Sender:   "alice*stellar.org",
+				NeedInfo: false,
+				Tx:       "AAAAAC3/58Z9rycNLmF6voWX9VmDETFVGhFoWf66mcMuir/DAAAAZAAAAAAAAAAAAAAAAAAAAANeCnOi6ZSpMNIMFUUVIfbBc5OA5kpzDbg+AJ6X8/WynAAAAAEAAAAAAAAAAgAAAAFVU0QAAAAAAEbpO2riZmlZMkHuBxUBYAAas3hWyo9VL1IOdnfXAVFBAAAAADuaygAAAAAAGVL83DJFwH0sKmy6AIgJYD7GexiD0YuzSMioBCAUOJwAAAABVVNEAAAAAAAZUvzcMkXAfSwqbLoAiAlgPsZ7GIPRi7NIyKgEIBQ4nAAAAAAL68IAAAAAAgAAAAAAAAABRVVSAAAAAAALt4SwWfv1PIJvDRMenW0zu91YxZbphRFLA4O+gbAaigAAAAA=",
+				Memo:     string(memoPreimage.Marshal()),
+			}
+
 			params := url.Values{
-				"data": {"{\"sender\":\"alice*stellar.org\",\"need_info\":false,\"tx\":\"AAAAAC3/58Z9rycNLmF6voWX9VmDETFVGhFoWf66mcMuir/DAAAAZAAAAAAAAAAAAAAAAAAAAANEE2+jVbNnihFGrRb36GSelPtPwh/nfoMQwGD2HKr/igAAAAEAAAAAAAAAAgAAAAFVU0QAAAAAAEbpO2riZmlZMkHuBxUBYAAas3hWyo9VL1IOdnfXAVFBAAAAADuaygAAAAAAGVL83DJFwH0sKmy6AIgJYD7GexiD0YuzSMioBCAUOJwAAAABVVNEAAAAAAAZUvzcMkXAfSwqbLoAiAlgPsZ7GIPRi7NIyKgEIBQ4nAAAAAAL68IAAAAAAgAAAAAAAAABRVVSAAAAAAALt4SwWfv1PIJvDRMenW0zu91YxZbphRFLA4O+gbAaigAAAAA=\",\"memo\":\"{}\"}"},
-				"sig":  {"ACamNqa0dF8gf97URhFVKWSD7fmvZKc5At+8dCLM5ySR0HsHySF3G2WuwYP2nKjeqjKmu3U9Z3+u1P10w1KBCA=="},
+				"data": {string(authData.Marshal())},
+				"sig":  {"Q2cQVOn/A+aOxrLLeUPwHmBm3LMvlfXN8tDHo4Oi6SxWWueMTDfRkC4XvRX4emLij+Npo7/GfrZ82CnT5yB5Dg=="},
 			}
 
 			mockStellartomlResolver.On(
@@ -243,7 +259,7 @@ func TestRequestHandlerAuth(t *testing.T) {
 				mockHTTPClient.On(
 					"PostForm",
 					"http://sanctions",
-					url.Values{"data": params["data"]},
+					url.Values{"sender": {memoPreimage.Transaction.SenderInfo}},
 				).Return(
 					net.BuildHTTPResponse(403, "forbidden"),
 					nil,
@@ -253,9 +269,9 @@ func TestRequestHandlerAuth(t *testing.T) {
 				responseString := strings.TrimSpace(string(response))
 				assert.Equal(t, 200, statusCode)
 				expected := test.StringToJSONMap(`{
-  "info_status": "ok",
-  "tx_status": "denied"
-}`)
+		  "info_status": "ok",
+		  "tx_status": "denied"
+		}`)
 				assert.Equal(t, expected, test.StringToJSONMap(responseString))
 			})
 
@@ -263,7 +279,7 @@ func TestRequestHandlerAuth(t *testing.T) {
 				mockHTTPClient.On(
 					"PostForm",
 					"http://sanctions",
-					url.Values{"data": params["data"]},
+					url.Values{"sender": {memoPreimage.Transaction.SenderInfo}},
 				).Return(
 					net.BuildHTTPResponse(202, "pending"),
 					nil,
@@ -284,16 +300,16 @@ func TestRequestHandlerAuth(t *testing.T) {
 				mockHTTPClient.On(
 					"PostForm",
 					"http://sanctions",
-					url.Values{"data": params["data"]},
+					url.Values{"sender": {memoPreimage.Transaction.SenderInfo}},
 				).Return(
 					net.BuildHTTPResponse(200, "ok"),
 					nil,
 				).Once()
 
 				authorizedTransaction := &entities.AuthorizedTransaction{
-					TransactionID:  "29ec92f95b00dd8e8bbb0d2a2fc90db8ed5b26c396c44ac978bb13ccd8d25524",
-					Memo:           "RBNvo1WzZ4oRRq0W9+hknpT7T8If536DEMBg9hyq/4o=",
-					TransactionXdr: "AAAAAC3/58Z9rycNLmF6voWX9VmDETFVGhFoWf66mcMuir/DAAAAZAAAAAAAAAAAAAAAAAAAAANEE2+jVbNnihFGrRb36GSelPtPwh/nfoMQwGD2HKr/igAAAAEAAAAAAAAAAgAAAAFVU0QAAAAAAEbpO2riZmlZMkHuBxUBYAAas3hWyo9VL1IOdnfXAVFBAAAAADuaygAAAAAAGVL83DJFwH0sKmy6AIgJYD7GexiD0YuzSMioBCAUOJwAAAABVVNEAAAAAAAZUvzcMkXAfSwqbLoAiAlgPsZ7GIPRi7NIyKgEIBQ4nAAAAAAL68IAAAAAAgAAAAAAAAABRVVSAAAAAAALt4SwWfv1PIJvDRMenW0zu91YxZbphRFLA4O+gbAaigAAAAA=",
+					TransactionID:  "f62589932eb9fcf0bf28fe95510bf614caf3169c67a85e75475a390a79b5ecc9",
+					Memo:           "XgpzoumUqTDSDBVFFSH2wXOTgOZKcw24PgCel/P1spw=",
+					TransactionXdr: "AAAAAC3/58Z9rycNLmF6voWX9VmDETFVGhFoWf66mcMuir/DAAAAZAAAAAAAAAAAAAAAAAAAAANeCnOi6ZSpMNIMFUUVIfbBc5OA5kpzDbg+AJ6X8/WynAAAAAEAAAAAAAAAAgAAAAFVU0QAAAAAAEbpO2riZmlZMkHuBxUBYAAas3hWyo9VL1IOdnfXAVFBAAAAADuaygAAAAAAGVL83DJFwH0sKmy6AIgJYD7GexiD0YuzSMioBCAUOJwAAAABVVNEAAAAAAAZUvzcMkXAfSwqbLoAiAlgPsZ7GIPRi7NIyKgEIBQ4nAAAAAAL68IAAAAAAgAAAAAAAAABRVVSAAAAAAALt4SwWfv1PIJvDRMenW0zu91YxZbphRFLA4O+gbAaigAAAAA=",
 					Data:           params["data"][0],
 				}
 
@@ -321,16 +337,10 @@ func TestRequestHandlerAuth(t *testing.T) {
 		})
 
 		Convey("When all params are valid (NeedInfo = `true`)", func() {
-			memoPreimage := memo.Memo{
-				Transaction: memo.Transaction{
-					Route: "bob*acme.com",
-				},
-			}
-
 			authData := compliance.AuthData{
 				Sender:   "alice*stellar.org",
 				NeedInfo: true,
-				Tx:       "AAAAAC3/58Z9rycNLmF6voWX9VmDETFVGhFoWf66mcMuir/DAAAAZAAAAAAAAAAAAAAAAAAAAAOSmd0xMyU3Or8ITID/nfZxYLwhySbceUpNTURuZBydVQAAAAEAAAAAAAAAAgAAAAFVU0QAAAAAAEbpO2riZmlZMkHuBxUBYAAas3hWyo9VL1IOdnfXAVFBAAAAADuaygAAAAAAGVL83DJFwH0sKmy6AIgJYD7GexiD0YuzSMioBCAUOJwAAAABVVNEAAAAAAAZUvzcMkXAfSwqbLoAiAlgPsZ7GIPRi7NIyKgEIBQ4nAAAAAAL68IAAAAAAgAAAAAAAAABRVVSAAAAAAALt4SwWfv1PIJvDRMenW0zu91YxZbphRFLA4O+gbAaigAAAAA=",
+				Tx:       "AAAAAC3/58Z9rycNLmF6voWX9VmDETFVGhFoWf66mcMuir/DAAAAZAAAAAAAAAAAAAAAAAAAAANeCnOi6ZSpMNIMFUUVIfbBc5OA5kpzDbg+AJ6X8/WynAAAAAEAAAAAAAAAAgAAAAFVU0QAAAAAAEbpO2riZmlZMkHuBxUBYAAas3hWyo9VL1IOdnfXAVFBAAAAADuaygAAAAAAGVL83DJFwH0sKmy6AIgJYD7GexiD0YuzSMioBCAUOJwAAAABVVNEAAAAAAAZUvzcMkXAfSwqbLoAiAlgPsZ7GIPRi7NIyKgEIBQ4nAAAAAAL68IAAAAAAgAAAAAAAAABRVVSAAAAAAALt4SwWfv1PIJvDRMenW0zu91YxZbphRFLA4O+gbAaigAAAAA=",
 				Memo:     string(memoPreimage.Marshal()),
 			}
 
@@ -353,11 +363,13 @@ func TestRequestHandlerAuth(t *testing.T) {
 				mock.AnythingOfType("[]uint8"),
 			).Return(nil).Once()
 
-			// Make sanctions checks successful (tested previously)
+			// Make sanctions checks successful (tested in the previous test case)
 			mockHTTPClient.On(
 				"PostForm",
 				"http://sanctions",
-				url.Values{"data": params["data"]},
+				url.Values{
+					"sender": {memoPreimage.Transaction.SenderInfo},
+				},
 			).Return(
 				net.BuildHTTPResponse(200, "ok"),
 				nil,
@@ -367,7 +379,13 @@ func TestRequestHandlerAuth(t *testing.T) {
 				mockHTTPClient.On(
 					"PostForm",
 					"http://ask_user",
-					url.Values{"data": params["data"]},
+					url.Values{
+						"sender":       {memoPreimage.Transaction.SenderInfo},
+						"note":         {memoPreimage.Transaction.Note},
+						"amount":       {"20.0000000"},
+						"asset_code":   {"USD"},
+						"asset_issuer": {"GAMVF7G4GJC4A7JMFJWLUAEIBFQD5RT3DCB5DC5TJDEKQBBACQ4JZVEE"},
+					},
 				).Return(
 					net.BuildHTTPResponse(403, "forbidden"),
 					nil,
@@ -387,7 +405,13 @@ func TestRequestHandlerAuth(t *testing.T) {
 				mockHTTPClient.On(
 					"PostForm",
 					"http://ask_user",
-					url.Values{"data": params["data"]},
+					url.Values{
+						"sender":       {memoPreimage.Transaction.SenderInfo},
+						"note":         {memoPreimage.Transaction.Note},
+						"amount":       {"20.0000000"},
+						"asset_code":   {"USD"},
+						"asset_issuer": {"GAMVF7G4GJC4A7JMFJWLUAEIBFQD5RT3DCB5DC5TJDEKQBBACQ4JZVEE"},
+					},
 				).Return(
 					net.BuildHTTPResponse(202, "{\"pending\": 300}"),
 					nil,
@@ -408,7 +432,13 @@ func TestRequestHandlerAuth(t *testing.T) {
 				mockHTTPClient.On(
 					"PostForm",
 					"http://ask_user",
-					url.Values{"data": params["data"]},
+					url.Values{
+						"sender":       {memoPreimage.Transaction.SenderInfo},
+						"note":         {memoPreimage.Transaction.Note},
+						"amount":       {"20.0000000"},
+						"asset_code":   {"USD"},
+						"asset_issuer": {"GAMVF7G4GJC4A7JMFJWLUAEIBFQD5RT3DCB5DC5TJDEKQBBACQ4JZVEE"},
+					},
 				).Return(
 					net.BuildHTTPResponse(202, "pending"),
 					nil,
@@ -429,7 +459,13 @@ func TestRequestHandlerAuth(t *testing.T) {
 				mockHTTPClient.On(
 					"PostForm",
 					"http://ask_user",
-					url.Values{"data": params["data"]},
+					url.Values{
+						"sender":       {memoPreimage.Transaction.SenderInfo},
+						"note":         {memoPreimage.Transaction.Note},
+						"amount":       {"20.0000000"},
+						"asset_code":   {"USD"},
+						"asset_issuer": {"GAMVF7G4GJC4A7JMFJWLUAEIBFQD5RT3DCB5DC5TJDEKQBBACQ4JZVEE"},
+					},
 				).Return(
 					net.BuildHTTPResponse(200, "ok"),
 					nil,
@@ -445,9 +481,9 @@ func TestRequestHandlerAuth(t *testing.T) {
 				).Once()
 
 				authorizedTransaction := &entities.AuthorizedTransaction{
-					TransactionID:  "b9c3a075b4c20663a26779202fdd2a25a6816114b46ef7553076af68ce1986f5",
-					Memo:           "kpndMTMlNzq/CEyA/532cWC8Ickm3HlKTU1EbmQcnVU=",
-					TransactionXdr: "AAAAAC3/58Z9rycNLmF6voWX9VmDETFVGhFoWf66mcMuir/DAAAAZAAAAAAAAAAAAAAAAAAAAAOSmd0xMyU3Or8ITID/nfZxYLwhySbceUpNTURuZBydVQAAAAEAAAAAAAAAAgAAAAFVU0QAAAAAAEbpO2riZmlZMkHuBxUBYAAas3hWyo9VL1IOdnfXAVFBAAAAADuaygAAAAAAGVL83DJFwH0sKmy6AIgJYD7GexiD0YuzSMioBCAUOJwAAAABVVNEAAAAAAAZUvzcMkXAfSwqbLoAiAlgPsZ7GIPRi7NIyKgEIBQ4nAAAAAAL68IAAAAAAgAAAAAAAAABRVVSAAAAAAALt4SwWfv1PIJvDRMenW0zu91YxZbphRFLA4O+gbAaigAAAAA=",
+					TransactionID:  "f62589932eb9fcf0bf28fe95510bf614caf3169c67a85e75475a390a79b5ecc9",
+					Memo:           "XgpzoumUqTDSDBVFFSH2wXOTgOZKcw24PgCel/P1spw=",
+					TransactionXdr: "AAAAAC3/58Z9rycNLmF6voWX9VmDETFVGhFoWf66mcMuir/DAAAAZAAAAAAAAAAAAAAAAAAAAANeCnOi6ZSpMNIMFUUVIfbBc5OA5kpzDbg+AJ6X8/WynAAAAAEAAAAAAAAAAgAAAAFVU0QAAAAAAEbpO2riZmlZMkHuBxUBYAAas3hWyo9VL1IOdnfXAVFBAAAAADuaygAAAAAAGVL83DJFwH0sKmy6AIgJYD7GexiD0YuzSMioBCAUOJwAAAABVVNEAAAAAAAZUvzcMkXAfSwqbLoAiAlgPsZ7GIPRi7NIyKgEIBQ4nAAAAAAL68IAAAAAAgAAAAAAAAABRVVSAAAAAAALt4SwWfv1PIJvDRMenW0zu91YxZbphRFLA4O+gbAaigAAAAA=",
 					Data:           params["data"][0],
 				}
 
@@ -496,9 +532,9 @@ func TestRequestHandlerAuth(t *testing.T) {
 					).Once()
 
 					authorizedTransaction := &entities.AuthorizedTransaction{
-						TransactionID:  "b9c3a075b4c20663a26779202fdd2a25a6816114b46ef7553076af68ce1986f5",
-						Memo:           "kpndMTMlNzq/CEyA/532cWC8Ickm3HlKTU1EbmQcnVU=",
-						TransactionXdr: "AAAAAC3/58Z9rycNLmF6voWX9VmDETFVGhFoWf66mcMuir/DAAAAZAAAAAAAAAAAAAAAAAAAAAOSmd0xMyU3Or8ITID/nfZxYLwhySbceUpNTURuZBydVQAAAAEAAAAAAAAAAgAAAAFVU0QAAAAAAEbpO2riZmlZMkHuBxUBYAAas3hWyo9VL1IOdnfXAVFBAAAAADuaygAAAAAAGVL83DJFwH0sKmy6AIgJYD7GexiD0YuzSMioBCAUOJwAAAABVVNEAAAAAAAZUvzcMkXAfSwqbLoAiAlgPsZ7GIPRi7NIyKgEIBQ4nAAAAAAL68IAAAAAAgAAAAAAAAABRVVSAAAAAAALt4SwWfv1PIJvDRMenW0zu91YxZbphRFLA4O+gbAaigAAAAA=",
+						TransactionID:  "f62589932eb9fcf0bf28fe95510bf614caf3169c67a85e75475a390a79b5ecc9",
+						Memo:           "XgpzoumUqTDSDBVFFSH2wXOTgOZKcw24PgCel/P1spw=",
+						TransactionXdr: "AAAAAC3/58Z9rycNLmF6voWX9VmDETFVGhFoWf66mcMuir/DAAAAZAAAAAAAAAAAAAAAAAAAAANeCnOi6ZSpMNIMFUUVIfbBc5OA5kpzDbg+AJ6X8/WynAAAAAEAAAAAAAAAAgAAAAFVU0QAAAAAAEbpO2riZmlZMkHuBxUBYAAas3hWyo9VL1IOdnfXAVFBAAAAADuaygAAAAAAGVL83DJFwH0sKmy6AIgJYD7GexiD0YuzSMioBCAUOJwAAAABVVNEAAAAAAAZUvzcMkXAfSwqbLoAiAlgPsZ7GIPRi7NIyKgEIBQ4nAAAAAAL68IAAAAAAgAAAAAAAAABRVVSAAAAAAALt4SwWfv1PIJvDRMenW0zu91YxZbphRFLA4O+gbAaigAAAAA=",
 						Data:           params["data"][0],
 					}
 
@@ -553,9 +589,9 @@ func TestRequestHandlerAuth(t *testing.T) {
 					).Once()
 
 					authorizedTransaction := &entities.AuthorizedTransaction{
-						TransactionID:  "b9c3a075b4c20663a26779202fdd2a25a6816114b46ef7553076af68ce1986f5",
-						Memo:           "kpndMTMlNzq/CEyA/532cWC8Ickm3HlKTU1EbmQcnVU=",
-						TransactionXdr: "AAAAAC3/58Z9rycNLmF6voWX9VmDETFVGhFoWf66mcMuir/DAAAAZAAAAAAAAAAAAAAAAAAAAAOSmd0xMyU3Or8ITID/nfZxYLwhySbceUpNTURuZBydVQAAAAEAAAAAAAAAAgAAAAFVU0QAAAAAAEbpO2riZmlZMkHuBxUBYAAas3hWyo9VL1IOdnfXAVFBAAAAADuaygAAAAAAGVL83DJFwH0sKmy6AIgJYD7GexiD0YuzSMioBCAUOJwAAAABVVNEAAAAAAAZUvzcMkXAfSwqbLoAiAlgPsZ7GIPRi7NIyKgEIBQ4nAAAAAAL68IAAAAAAgAAAAAAAAABRVVSAAAAAAALt4SwWfv1PIJvDRMenW0zu91YxZbphRFLA4O+gbAaigAAAAA=",
+						TransactionID:  "f62589932eb9fcf0bf28fe95510bf614caf3169c67a85e75475a390a79b5ecc9",
+						Memo:           "XgpzoumUqTDSDBVFFSH2wXOTgOZKcw24PgCel/P1spw=",
+						TransactionXdr: "AAAAAC3/58Z9rycNLmF6voWX9VmDETFVGhFoWf66mcMuir/DAAAAZAAAAAAAAAAAAAAAAAAAAANeCnOi6ZSpMNIMFUUVIfbBc5OA5kpzDbg+AJ6X8/WynAAAAAEAAAAAAAAAAgAAAAFVU0QAAAAAAEbpO2riZmlZMkHuBxUBYAAas3hWyo9VL1IOdnfXAVFBAAAAADuaygAAAAAAGVL83DJFwH0sKmy6AIgJYD7GexiD0YuzSMioBCAUOJwAAAABVVNEAAAAAAAZUvzcMkXAfSwqbLoAiAlgPsZ7GIPRi7NIyKgEIBQ4nAAAAAAL68IAAAAAAgAAAAAAAAABRVVSAAAAAAALt4SwWfv1PIJvDRMenW0zu91YxZbphRFLA4O+gbAaigAAAAA=",
 						Data:           params["data"][0],
 					}
 
