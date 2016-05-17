@@ -29,7 +29,7 @@ type PaymentListener struct {
 	now           func() time.Time
 }
 
-const hookTimeout = 10 * time.Second
+const callbackTimeout = 10 * time.Second
 
 // NewPaymentListener creates a new PaymentListener
 func NewPaymentListener(
@@ -40,7 +40,7 @@ func NewPaymentListener(
 	now func() time.Time,
 ) (pl PaymentListener, err error) {
 	pl.client = &http.Client{
-		Timeout: hookTimeout,
+		Timeout: callbackTimeout,
 	}
 	pl.config = config
 	pl.entityManager = entityManager
@@ -192,7 +192,7 @@ func (pl PaymentListener) onPayment(payment horizon.PaymentResponse) (err error)
 	}
 
 	resp, err := pl.client.PostForm(
-		pl.config.Hooks.Receive,
+		pl.config.Callbacks.Receive,
 		url.Values{
 			"id":         {payment.ID},
 			"from":       {payment.From},
@@ -204,7 +204,7 @@ func (pl PaymentListener) onPayment(payment horizon.PaymentResponse) (err error)
 		},
 	)
 	if err != nil {
-		pl.log.Error("Error sending request to receive hook")
+		pl.log.Error("Error sending request to receive callback")
 		return err
 	}
 
@@ -212,15 +212,15 @@ func (pl PaymentListener) onPayment(payment horizon.PaymentResponse) (err error)
 		defer resp.Body.Close()
 		body, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			pl.log.Error("Error reading receive hook response")
+			pl.log.Error("Error reading receive callback response")
 			return err
 		}
 
 		pl.log.WithFields(logrus.Fields{
 			"status": resp.StatusCode,
 			"body":   string(body),
-		}).Error("Error response from receive hook")
-		return errors.New("Error response from receive hook")
+		}).Error("Error response from receive callback")
+		return errors.New("Error response from receive callback")
 	}
 
 	dbPayment.Status = "Success"

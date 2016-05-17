@@ -40,9 +40,9 @@ The `config_bridge.toml` file must be present in a working directory. Config fil
   * `base_seed` - The secret seed of the account used to send payments. If left blank you will need to pass it in calls to `/payment`. 
   * `authorizing_seed` - The secret seed of the public key that is able to submit `allow_trust` operations on the issuing account.
   * `issuing_account_id` - The account ID of the issuing account.
-  * `receiving_account_id` - The account ID that receives incoming payments. The `receive hook` will be called when a payment is received by this account.
-* `hooks`
-  * `receive` - URL of the webhook where requests will be sent when a new payment is sent to the receiving account. The bridge server will keep calling the receive hook indefinitely until 200 OK status is returned by it. **WARNING** The bridge server can send multiple requests to this webhook for a single payment! You need to be prepared for it. See: [Security](#security).
+  * `receiving_account_id` - The account ID that receives incoming payments. The `callbacks.receive` will be called when a payment is received by this account.
+* `callbacks`
+  * `receive` - URL of the webhook where requests will be sent when a new payment is sent to the receiving account. The bridge server will keep calling the receive callback indefinitely until 200 OK status is returned by it. **WARNING** The bridge server can send multiple requests to this webhook for a single payment! You need to be prepared for it. See: [Security](#security).
   * `error` - URL of the webhook where requests will be sent when there is an error with an incoming payment
 * `log_format` - set to `json` for JSON logs
 
@@ -347,18 +347,18 @@ It will return [`SubmitTransactionResponse`](./blob/master/src/github.com/stella
 * [`AllowTrustTrustNotRequired`](./blob/master/src/github.com/stellar/gateway/protocols/bridge/authorize.go)
 * [`AllowTrustCantRevoke`](./blob/master/src/github.com/stellar/gateway/protocols/bridge/authorize.go)
 
-## Hooks
+## Callbacks
 
 The Bridge server listens for payment operations to the account specified by `accounts.receiving_account_id`. Every time 
-a payment arrives it will send a HTTP POST request to `hooks.receive`.
+a payment arrives it will send a HTTP POST request to `callbacks.receive`.
 
 `Content-Type` of requests data will be `application/x-www-form-urlencoded`.
 
-### `hooks.receive`
+### `callbacks.receive`
 
-The POST request with following parameters will be sent to this hook when a payment arrives.
+The POST request with following parameters will be sent to this callback when a payment arrives.
 
-> **Warning!** This hook can be called multiple times. Please check `id` parameter and respond with `200 OK` in case of duplicate payment.
+> **Warning!** This callback can be called multiple times. Please check `id` parameter and respond with `200 OK` in case of duplicate payment.
 
 #### Request
 
@@ -381,8 +381,8 @@ Respond with `200 OK` when processing succeeded. Any other status code will be c
 * This server must be set up in an isolated environment (ex. AWS VPC). Please make sure your firewall is properly configured 
 and accepts connections from a trusted IPs only. You can also set the `api_key` config parameter but it's not recommended. 
 If you don't set this properly, an unauthorized person will be able to submit transactions from your accounts!
-* Make sure the `hooks` you provide only accept connections from the bridge server IP.
-* Remember that `hooks.receive` may be called multiple times with the same payment. Check `id` parameter and ignore 
+* Make sure the `callbacks` you provide only accept connections from the bridge server IP.
+* Remember that `callbacks.receive` may be called multiple times with the same payment. Check `id` parameter and ignore 
 requests with the same value (just send `200 OK` response).
 
 ## Building

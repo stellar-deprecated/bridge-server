@@ -115,8 +115,8 @@ func NewApp(config config.Config, migrateFlag bool) (app *App, err error) {
 
 	if config.Accounts.ReceivingAccountID == "" {
 		log.Warning("No accounts.receiving_account_id param. Skipping...")
-	} else if config.Hooks.Receive == "" {
-		log.Warning("No hooks.receive param. Skipping...")
+	} else if config.Callbacks.Receive == "" {
+		log.Warning("No callbacks.receive param. Skipping...")
 	} else {
 		paymentListener, err = listener.NewPaymentListener(&config, entityManager, &h, repository, time.Now)
 		if err != nil {
