@@ -71,6 +71,22 @@ Then you can start the server:
 
 `Content-Type` of requests data should be `application/x-www-form-urlencoded`.
 
+### POST /create-keypair
+
+Creates a new random key pair.
+
+#### Response
+
+```json
+{
+	"public_key": "GCSLLOYK7IKDQKUDSSAPHSJT3Y5XLIDIAFPVO5K42IN5CAQPNHIHJ2DE",
+	"private_key": "SCJAOTWONWSOQLILCHNSGUOIXWCMIJQ563SPHMG25OPFX3IUDBAFU4SV"
+}
+```
+
+In case of error it will return the following error:
+* [`InternalServerError`](./blob/master/src/github.com/stellar/gateway/protocols/errors.go)
+
 ### POST /builder
 
 Builds a transaction from a given request. `Content-Type` of this request should be `application/json`. Check [List of operations](https://www.stellar.org/developers/learn/concepts/list-of-operations.html) doc to learn more about how each operation looks like.
