@@ -181,6 +181,7 @@ func (a *App) Serve() {
 		log.Warning("accounts.authorizing_seed not provided. /authorize endpoint will not be available.")
 	}
 
+	goji.Post("/create-keypair", a.requestHandler.CreateKeypair)
 	goji.Post("/builder", a.requestHandler.Builder)
 	goji.Post("/payment", a.requestHandler.Payment)
 
