@@ -269,8 +269,8 @@ Every request must contain required parameters from the following list. Addition
 name |  | description
 --- | --- | ---
 `source` | optional | Secret seed of transaction source account. If ommitted it will use the `base_seed` specified in the config file.
-`sender` | optional | Stellar address (ex. `bob*stellar.org`) of payment sender account. Required for when sending using Compliance protocol.
-`destination` | required | Account ID or Stellar address (ex. `bob*stellar.org`) of payment destination account
+`sender` | optional | Payment address (ex. `bob*stellar.org`) of payment sender account. Required for when sending using Compliance protocol.
+`destination` | required | Account ID or payment address (ex. `bob*stellar.org`) of payment destination account
 `amount` | required | Amount that destination will receive
 `memo_type` | optional | Memo type, one of: `id`, `text`, `hash`, `extra`
 `memo` | optional | Memo value, `id` it must be uint64, when `hash` it must be 32 bytes hex value.
