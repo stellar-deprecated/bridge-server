@@ -382,6 +382,7 @@ name | description
 --- | ---
 `id` | Operation ID
 `from` | Account ID of the sender
+`route` | The recipient ID at the receiving FI. This will be the routing information containd in the memo.
 `amount` | Amount that was sent
 `asset_code` | Code of the asset sent (ex. `USD`)
 `memo_type` | Type of the memo attached to the transaction. This field will be empty when no memo was attached.
