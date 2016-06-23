@@ -183,6 +183,7 @@ func (a *App) Serve() {
 
 	goji.Post("/builder", a.requestHandler.Builder)
 	goji.Post("/payment", a.requestHandler.Payment)
+	goji.Get("/payment", a.requestHandler.Payment)
 
 	goji.Serve()
 }
