@@ -157,6 +157,7 @@ func (pl PaymentListener) onPayment(payment horizon.PaymentResponse) (err error)
 	}
 
 	var receiveResponse compliance.ReceiveResponse
+	var route string
 
 	// Request extra_memo from compliance server
 	if pl.config.Compliance != "" && payment.Memo.Type == "hash" {
@@ -189,6 +190,11 @@ func (pl PaymentListener) onPayment(payment horizon.PaymentResponse) (err error)
 			pl.log.WithFields(logrus.Fields{"err": err}).Error("Cannot unmarshal receiveResponse")
 			return err
 		}
+	}else
+	{
+		if payment.Memo.Type != "hash" {
+			route=string(payment.Memo.Value)
+		}
 	}
 
 	resp, err := pl.client.PostForm(
@@ -196,6 +202,7 @@ func (pl PaymentListener) onPayment(payment horizon.PaymentResponse) (err error)
 		url.Values{
 			"id":         {payment.ID},
 			"from":       {payment.From},
+			"route":      {route},
 			"amount":     {payment.Amount},
 			"asset_code": {payment.AssetCode},
 			"memo_type":  {payment.Memo.Type},
