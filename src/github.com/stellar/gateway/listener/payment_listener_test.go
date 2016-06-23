@@ -30,8 +30,8 @@ func TestPaymentListener(t *testing.T) {
 			IssuingAccountID:   "GATKP6ZQM5CSLECPMTAC5226PE367QALCPM6AFHTSULPPZMT62OOPMQB",
 			ReceivingAccountID: "GATKP6ZQM5CSLECPMTAC5226PE367QALCPM6AFHTSULPPZMT62OOPMQB",
 		},
-		Hooks: config.Hooks{
-			Receive: "http://receive_hook",
+		Callbacks: config.Callbacks{
+			Receive: "http://receive_callback",
 		},
 	}
 
@@ -148,7 +148,7 @@ func TestPaymentListener(t *testing.T) {
 			})
 		})
 
-		Convey("When receive hook returns error", func() {
+		Convey("When receive callback returns error", func() {
 			operation.Type = "payment"
 			operation.To = "GATKP6ZQM5CSLECPMTAC5226PE367QALCPM6AFHTSULPPZMT62OOPMQB"
 			operation.AssetCode = "USD"
@@ -161,7 +161,7 @@ func TestPaymentListener(t *testing.T) {
 
 			mockHTTPClient.On(
 				"PostForm",
-				"http://receive_hook",
+				"http://receive_callback",
 				url.Values{
 					"id":         {"1"},
 					"from":       {"GBIHSMPXC2KJ3NJVHEYTG3KCHYEUQRT45X6AWYWXMAXZOAX4F5LFZYYQ"},
@@ -184,7 +184,7 @@ func TestPaymentListener(t *testing.T) {
 			})
 		})
 
-		Convey("When receive hook returns success", func() {
+		Convey("When receive callback returns success", func() {
 			operation.Type = "payment"
 			operation.To = "GATKP6ZQM5CSLECPMTAC5226PE367QALCPM6AFHTSULPPZMT62OOPMQB"
 			operation.AssetCode = "USD"
@@ -200,7 +200,7 @@ func TestPaymentListener(t *testing.T) {
 
 			mockHTTPClient.On(
 				"PostForm",
-				"http://receive_hook",
+				"http://receive_callback",
 				url.Values{
 					"id":         {"1"},
 					"from":       {"GBIHSMPXC2KJ3NJVHEYTG3KCHYEUQRT45X6AWYWXMAXZOAX4F5LFZYYQ"},
@@ -223,7 +223,7 @@ func TestPaymentListener(t *testing.T) {
 			})
 		})
 
-		Convey("When receive hook returns success (no memo)", func() {
+		Convey("When receive callback returns success (no memo)", func() {
 			operation.Type = "payment"
 			operation.To = "GATKP6ZQM5CSLECPMTAC5226PE367QALCPM6AFHTSULPPZMT62OOPMQB"
 			operation.AssetCode = "USD"
@@ -237,7 +237,7 @@ func TestPaymentListener(t *testing.T) {
 
 			mockHTTPClient.On(
 				"PostForm",
-				"http://receive_hook",
+				"http://receive_callback",
 				url.Values{
 					"id":         {"1"},
 					"from":       {"GBIHSMPXC2KJ3NJVHEYTG3KCHYEUQRT45X6AWYWXMAXZOAX4F5LFZYYQ"},
@@ -260,7 +260,7 @@ func TestPaymentListener(t *testing.T) {
 			})
 		})
 
-		Convey("When receive hook returns success and compliance server is connected", func() {
+		Convey("When receive callback returns success and compliance server is connected", func() {
 			paymentListener.config.Compliance = "http://compliance"
 
 			operation.Type = "payment"
@@ -287,7 +287,7 @@ func TestPaymentListener(t *testing.T) {
 
 			mockHTTPClient.On(
 				"PostForm",
-				"http://receive_hook",
+				"http://receive_callback",
 				url.Values{
 					"id":         {"1"},
 					"from":       {"GBIHSMPXC2KJ3NJVHEYTG3KCHYEUQRT45X6AWYWXMAXZOAX4F5LFZYYQ"},

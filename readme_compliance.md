@@ -31,7 +31,7 @@ The `config_compliance.toml` file must be present in a working directory. Config
 * `callbacks`
   * `sanctions` - Callback that performs sanctions check. Read [Callbacks](#callbacks) section.
   * `ask_user` - Callback that asks user for permission for reading their data. Read [Callbacks](#callbacks) section.
-  * `fetch_info` - Callback that returns user data.
+  * `fetch_info` - Callback that returns user data. Read [Callbacks](#callbacks) section.
 * `log_format` - set to `json` for JSON logs
 
 Check [`config-example.toml`](./config-example.toml).
@@ -142,6 +142,100 @@ name |  | description
 #### Response
 
 Will response with `200 OK` if removed. Any other status is an error.
+
+## Callbacks
+
+The Compliance server will send callback request to URLs you define in the config file. `Content-Type` of requests data will be `application/x-www-form-urlencoded`.
+
+### `callbacks.sanctions`
+
+If set in the config file, this callback will be called when sanctions checks need to be performed. If not set the compliance server will act as if the sanction check passes.
+
+#### Request
+
+name | description
+--- | ---
+`sender` | Sender info JSON
+
+The customer information that is exchanged between FIs is flexible but the typical fields are:
+
+* Full Name
+* Date of birth
+* Physical address
+
+#### Response
+
+Respond with one of the following status codes:
+* `200 OK` when sender/receiver is allowed and the payment should be processed,
+* `202 Accepted` when your callback needs some time for processing,
+* `403 Forbidden` when sender/receiver is denied.
+
+Any other status code will be considered an error.
+
+When `202 Accepted` is returned the response body should contain JSON object with a `pending` field which represents the estimated number of seconds needed for processing. For example, the following response means to try the payment again in an hour.
+
+```json
+{"pending": 3600}
+```
+
+### `callbacks.ask_user`
+
+If set in the config file, this callback will be called when the sender needs your customer KYC info to send a payment. If not set then the customer information won't be given to the other FI.
+
+#### Request
+
+name | description
+--- | ---
+`amount` | Payment amount
+`asset_code` | Payment asset code
+`asset_issuer` | Payment asset issuer
+`sender` | Sender info JSON
+`note` | Note attached to the payment
+
+The customer information (`sender`) that is exchanged between FIs is flexible but the typical fields are:
+
+* Full Name
+* Date of birth
+* Physical address
+
+#### Response
+
+Respond with one of the following status codes:
+* `200 OK` when your customer has allowed sharing his/her compliance information with the requesting FI.
+* `202 Accepted` when your callback needs some time for processing, ie to ask the customer.
+* `403 Forbidden` when your customer has denied sharing his/her compliance information with the requesting FI.
+
+Any other status code will be considered an error.
+
+When `202 Accepted` is returned the response body should contain JSON object with `pending` field which represents estimated number of seconds needed for processing. For example, the following response means to try the payment again in an hour:
+
+```json
+{"pending": 3600}
+```
+
+### `callbacks.fetch_info`
+
+This callback should return the compliance information of your customer identified by `address`.
+
+#### Request
+
+name | description
+--- | ---
+`address` | Stellar address (ex. `alice*acme.com`) of the user.
+
+#### Response
+
+This callback should return `200 OK` status code and JSON object with the customer compliance info:
+
+```json
+{
+	"name": "John Doe",
+	"address": "User physical address",
+	"date_of_birth": "1990-01-01"
+}
+```
+
+Any other status code will be considered an error.
 
 ## Building
 

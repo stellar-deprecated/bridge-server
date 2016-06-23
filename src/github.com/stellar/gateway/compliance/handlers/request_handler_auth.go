@@ -19,6 +19,7 @@ import (
 	"github.com/stellar/gateway/protocols/memo"
 	"github.com/stellar/gateway/server"
 	"github.com/stellar/gateway/submitter"
+	baseAmount "github.com/stellar/go-stellar-base/amount"
 	"github.com/stellar/go-stellar-base/xdr"
 	"github.com/zenazn/goji/web"
 )
@@ -151,7 +152,7 @@ func (rh *RequestHandler) HandlerAuth(c web.C, w http.ResponseWriter, r *http.Re
 	} else {
 		resp, err := rh.Client.PostForm(
 			rh.Config.Callbacks.Sanctions,
-			url.Values{"data": {string(request.Data)}},
+			url.Values{"sender": {memoPreimage.Transaction.SenderInfo}},
 		)
 		if err != nil {
 			log.WithFields(log.Fields{
@@ -235,9 +236,28 @@ func (rh *RequestHandler) HandlerAuth(c web.C, w http.ResponseWriter, r *http.Re
 			}
 		} else {
 			// Ask user
+			var amount, assetType, assetCode, assetIssuer string
+
+			if len(tx.Operations) > 0 {
+				operationBody := tx.Operations[0].Body
+				if operationBody.Type == xdr.OperationTypePayment {
+					amount = baseAmount.String(operationBody.PaymentOp.Amount)
+					operationBody.PaymentOp.Asset.Extract(&assetType, &assetCode, &assetIssuer)
+				} else if operationBody.Type == xdr.OperationTypePathPayment {
+					amount = baseAmount.String(operationBody.PathPaymentOp.DestAmount)
+					operationBody.PathPaymentOp.DestAsset.Extract(&assetType, &assetCode, &assetIssuer)
+				}
+			}
+
 			resp, err := rh.Client.PostForm(
 				rh.Config.Callbacks.AskUser,
-				url.Values{"data": {string(request.Data)}},
+				url.Values{
+					"amount":       {amount},
+					"asset_code":   {assetCode},
+					"asset_issuer": {assetIssuer},
+					"sender":       {memoPreimage.Transaction.SenderInfo},
+					"note":         {memoPreimage.Transaction.Note},
+				},
 			)
 			if err != nil {
 				log.WithFields(log.Fields{

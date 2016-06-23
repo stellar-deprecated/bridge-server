@@ -21,7 +21,7 @@ type Config struct {
 		URL  string
 	}
 	Accounts
-	Hooks
+	Callbacks
 }
 
 // Asset represents credit asset
@@ -38,8 +38,8 @@ type Accounts struct {
 	ReceivingAccountID string `mapstructure:"receiving_account_id"`
 }
 
-// Hooks contains values of `hooks` config group
-type Hooks struct {
+// Callbacks contains values of `callbacks` config group
+type Callbacks struct {
 	Receive string
 	Error   string
 }
@@ -123,18 +123,18 @@ func (c *Config) Validate() (err error) {
 		}
 	}
 
-	if c.Hooks.Receive != "" {
-		_, err = url.Parse(c.Hooks.Receive)
+	if c.Callbacks.Receive != "" {
+		_, err = url.Parse(c.Callbacks.Receive)
 		if err != nil {
-			err = errors.New("Cannot parse hooks.receive param")
+			err = errors.New("Cannot parse callbacks.receive param")
 			return
 		}
 	}
 
-	if c.Hooks.Error != "" {
-		_, err = url.Parse(c.Hooks.Error)
+	if c.Callbacks.Error != "" {
+		_, err = url.Parse(c.Callbacks.Error)
 		if err != nil {
-			err = errors.New("Cannot parse hooks.error param")
+			err = errors.New("Cannot parse callbacks.error param")
 			return
 		}
 	}

@@ -64,7 +64,7 @@ When you want to use compliance protocol when receiving payments...
        |          □<-----------------------------------□                                    |
        |          □                                    |                                    |
        |          □~~~ - Bridge server will send       |                                    |
-       |          □      a receive hook with           |                                    |
+       |          □      a receive callback with       |                                    |
        |          □      `extra_memo` preimage         |                                    |
        |          □                                    |                                    |
        |          |                                    |                                    |

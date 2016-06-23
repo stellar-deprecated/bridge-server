@@ -1,3 +1,5 @@
+#Bridge server config.toml example
+
 port = 8001
 horizon = "https://horizon-testnet.stellar.org"
 network_passphrase = "Test SDF Network ; September 2015"
@@ -19,6 +21,6 @@ url = "root:@/gateway_test?parseTime=true"
 authorizing_seed = "SDMRITVCFY6IIK6H5DXIVUOL342YFVE3VFOGVF3D7XXHGITPX4ABMYXR" # GCAW3TYUYGCNODKO4QKMD6PSH5GP3KES4GWGVFCKZ6DD6EJUDUQ77BO
 receiving_account_id = "GAJBUSUTGTS3MAU2KP6MWJFJACDN4ZJ5YCET23U6XYZZ7WUD2OYQQUR2"
 
-[hooks]
+[callbacks]
 receive = "http://localhost:8002/receive"
 error = "http://localhost:8002/error"
