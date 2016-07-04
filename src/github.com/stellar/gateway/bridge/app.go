@@ -54,6 +54,7 @@ func NewApp(config config.Config, migrateFlag bool) (app *App, err error) {
 	if driver != nil {
 		err = driver.Init(config.Database.URL)
 		if err != nil {
+			err = fmt.Errorf("Cannot connect to a DB: %s", err)
 			return
 		}
 
