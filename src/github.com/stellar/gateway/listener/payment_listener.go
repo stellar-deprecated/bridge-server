@@ -16,6 +16,7 @@ import (
 	"github.com/stellar/gateway/horizon"
 	"github.com/stellar/gateway/net"
 	"github.com/stellar/gateway/protocols/compliance"
+	"github.com/stellar/gateway/protocols/memo"
 )
 
 // PaymentListener is listening for a new payments received by ReceivingAccount
@@ -190,11 +191,24 @@ func (pl PaymentListener) onPayment(payment horizon.PaymentResponse) (err error)
 			pl.log.WithFields(logrus.Fields{"err": err}).Error("Cannot unmarshal receiveResponse")
 			return err
 		}
-	}else
-	{
-		if payment.Memo.Type != "hash" {
-			route=string(payment.Memo.Value)
+
+		var authData compliance.AuthData
+		err = json.Unmarshal([]byte(receiveResponse.Data), &authData)
+		if err != nil {
+			pl.log.WithFields(logrus.Fields{"err": err}).Error("Cannot unmarshal authData")
+			return err
 		}
+
+		var memo memo.Memo
+		err = json.Unmarshal([]byte(authData.Memo), &memo)
+		if err != nil {
+			pl.log.WithFields(logrus.Fields{"err": err}).Error("Cannot unmarshal memo")
+			return err
+		}
+
+		route = memo.Transaction.Route
+	} else if payment.Memo.Type != "hash" {
+		route = payment.Memo.Value
 	}
 
 	resp, err := pl.client.PostForm(

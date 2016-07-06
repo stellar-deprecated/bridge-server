@@ -1,6 +1,7 @@
 package listener
 
 import (
+	"encoding/json"
 	"errors"
 	"net/url"
 	"testing"
@@ -12,6 +13,8 @@ import (
 	"github.com/stellar/gateway/horizon"
 	"github.com/stellar/gateway/mocks"
 	"github.com/stellar/gateway/net"
+	"github.com/stellar/gateway/protocols/compliance"
+	"github.com/stellar/gateway/protocols/memo"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -165,6 +168,7 @@ func TestPaymentListener(t *testing.T) {
 				url.Values{
 					"id":         {"1"},
 					"from":       {"GBIHSMPXC2KJ3NJVHEYTG3KCHYEUQRT45X6AWYWXMAXZOAX4F5LFZYYQ"},
+					"route":      {"testing"},
 					"amount":     {"200"},
 					"asset_code": {"USD"},
 					"memo_type":  {"text"},
@@ -204,6 +208,7 @@ func TestPaymentListener(t *testing.T) {
 				url.Values{
 					"id":         {"1"},
 					"from":       {"GBIHSMPXC2KJ3NJVHEYTG3KCHYEUQRT45X6AWYWXMAXZOAX4F5LFZYYQ"},
+					"route":      {"testing"},
 					"amount":     {"200"},
 					"asset_code": {"USD"},
 					"memo_type":  {"text"},
@@ -241,6 +246,7 @@ func TestPaymentListener(t *testing.T) {
 				url.Values{
 					"id":         {"1"},
 					"from":       {"GBIHSMPXC2KJ3NJVHEYTG3KCHYEUQRT45X6AWYWXMAXZOAX4F5LFZYYQ"},
+					"route":      {""},
 					"amount":     {"200"},
 					"asset_code": {"USD"},
 					"memo_type":  {""},
@@ -276,12 +282,32 @@ func TestPaymentListener(t *testing.T) {
 			mockHorizon.On("LoadMemo", &operation).Return(nil).Once()
 			mockEntityManager.On("Persist", &dbPayment).Return(nil).Once()
 
+			memo := memo.Memo{
+				Transaction: memo.Transaction{
+					Route: "jed*stellar.org",
+				},
+			}
+
+			memoString, _ := json.Marshal(memo)
+
+			auth := compliance.AuthData{
+				Memo: string(memoString),
+			}
+
+			authString, _ := json.Marshal(auth)
+
+			response := compliance.ReceiveResponse{
+				Data: string(authString),
+			}
+
+			responseString, _ := json.Marshal(response)
+
 			mockHTTPClient.On(
 				"PostForm",
 				"http://compliance/receive",
 				url.Values{"memo": {"b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9"}},
 			).Return(
-				net.BuildHTTPResponse(200, "{\"data\": \"hello world\"}"),
+				net.BuildHTTPResponse(200, string(responseString)),
 				nil,
 			).Once()
 
@@ -291,11 +317,12 @@ func TestPaymentListener(t *testing.T) {
 				url.Values{
 					"id":         {"1"},
 					"from":       {"GBIHSMPXC2KJ3NJVHEYTG3KCHYEUQRT45X6AWYWXMAXZOAX4F5LFZYYQ"},
+					"route":      {"jed*stellar.org"},
 					"amount":     {"200"},
 					"asset_code": {"USD"},
 					"memo_type":  {"hash"},
 					"memo":       {"b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9"},
-					"data":       {"hello world"},
+					"data":       {string(authString)},
 				},
 			).Return(
 				net.BuildHTTPResponse(200, "ok"),
