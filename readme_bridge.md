@@ -46,7 +46,7 @@ The `config_bridge.toml` file must be present in a working directory. Config fil
   * `error` - URL of the webhook where requests will be sent when there is an error with an incoming payment
 * `log_format` - set to `json` for JSON logs
 
-Check [`config-example.toml`](./config-example.toml).
+Check [`config_bridge_example.toml`](./config_bridge_example.toml).
 
 The minimal set of config values contains:
 * `port`

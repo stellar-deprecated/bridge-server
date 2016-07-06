@@ -21,7 +21,7 @@ build() {
   cp bin/$(srcBin $NAME $GOOS) $PKG_DIR/$(destBin $NAME $GOOS)
   cp CHANGELOG.md $PKG_DIR/
   cp LICENSE.txt $PKG_DIR/
-  cp config-example.toml $PKG_DIR/
+  cp config_${NAME}_example.toml $PKG_DIR/
   cp readme_$NAME.md $PKG_DIR/
 
   # TODO: add platform specific install intstructions

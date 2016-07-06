@@ -34,7 +34,7 @@ The `config_compliance.toml` file must be present in a working directory. Config
   * `fetch_info` - Callback that returns user data. Read [Callbacks](#callbacks) section.
 * `log_format` - set to `json` for JSON logs
 
-Check [`config-example.toml`](./config-example.toml).
+Check [`config_compliance_example.toml`](./config_compliance_example.toml).
 
 ## Getting started
 
