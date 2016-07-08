@@ -12,6 +12,7 @@ url = "root:@/compliance"
 [keys]
 # GC7DVHGMSQYAPYXQU652VVHEMZ2OZN4VH44T67QILDHDMBOACMZHQWLW
 signing_seed = "SBEL63EBNQUTQ2ZTGHGLLXEMP6THALGS3VQ2N4RVHUWIBB5KGDJWVF3R"
+encryption_key = ""
 
 [callbacks]
 sanctions = "http://sanctions"
