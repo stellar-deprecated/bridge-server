@@ -22,7 +22,7 @@ The `config_compliance.toml` file must be present in a working directory. Config
 * `network_passphrase` - passphrase of the network that will be used with this bridge server:
    * test network: `Test SDF Network ; September 2015`
    * public network: `Public Global Stellar Network ; September 2015`
-* `database`
+* `database` - This database is used internally to store memo information and to keep track of what FIs have been authorized to receive customer info.
   * `type` - database type (mysql, postgres)
   * `url` - url to database connection
 * `keys`
