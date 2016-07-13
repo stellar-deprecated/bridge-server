@@ -73,6 +73,14 @@ func NewApp(config config.Config, migrateFlag bool) (app *App, err error) {
 		&inject.Object{Value: &http.Client{}},
 	)
 
+	if err != nil {
+		log.Fatal("Injector: ", err)
+	}
+
+	if err := g.Populate(); err != nil {
+		log.Fatal("Injector: ", err)
+	}
+
 	app = &App{
 		config:         config,
 		requestHandler: requestHandler,
