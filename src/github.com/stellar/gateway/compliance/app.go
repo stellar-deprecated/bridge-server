@@ -11,6 +11,7 @@ import (
 	"github.com/stellar/gateway/compliance/handlers"
 	"github.com/stellar/gateway/crypto"
 	"github.com/stellar/gateway/db"
+	"github.com/stellar/gateway/db/drivers/mssql"
 	"github.com/stellar/gateway/db/drivers/mysql"
 	"github.com/stellar/gateway/db/drivers/postgres"
 	"github.com/stellar/gateway/protocols/federation"
@@ -32,6 +33,8 @@ func NewApp(config config.Config, migrateFlag bool) (app *App, err error) {
 
 	var driver db.Driver
 	switch config.Database.Type {
+	case "mssql":
+		driver = &mssql.Driver{}
 	case "mysql":
 		driver = &mysql.Driver{}
 	case "postgres":

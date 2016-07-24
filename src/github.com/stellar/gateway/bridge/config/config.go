@@ -75,6 +75,8 @@ func (c *Config) Validate() (err error) {
 	}
 
 	switch c.Database.Type {
+	case "mssql":
+		break
 	case "mysql":
 		// Add `parseTime=true` param to mysql url
 		query := dbURL.Query()

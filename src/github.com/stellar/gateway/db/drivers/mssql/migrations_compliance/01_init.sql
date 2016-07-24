@@ -1,0 +1,80 @@
+-- +migrate Up
+BEGIN TRANSACTION
+GO
+CREATE TABLE AuthorizedTransaction
+	(
+	id bigint NOT NULL IDENTITY (1, 1),
+	transaction_id varchar(64) NOT NULL,
+	memo varchar(64) NOT NULL,
+	transaction_xdr text NOT NULL,
+	authorized_at datetime NOT NULL,
+	data ntext NOT NULL
+	)  ON [PRIMARY]
+GO
+ALTER TABLE AuthorizedTransaction SET (LOCK_ESCALATION = TABLE)
+GO
+CREATE TABLE AllowedFI
+	(
+	id bigint NOT NULL IDENTITY (1, 1),
+	name varchar(255) NOT NULL,
+	domain varchar(255) NOT NULL,
+	public_key varchar(56) NOT NULL,
+	allowed_at datetime NOT NULL
+	)  ON [PRIMARY]
+GO
+ALTER TABLE AllowedFI ADD CONSTRAINT
+	PK_AllowedFI PRIMARY KEY CLUSTERED 
+	(
+	id
+	) WITH( STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+
+GO
+ALTER TABLE AllowedFI ADD CONSTRAINT
+	domain UNIQUE NONCLUSTERED 
+	(
+	domain
+	) WITH( STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+
+GO
+ALTER TABLE AllowedFI ADD CONSTRAINT
+	public_key UNIQUE NONCLUSTERED 
+	(
+	public_key
+	) WITH( STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+
+GO
+ALTER TABLE AllowedFI SET (LOCK_ESCALATION = TABLE)
+GO
+CREATE TABLE AllowedUser
+	(
+	id bigint NOT NULL IDENTITY (1, 1),
+	fi_name varchar(255) NOT NULL,
+	fi_domain varchar(255) NOT NULL,
+	fi_public_key varchar(56) NOT NULL,
+	user_id varchar(255) NOT NULL,
+	allowed_at datetime NOT NULL
+	)  ON [PRIMARY]
+GO
+ALTER TABLE AllowedUser ADD CONSTRAINT
+	PK_AllowedUser PRIMARY KEY CLUSTERED 
+	(
+	id
+	) WITH( STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+
+GO
+ALTER TABLE AllowedUser ADD CONSTRAINT
+	fi_public_key_user_id UNIQUE NONCLUSTERED 
+	(
+	fi_public_key,
+	user_id
+	) WITH( STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+
+GO
+ALTER TABLE AllowedUser SET (LOCK_ESCALATION = TABLE)
+GO
+COMMIT
+
+-- +migrate Down
+DROP TABLE `AuthorizedTransaction`;
+DROP TABLE `AllowedFI`;
+DROP TABLE `AllowedUser`;
