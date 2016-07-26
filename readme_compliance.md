@@ -148,7 +148,7 @@ Will response with `200 OK` if removed. Any other status is an error.
 
 ## Callbacks
 
-The Compliance server will send callback request to URLs you define in the config file. `Content-Type` of requests data will be `application/x-www-form-urlencoded`.
+The Compliance server will send callback `POST` request to URLs you define in the config file. `Content-Type` of requests data will be `application/x-www-form-urlencoded`.
 
 ### `callbacks.sanctions`
 
