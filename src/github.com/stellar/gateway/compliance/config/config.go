@@ -20,6 +20,10 @@ type Config struct {
 	}
 	Keys
 	Callbacks
+	TLS struct {
+		CertificateFile string `mapstructure:"certificate_file"`
+		PrivateKeyFile  string `mapstructure:"private_key_file"`
+	}
 }
 
 // Keys contains values of `keys` config group

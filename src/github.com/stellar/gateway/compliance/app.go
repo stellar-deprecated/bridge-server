@@ -97,7 +97,23 @@ func (a *App) Serve() {
 	external.Post("/", a.requestHandler.HandlerAuth)
 	externalPortString := fmt.Sprintf(":%d", *a.config.ExternalPort)
 	log.Println("Starting external server on", externalPortString)
-	go graceful.ListenAndServe(externalPortString, external)
+	go func() {
+		var err error
+		if a.config.TLS.CertificateFile != "" && a.config.TLS.PrivateKeyFile != "" {
+			err = graceful.ListenAndServeTLS(
+				externalPortString,
+				a.config.TLS.CertificateFile,
+				a.config.TLS.PrivateKeyFile,
+				external,
+			)
+		} else {
+			err = graceful.ListenAndServe(externalPortString, external)
+		}
+
+		if err != nil {
+			log.Fatal(err)
+		}
+	}()
 
 	// Internal endpoints
 	internal := web.New()
@@ -109,5 +125,8 @@ func (a *App) Serve() {
 	internal.Post("/remove_access", a.requestHandler.HandlerRemoveAccess)
 	internalPortString := fmt.Sprintf(":%d", *a.config.InternalPort)
 	log.Println("Starting internal server on", internalPortString)
-	graceful.ListenAndServe(internalPortString, internal)
+	err := graceful.ListenAndServe(internalPortString, internal)
+	if err != nil {
+		log.Fatal(err)
+	}
 }

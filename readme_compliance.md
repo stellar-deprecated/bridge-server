@@ -32,6 +32,9 @@ The `config_compliance.toml` file must be present in a working directory. Config
   * `sanctions` - Callback that performs sanctions check. Read [Callbacks](#callbacks) section.
   * `ask_user` - Callback that asks user for permission for reading their data. Read [Callbacks](#callbacks) section.
   * `fetch_info` - Callback that returns user data. Read [Callbacks](#callbacks) section.
+* `tls` (only when running HTTPS external server)
+  * `certificate_file` - a file containing a certificate
+  * `private_key_file` - a file containing a matching private key
 * `log_format` - set to `json` for JSON logs
 
 Check [`config_compliance_example.toml`](./config_compliance_example.toml).

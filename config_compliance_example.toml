@@ -18,3 +18,7 @@ encryption_key = ""
 sanctions = "http://sanctions"
 ask_user = "http://ask_user"
 fetch_info = "http://fetch_info"
+
+[tls]
+certificate_file = "server.crt"
+private_key_file = "server.key"
