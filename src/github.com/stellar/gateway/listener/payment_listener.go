@@ -30,7 +30,7 @@ type PaymentListener struct {
 	now           func() time.Time
 }
 
-const callbackTimeout = 10 * time.Second
+const callbackTimeout = 60 * time.Second
 
 // NewPaymentListener creates a new PaymentListener
 func NewPaymentListener(
