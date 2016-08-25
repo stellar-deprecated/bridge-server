@@ -1,15 +1,15 @@
 package postgres
 
 import (
-	"errors"
 	"fmt"
+	"log"
 	"reflect"
 	"strings"
 
 	"github.com/jmoiron/sqlx"
 	// To load pq driver
 	_ "github.com/lib/pq"
-	"github.com/rubenv/sql-migrate"
+	migrate "github.com/rubenv/sql-migrate"
 	"github.com/stellar/gateway/db/entities"
 )
 
@@ -25,21 +25,11 @@ func (d *Driver) Init(url string) (err error) {
 }
 
 // MigrateUp migrates DB using migrate files
-// go-bindata -ignore .+\.go$ -pkg postgres -o bindata.go ./migrations
+// go-bindata -ignore .+\.go$ -pkg postgres -o bindata.go ./migrations*
 func (d *Driver) MigrateUp(component string) (migrationsApplied int, err error) {
-	source := d.getAssetMigrationSource()
+	source := d.getAssetMigrationSource(component)
 	migrationsApplied, err = migrate.Exec(d.database.DB, "postgres", source, migrate.Up)
 	return
-}
-
-// GetAuthorizedTransactionByMemo returns authorized transaction by memo
-func (d *Driver) GetAuthorizedTransactionByMemo(memo string) (*entities.AuthorizedTransaction, error) {
-	var authorizedTransaction entities.AuthorizedTransaction
-	err := d.database.Get(&authorizedTransaction, "SELECT * FROM AuthorizedTransaction WHERE memo = :memo;", memo)
-	if err != nil {
-		return nil, err
-	}
-	return &authorizedTransaction, nil
 }
 
 // GetLastReceivedPayment returns the last received payment
@@ -95,6 +85,10 @@ func (d *Driver) Insert(object entities.Entity) (id int64, err error) {
 	switch object := object.(type) {
 	case *entities.AuthorizedTransaction:
 		err = stmt.Get(&id, object)
+	case *entities.AllowedFi:
+		err = stmt.Get(&id, object)
+	case *entities.AllowedUser:
+		err = stmt.Get(&id, object)
 	case *entities.SentTransaction:
 		err = stmt.Get(&id, object)
 	case *entities.ReceivedPayment:
@@ -147,6 +141,10 @@ func (d *Driver) Update(object entities.Entity) (err error) {
 	switch object := object.(type) {
 	case *entities.AuthorizedTransaction:
 		_, err = d.database.NamedExec(query, object)
+	case *entities.AllowedFi:
+		_, err = d.database.NamedExec(query, object)
+	case *entities.AllowedUser:
+		_, err = d.database.NamedExec(query, object)
 	case *entities.SentTransaction:
 		_, err = d.database.NamedExec(query, object)
 	case *entities.ReceivedPayment:
@@ -158,13 +156,36 @@ func (d *Driver) Update(object entities.Entity) (err error) {
 
 // Delete delets the entity from a DB
 func (d *Driver) Delete(object entities.Entity) (err error) {
-	err = errors.New("Not implemented yet")
+	_, tableName, err := getTypeData(object)
+
+	if err != nil {
+		return
+	}
+
+	query := "DELETE FROM " + tableName + " WHERE id = :id;"
+	_, err = d.database.NamedExec(query, object)
+
 	return
 }
 
 // GetOne returns a single entity based on a seach conditions
 func (d *Driver) GetOne(object entities.Entity, where string, params ...interface{}) (entities.Entity, error) {
-	return nil, errors.New("Not implemented yet")
+	_, tableName, err := getTypeData(object)
+	if err != nil {
+		return nil, err
+	}
+
+	sql := "SELECT * FROM " + tableName + " WHERE " + where + " LIMIT 1"
+	log.Println(sql)
+	err = d.database.Get(object, sql, params...)
+	if err != nil {
+		if err.Error() == "sql: no rows in result set" {
+			return nil, nil
+		}
+		return nil, err
+	}
+	object.SetExists() // Mark this entity as existing
+	return object, err
 }
 
 func getTypeData(object interface{}) (typeValue reflect.Type, tableName string, err error) {
@@ -172,6 +193,12 @@ func getTypeData(object interface{}) (typeValue reflect.Type, tableName string, 
 	case *entities.AuthorizedTransaction:
 		typeValue = reflect.TypeOf(*object)
 		tableName = "AuthorizedTransaction"
+	case *entities.AllowedFi:
+		typeValue = reflect.TypeOf(*object)
+		tableName = "AllowedFi"
+	case *entities.AllowedUser:
+		typeValue = reflect.TypeOf(*object)
+		tableName = "AllowedUser"
 	case *entities.SentTransaction:
 		typeValue = reflect.TypeOf(*object)
 		tableName = "SentTransaction"
@@ -184,11 +211,11 @@ func getTypeData(object interface{}) (typeValue reflect.Type, tableName string, 
 	return
 }
 
-func (d *Driver) getAssetMigrationSource() (source *migrate.AssetMigrationSource) {
+func (d *Driver) getAssetMigrationSource(component string) (source *migrate.AssetMigrationSource) {
 	source = &migrate.AssetMigrationSource{
 		Asset:    Asset,
 		AssetDir: AssetDir,
-		Dir:      "migrations",
+		Dir:      "migrations_" + component,
 	}
 	return
 }
