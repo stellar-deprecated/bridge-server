@@ -1,0 +1,5 @@
+gem 'xdrgen'
+gem 'pry'
+gem 'octokit'
+gem 'netrc'
+gem 'rake'

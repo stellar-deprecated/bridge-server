@@ -1,0 +1,29 @@
+package: github.com/stellar/go
+import:
+- package: github.com/howeyc/gopass
+- package: github.com/agl/ed25519
+- package: github.com/nullstyle/go-xdr
+- package: github.com/pkg/errors
+  version: ^0.7.0
+- package: github.com/getsentry/raven-go
+- package: github.com/segmentio/go-loggly
+- package: golang.org/x/net/context
+- package: golang.org/x/net/http2
+- package: github.com/stretchr/testify
+- package: github.com/jmoiron/sqlx
+- package: github.com/lann/squirrel
+- package: github.com/lib/pq
+- package: github.com/go-sql-driver/mysql
+- package: github.com/mattn/go-sqlite3
+- package: gopkg.in/tylerb/graceful.v1
+- package: github.com/rs/cors
+- package: goji.io
+- package: github.com/asaskevich/govalidator
+- package: github.com/BurntSushi/toml
+- package: github.com/spf13/cobra
+- package: gopkg.in/gavv/httpexpect.v1
+- package: github.com/onsi/ginkgo
+  version: master
+- package: github.com/onsi/gomega
+  version: master
+- package: github.com/aws/aws-sdk-go/aws
