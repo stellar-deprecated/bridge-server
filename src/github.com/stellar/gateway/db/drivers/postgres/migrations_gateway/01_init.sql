@@ -1,6 +1,6 @@
 -- +migrate Up
 CREATE TABLE ReceivedPayment (
-  id serial,
+  id bigserial,
   operation_id varchar(255) UNIQUE NOT NULL,
   processed_at timestamp NOT NULL,
   paging_token varchar(255) NOT NULL,

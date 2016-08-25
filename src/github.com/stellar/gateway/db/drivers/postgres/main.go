@@ -13,6 +13,8 @@ import (
 	"github.com/stellar/gateway/db/entities"
 )
 
+//go:generate go-bindata -ignore .+\.go$ -pkg postgres -o bindata.go ./migrations_gateway
+
 // Driver implements Driver interface using Postgres connection
 type Driver struct {
 	database *sqlx.DB
@@ -24,25 +26,15 @@ func (d *Driver) Init(url string) (err error) {
 	return
 }
 
+func (d *Driver) DB() *sqlx.DB {
+	return d.database
+}
+
 // MigrateUp migrates DB using migrate files
-// go-bindata -ignore .+\.go$ -pkg postgres -o bindata.go ./migrations*
 func (d *Driver) MigrateUp(component string) (migrationsApplied int, err error) {
 	source := d.getAssetMigrationSource(component)
 	migrationsApplied, err = migrate.Exec(d.database.DB, "postgres", source, migrate.Up)
 	return
-}
-
-// GetLastReceivedPayment returns the last received payment
-func (d *Driver) GetLastReceivedPayment() (*entities.ReceivedPayment, error) {
-	var receivedPayment entities.ReceivedPayment
-	err := d.database.Get(&receivedPayment, "SELECT * FROM ReceivedPayment ORDER BY id DESC LIMIT 1")
-	if err != nil {
-		if err.Error() == "sql: no rows in result set" {
-			return nil, nil
-		}
-		return nil, err
-	}
-	return &receivedPayment, nil
 }
 
 // Insert inserts the entity to a DB
