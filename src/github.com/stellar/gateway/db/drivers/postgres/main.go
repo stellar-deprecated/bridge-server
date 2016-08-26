@@ -13,7 +13,7 @@ import (
 	"github.com/stellar/gateway/db/entities"
 )
 
-//go:generate go-bindata -ignore .+\.go$ -pkg postgres -o bindata.go ./migrations_gateway
+//go:generate go-bindata -ignore .+\.go$ -pkg postgres -o bindata.go ./migrations_gateway ./migrations_compliance
 
 // Driver implements Driver interface using Postgres connection
 type Driver struct {
