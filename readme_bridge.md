@@ -23,7 +23,7 @@ Alternatively, you can [build](#building) the binary yourself.
 
 ## Config
 
-The `config_bridge.toml` file must be present in a working directory. Config file should contain following values:
+The `config_bridge.toml` file must be present in a working directory. Here is an [example configuration file](https://github.com/stellar/bridge-server/blob/master/config_bridge_example.toml). Config file should contain following values:
 
 * `port` - server listening port
 * `api_key` - when set, all requests to bridge server must contain `api_key` parameter with a correct value, otherwise the server will respond with `503 Forbidden`
