@@ -85,7 +85,7 @@ Creates a new random key pair.
 ```
 
 In case of error it will return the following error:
-* [`InternalServerError`](./blob/master/src/github.com/stellar/gateway/protocols/errors.go)
+* [`InternalServerError`](/src/github.com/stellar/gateway/protocols/errors.go)
 
 ### POST /builder
 
@@ -255,8 +255,8 @@ When transaction can be successfully built it will return a JSON object with a s
 ```
 
 In case of error it will return one of the following errors:
-* [`InternalServerError`](./blob/master/src/github.com/stellar/gateway/protocols/errors.go)
-* [`InvalidParameterError`](./blob/master/src/github.com/stellar/gateway/protocols/errors.go)
+* [`InternalServerError`](/src/github.com/stellar/gateway/protocols/errors.go)
+* [`InvalidParameterError`](/src/github.com/stellar/gateway/protocols/errors.go)
 
 ### POST /payment
 
@@ -288,35 +288,35 @@ name |  | description
 
 #### Response
 
-It will return [`SubmitTransactionResponse`](./blob/master/src/github.com/stellar/gateway/horizon/submit_transaction_response.go) if there were no errors or with one of the following errors:
+It will return [`SubmitTransactionResponse`](/src/github.com/stellar/gateway/horizon/submit_transaction_response.go) if there were no errors or with one of the following errors:
 
-* [`InternalServerError`](./blob/master/src/github.com/stellar/gateway/protocols/errors.go)
-* [`InvalidParameterError`](./blob/master/src/github.com/stellar/gateway/protocols/errors.go)
-* [`MissingParameterError`](./blob/master/src/github.com/stellar/gateway/protocols/errors.go)
-* [`TransactionBadSequence`](./blob/master/src/github.com/stellar/gateway/protocols/bridge/errors.go)
-* [`TransactionBadAuth`](./blob/master/src/github.com/stellar/gateway/protocols/bridge/errors.go)
-* [`TransactionInsufficientBalance`](./blob/master/src/github.com/stellar/gateway/protocols/bridge/errors.go)
-* [`TransactionNoAccount`](./blob/master/src/github.com/stellar/gateway/protocols/bridge/errors.go)
-* [`TransactionInsufficientFee`](./blob/master/src/github.com/stellar/gateway/protocols/bridge/errors.go)
-* [`TransactionBadAuthExtra`](./blob/master/src/github.com/stellar/gateway/protocols/bridge/errors.go)
-* [`PaymentCannotResolveDestination`](./blob/master/src/github.com/stellar/gateway/protocols/bridge/payment.go)
-* [`PaymentCannotUseMemo`](./blob/master/src/github.com/stellar/gateway/protocols/bridge/payment.go)
-* [`PaymentSourceNotExist`](./blob/master/src/github.com/stellar/gateway/protocols/bridge/payment.go)
-* [`PaymentAssetCodeNotAllowed`](./blob/master/src/github.com/stellar/gateway/protocols/bridge/payment.go)
-* [`PaymentPending`](./blob/master/src/github.com/stellar/gateway/protocols/bridge/payment.go)
-* [`PaymentDenied`](./blob/master/src/github.com/stellar/gateway/protocols/bridge/payment.go)
-* [`PaymentMalformed`](./blob/master/src/github.com/stellar/gateway/protocols/bridge/payment.go)
-* [`PaymentUnderfunded`](./blob/master/src/github.com/stellar/gateway/protocols/bridge/payment.go)
-* [`PaymentSrcNoTrust`](./blob/master/src/github.com/stellar/gateway/protocols/bridge/payment.go)
-* [`PaymentSrcNotAuthorized`](./blob/master/src/github.com/stellar/gateway/protocols/bridge/payment.go)
-* [`PaymentNoDestination`](./blob/master/src/github.com/stellar/gateway/protocols/bridge/payment.go)
-* [`PaymentNoTrust`](./blob/master/src/github.com/stellar/gateway/protocols/bridge/payment.go)
-* [`PaymentNotAuthorized`](./blob/master/src/github.com/stellar/gateway/protocols/bridge/payment.go)
-* [`PaymentLineFull`](./blob/master/src/github.com/stellar/gateway/protocols/bridge/payment.go)
-* [`PaymentNoIssuer`](./blob/master/src/github.com/stellar/gateway/protocols/bridge/payment.go)
-* [`PaymentTooFewOffers`](./blob/master/src/github.com/stellar/gateway/protocols/bridge/payment.go)
-* [`PaymentOfferCrossSelf`](./blob/master/src/github.com/stellar/gateway/protocols/bridge/payment.go)
-* [`PaymentOverSendmax`](./blob/master/src/github.com/stellar/gateway/protocols/bridge/payment.go)
+* [`InternalServerError`](/src/github.com/stellar/gateway/protocols/errors.go)
+* [`InvalidParameterError`](/src/github.com/stellar/gateway/protocols/errors.go)
+* [`MissingParameterError`](/src/github.com/stellar/gateway/protocols/errors.go)
+* [`TransactionBadSequence`](/src/github.com/stellar/gateway/protocols/bridge/errors.go)
+* [`TransactionBadAuth`](/src/github.com/stellar/gateway/protocols/bridge/errors.go)
+* [`TransactionInsufficientBalance`](/src/github.com/stellar/gateway/protocols/bridge/errors.go)
+* [`TransactionNoAccount`](/src/github.com/stellar/gateway/protocols/bridge/errors.go)
+* [`TransactionInsufficientFee`](/src/github.com/stellar/gateway/protocols/bridge/errors.go)
+* [`TransactionBadAuthExtra`](/src/github.com/stellar/gateway/protocols/bridge/errors.go)
+* [`PaymentCannotResolveDestination`](/src/github.com/stellar/gateway/protocols/bridge/payment.go)
+* [`PaymentCannotUseMemo`](/src/github.com/stellar/gateway/protocols/bridge/payment.go)
+* [`PaymentSourceNotExist`](/src/github.com/stellar/gateway/protocols/bridge/payment.go)
+* [`PaymentAssetCodeNotAllowed`](/src/github.com/stellar/gateway/protocols/bridge/payment.go)
+* [`PaymentPending`](/src/github.com/stellar/gateway/protocols/bridge/payment.go)
+* [`PaymentDenied`](/src/github.com/stellar/gateway/protocols/bridge/payment.go)
+* [`PaymentMalformed`](/src/github.com/stellar/gateway/protocols/bridge/payment.go)
+* [`PaymentUnderfunded`](/src/github.com/stellar/gateway/protocols/bridge/payment.go)
+* [`PaymentSrcNoTrust`](/src/github.com/stellar/gateway/protocols/bridge/payment.go)
+* [`PaymentSrcNotAuthorized`](/src/github.com/stellar/gateway/protocols/bridge/payment.go)
+* [`PaymentNoDestination`](/src/github.com/stellar/gateway/protocols/bridge/payment.go)
+* [`PaymentNoTrust`](/src/github.com/stellar/gateway/protocols/bridge/payment.go)
+* [`PaymentNotAuthorized`](/src/github.com/stellar/gateway/protocols/bridge/payment.go)
+* [`PaymentLineFull`](/src/github.com/stellar/gateway/protocols/bridge/payment.go)
+* [`PaymentNoIssuer`](/src/github.com/stellar/gateway/protocols/bridge/payment.go)
+* [`PaymentTooFewOffers`](/src/github.com/stellar/gateway/protocols/bridge/payment.go)
+* [`PaymentOfferCrossSelf`](/src/github.com/stellar/gateway/protocols/bridge/payment.go)
+* [`PaymentOverSendmax`](/src/github.com/stellar/gateway/protocols/bridge/payment.go)
 
 #### Example
 
@@ -347,21 +347,21 @@ name |  | description
 
 #### Response
 
-It will return [`SubmitTransactionResponse`](./blob/master/src/github.com/stellar/gateway/horizon/submit_transaction_response.go) if there were no errors or with one of the following errors:
+It will return [`SubmitTransactionResponse`](/src/github.com/stellar/gateway/horizon/submit_transaction_response.go) if there were no errors or with one of the following errors:
 
-* [`InternalServerError`](./blob/master/src/github.com/stellar/gateway/protocols/errors.go)
-* [`InvalidParameterError`](./blob/master/src/github.com/stellar/gateway/protocols/errors.go)
-* [`MissingParameterError`](./blob/master/src/github.com/stellar/gateway/protocols/errors.go)
-* [`TransactionBadSequence`](./blob/master/src/github.com/stellar/gateway/protocols/bridge/errors.go)
-* [`TransactionBadAuth`](./blob/master/src/github.com/stellar/gateway/protocols/bridge/errors.go)
-* [`TransactionInsufficientBalance`](./blob/master/src/github.com/stellar/gateway/protocols/bridge/errors.go)
-* [`TransactionNoAccount`](./blob/master/src/github.com/stellar/gateway/protocols/bridge/errors.go)
-* [`TransactionInsufficientFee`](./blob/master/src/github.com/stellar/gateway/protocols/bridge/errors.go)
-* [`TransactionBadAuthExtra`](./blob/master/src/github.com/stellar/gateway/protocols/bridge/errors.go)
-* [`AllowTrustMalformed`](./blob/master/src/github.com/stellar/gateway/protocols/bridge/authorize.go)
-* [`AllowTrustNoTrustline`](./blob/master/src/github.com/stellar/gateway/protocols/bridge/authorize.go)
-* [`AllowTrustTrustNotRequired`](./blob/master/src/github.com/stellar/gateway/protocols/bridge/authorize.go)
-* [`AllowTrustCantRevoke`](./blob/master/src/github.com/stellar/gateway/protocols/bridge/authorize.go)
+* [`InternalServerError`](/src/github.com/stellar/gateway/protocols/errors.go)
+* [`InvalidParameterError`](/src/github.com/stellar/gateway/protocols/errors.go)
+* [`MissingParameterError`](/src/github.com/stellar/gateway/protocols/errors.go)
+* [`TransactionBadSequence`](/src/github.com/stellar/gateway/protocols/bridge/errors.go)
+* [`TransactionBadAuth`](/src/github.com/stellar/gateway/protocols/bridge/errors.go)
+* [`TransactionInsufficientBalance`](/src/github.com/stellar/gateway/protocols/bridge/errors.go)
+* [`TransactionNoAccount`](/src/github.com/stellar/gateway/protocols/bridge/errors.go)
+* [`TransactionInsufficientFee`](/src/github.com/stellar/gateway/protocols/bridge/errors.go)
+* [`TransactionBadAuthExtra`](/src/github.com/stellar/gateway/protocols/bridge/errors.go)
+* [`AllowTrustMalformed`](/src/github.com/stellar/gateway/protocols/bridge/authorize.go)
+* [`AllowTrustNoTrustline`](/src/github.com/stellar/gateway/protocols/bridge/authorize.go)
+* [`AllowTrustTrustNotRequired`](/src/github.com/stellar/gateway/protocols/bridge/authorize.go)
+* [`AllowTrustCantRevoke`](/src/github.com/stellar/gateway/protocols/bridge/authorize.go)
 
 ## Callbacks
 
