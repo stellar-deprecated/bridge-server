@@ -7,8 +7,10 @@ import:
   version: ^0.7.0
 - package: github.com/getsentry/raven-go
 - package: github.com/segmentio/go-loggly
-- package: golang.org/x/net/context
-- package: golang.org/x/net/http2
+- package: golang.org/x/net
+  subpackages:
+  - context
+  - http2
 - package: github.com/stretchr/testify
 - package: github.com/jmoiron/sqlx
 - package: github.com/lann/squirrel
@@ -26,4 +28,8 @@ import:
   version: master
 - package: github.com/onsi/gomega
   version: master
-- package: github.com/aws/aws-sdk-go/aws
+- package: github.com/aws/aws-sdk-go
+  subpackages:
+  - aws
+- package: github.com/jarcoal/httpmock
+- package: github.com/manucorporat/sse

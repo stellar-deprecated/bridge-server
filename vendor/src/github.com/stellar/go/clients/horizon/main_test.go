@@ -1,16 +1,12 @@
 package horizon
 
 import (
-	"bytes"
-	"errors"
-	"io/ioutil"
-	"net/http"
-	"net/url"
 	"testing"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/stellar/go/build"
+	"github.com/stellar/go/support/errors"
+	"github.com/stellar/go/support/http/httptest"
 )
 
 func TestHorizon(t *testing.T) {
@@ -18,31 +14,28 @@ func TestHorizon(t *testing.T) {
 	RunSpecs(t, "Package: github.com/stellar/go/horizon")
 }
 
-var _ build.SequenceProvider = TestHorizonClient
-
 var _ = Describe("Horizon", func() {
-	Describe("initHttpClient", func() {
-		It("does not run into race condition", func() {
-			// Race condition should be detected by race-detector:
-			// http://blog.golang.org/race-detector
-			init := func() {
-				DefaultTestNetClient.initHttpClient()
-			}
-			go init()
-			go init()
-		})
+	var (
+		client *Client
+		hmock  *httptest.Client
+	)
+
+	BeforeEach(func() {
+		hmock = httptest.NewClient()
+		client = &Client{
+			URL:  "https://localhost",
+			HTTP: hmock,
+		}
 	})
 
 	Describe("LoadAccount", func() {
 		It("success response", func() {
-			TestHorizonClient.Client = &TestHttpClient{
-				Response: http.Response{
-					StatusCode: 200,
-					Body:       ioutil.NopCloser(bytes.NewBufferString(accountResponse)),
-				},
-			}
+			hmock.On(
+				"GET",
+				"https://localhost/accounts/GBRPYHIL2CI3FNQ4BXLFMNDLFJUNPU2HY3ZMFSHONUCEOASW7QC7OX2H",
+			).ReturnString(200, accountResponse)
 
-			account, err := TestHorizonClient.LoadAccount("GBRPYHIL2CI3FNQ4BXLFMNDLFJUNPU2HY3ZMFSHONUCEOASW7QC7OX2H")
+			account, err := client.LoadAccount("GBRPYHIL2CI3FNQ4BXLFMNDLFJUNPU2HY3ZMFSHONUCEOASW7QC7OX2H")
 			Expect(err).To(BeNil())
 			Expect(account.ID).To(Equal("GBRPYHIL2CI3FNQ4BXLFMNDLFJUNPU2HY3ZMFSHONUCEOASW7QC7OX2H"))
 			Expect(account.PT).To(Equal("1"))
@@ -50,14 +43,12 @@ var _ = Describe("Horizon", func() {
 		})
 
 		It("failure response", func() {
-			TestHorizonClient.Client = &TestHttpClient{
-				Response: http.Response{
-					StatusCode: 404,
-					Body:       ioutil.NopCloser(bytes.NewBufferString(notFoundResponse)),
-				},
-			}
+			hmock.On(
+				"GET",
+				"https://localhost/accounts/GBRPYHIL2CI3FNQ4BXLFMNDLFJUNPU2HY3ZMFSHONUCEOASW7QC7OX2H",
+			).ReturnString(404, notFoundResponse)
 
-			_, err := TestHorizonClient.LoadAccount("GBRPYHIL2CI3FNQ4BXLFMNDLFJUNPU2HY3ZMFSHONUCEOASW7QC7OX2H")
+			_, err := client.LoadAccount("GBRPYHIL2CI3FNQ4BXLFMNDLFJUNPU2HY3ZMFSHONUCEOASW7QC7OX2H")
 			Expect(err).NotTo(BeNil())
 			Expect(err.Error()).To(Equal("Horizon error"))
 			horizonError, ok := err.(*Error)
@@ -66,13 +57,14 @@ var _ = Describe("Horizon", func() {
 		})
 
 		It("connection error", func() {
-			TestHorizonClient.Client = &TestHttpClient{
-				Error: errors.New("http.Client error"),
-			}
+			hmock.On(
+				"GET",
+				"https://localhost/accounts/GBRPYHIL2CI3FNQ4BXLFMNDLFJUNPU2HY3ZMFSHONUCEOASW7QC7OX2H",
+			).ReturnError("http.Client error")
 
-			_, err := TestHorizonClient.LoadAccount("GBRPYHIL2CI3FNQ4BXLFMNDLFJUNPU2HY3ZMFSHONUCEOASW7QC7OX2H")
+			_, err := client.LoadAccount("GBRPYHIL2CI3FNQ4BXLFMNDLFJUNPU2HY3ZMFSHONUCEOASW7QC7OX2H")
 			Expect(err).NotTo(BeNil())
-			Expect(err.Error()).To(Equal("http.Client error"))
+			Expect(err.Error()).To(ContainSubstring("http.Client error"))
 			_, ok := err.(*Error)
 			Expect(ok).To(BeFalse())
 		})
@@ -82,64 +74,41 @@ var _ = Describe("Horizon", func() {
 		var tx = "AAAAADSMMRmQGDH6EJzkgi/7PoKhphMHyNGQgDp2tlS/dhGXAAAAZAAT3TUAAAAwAAAAAAAAAAAAAAABAAAAAAAAAAMAAAABSU5SAAAAAAA0jDEZkBgx+hCc5IIv+z6CoaYTB8jRkIA6drZUv3YRlwAAAAFVU0QAAAAAADSMMRmQGDH6EJzkgi/7PoKhphMHyNGQgDp2tlS/dhGXAAAAAAX14QAAAAAKAAAAAQAAAAAAAAAAAAAAAAAAAAG/dhGXAAAAQLuStfImg0OeeGAQmvLkJSZ1MPSkCzCYNbGqX5oYNuuOqZ5SmWhEsC7uOD9ha4V7KengiwNlc0oMNqBVo22S7gk="
 
 		It("success response", func() {
-			TestHorizonClient.Client = &TestHttpClient{
-				Response: http.Response{
-					StatusCode: 200,
-					Body:       ioutil.NopCloser(bytes.NewBufferString(submitResponse)),
-				},
-			}
+			hmock.
+				On("POST", "https://localhost/transactions").
+				ReturnString(200, submitResponse)
 
-			account, err := TestHorizonClient.SubmitTransaction(tx)
+			account, err := client.SubmitTransaction(tx)
 			Expect(err).To(BeNil())
 			Expect(account.Ledger).To(Equal(int32(3128812)))
 		})
 
 		It("failure response", func() {
-			TestHorizonClient.Client = &TestHttpClient{
-				Response: http.Response{
-					StatusCode: 400,
-					Body:       ioutil.NopCloser(bytes.NewBufferString(transactionFailure)),
-				},
-			}
+			hmock.
+				On("POST", "https://localhost/transactions").
+				ReturnString(400, transactionFailure)
 
-			_, err := TestHorizonClient.SubmitTransaction(tx)
+			_, err := client.SubmitTransaction(tx)
 			Expect(err).NotTo(BeNil())
-			Expect(err.Error()).To(Equal("Horizon error"))
-			horizonError, ok := err.(*Error)
+			Expect(err.Error()).To(ContainSubstring("Horizon error"))
+			horizonError, ok := errors.Cause(err).(*Error)
 			Expect(ok).To(BeTrue())
 			Expect(horizonError.Problem.Title).To(Equal("Transaction Failed"))
 		})
 
 		It("connection error", func() {
-			TestHorizonClient.Client = &TestHttpClient{
-				Error: errors.New("http.Client error"),
-			}
+			hmock.
+				On("POST", "https://localhost/transactions").
+				ReturnError("http.Client error")
 
-			_, err := TestHorizonClient.SubmitTransaction(tx)
+			_, err := client.SubmitTransaction(tx)
 			Expect(err).NotTo(BeNil())
-			Expect(err.Error()).To(Equal("http.Client error"))
+			Expect(err.Error()).To(ContainSubstring("http.Client error"))
 			_, ok := err.(*Error)
 			Expect(ok).To(BeFalse())
 		})
 	})
 })
-
-var TestHorizonClient = &Client{
-	Client: &TestHttpClient{},
-}
-
-type TestHttpClient struct {
-	Response http.Response
-	Error    error
-}
-
-func (tc *TestHttpClient) Get(url string) (*http.Response, error) {
-	return &tc.Response, tc.Error
-}
-
-func (tc *TestHttpClient) PostForm(url string, data url.Values) (resp *http.Response, err error) {
-	return &tc.Response, tc.Error
-}
 
 var accountResponse = `{
   "_links": {
