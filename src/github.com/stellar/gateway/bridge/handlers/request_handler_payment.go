@@ -38,6 +38,7 @@ func (rh *RequestHandler) Payment(w http.ResponseWriter, r *http.Request) {
 	sourceKeypair, _ := keypair.Parse(request.Source)
 
 	var submitResponse horizon.SubmitTransactionResponse
+	var submitError error
 
 	if request.ExtraMemo != "" && rh.Config.Compliance != "" {
 		// Compliance server part
@@ -100,7 +101,7 @@ func (rh *RequestHandler) Payment(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		submitResponse, err = rh.TransactionSubmitter.SignAndSubmitRawTransaction(request.Source, &tx)
+		submitResponse, submitError = rh.TransactionSubmitter.SignAndSubmitRawTransaction(request.Source, &tx)
 	} else {
 		// Payment without compliance server
 		destinationObject, _, err := rh.FederationResolver.Resolve(request.Destination)
@@ -288,11 +289,11 @@ func (rh *RequestHandler) Payment(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		submitResponse, err = rh.Horizon.SubmitTransaction(txeB64)
+		submitResponse, submitError = rh.Horizon.SubmitTransaction(txeB64)
 	}
 
-	if err != nil {
-		log.WithFields(log.Fields{"error": err}).Error("Error submitting transaction")
+	if submitError != nil {
+		log.WithFields(log.Fields{"error": submitError}).Error("Error submitting transaction")
 		server.Write(w, protocols.InternalServerError)
 		return
 	}
