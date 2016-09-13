@@ -5,9 +5,10 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
-	log "github.com/Sirupsen/logrus"
 	"io/ioutil"
 	"net/http"
+
+	log "github.com/Sirupsen/logrus"
 
 	"github.com/stellar/gateway/protocols"
 	"github.com/stellar/gateway/protocols/compliance"
@@ -32,7 +33,17 @@ func (rh *RequestHandler) HandlerSend(c web.C, w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	destinationObject, stellarToml, err := rh.FederationResolver.Resolve(request.Destination)
+	stellarToml, err := rh.StellarTomlClient.GetStellarTomlByAddress(request.Destination)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"destination": request.Destination,
+			"err":         err,
+		}).Print("Cannot lookup stellar.toml")
+		server.Write(w, compliance.CannotResolveDestination)
+		return
+	}
+
+	destinationObject, err := rh.FederationClient.LookupByAddress(request.Destination)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"destination": request.Destination,

@@ -1,13 +1,12 @@
 package bridge
 
 import (
-	"encoding/base64"
+	"fmt"
 	"net/http"
-	"strings"
 
-	"github.com/stellar/gateway/horizon"
 	"github.com/stellar/gateway/protocols"
-	"github.com/stellar/go-stellar-base/xdr"
+	"github.com/stellar/go/clients/horizon"
+	"github.com/stellar/go/xdr"
 )
 
 var (
@@ -22,127 +21,105 @@ var (
 	// TransactionInsufficientFee is an error response
 	TransactionInsufficientFee = &protocols.ErrorResponse{Code: "transaction_insufficient_fee", Message: "Transaction fee is too small.", Status: http.StatusBadRequest}
 	// TransactionBadAuthExtra is an error response
-	TransactionBadAuthExtra = &protocols.ErrorResponse{Code: "transaction_bad_auth_extra", Message: "Unused signatures attached to transaction.", Status: http.StatusBadRequest}
+	TransactionBadAuthExtra  = &protocols.ErrorResponse{Code: "transaction_bad_auth_extra", Message: "Unused signatures attached to transaction.", Status: http.StatusBadRequest}
+	TransactionInternalError = &protocols.ErrorResponse{Code: "transaction_internal_error", Message: "Transaction triggered an internal error to stellar-core", Status: http.StatusBadRequest}
 )
 
-// ErrorFromHorizonResponse checks if horizon.SubmitTransactionResponse is an error response and creates ErrorResponse for it
-func ErrorFromHorizonResponse(response horizon.SubmitTransactionResponse) *protocols.ErrorResponse {
-	if response.Ledger == nil && response.Extras != nil {
-		var txResult xdr.TransactionResult
-		txResult, err := unmarshalTransactionResult(response.Extras.ResultXdr)
+// ErrorFromHorizonResponse checks if horizon.SubmitTransactionResponse is an
+// error response and creates ErrorResponse for it
+func ErrorFromHorizonResponse(herr *horizon.Error) *protocols.ErrorResponse {
 
-		if err != nil {
-			return protocols.NewInternalServerError(
-				"Error decoding xdr.TransactionResult",
-				map[string]interface{}{"err": err},
-			)
-		}
-
-		transactionResult := txResult.Result.Code
-		var operationsResult *xdr.OperationResult
-		if txResult.Result.Results != nil {
-			operationsResultsSlice := *txResult.Result.Results
-			if len(operationsResultsSlice) > 0 {
-				operationsResult = &operationsResultsSlice[0]
-			}
-		}
-
-		if transactionResult != xdr.TransactionResultCodeTxSuccess &&
-			transactionResult != xdr.TransactionResultCodeTxFailed {
-			switch transactionResult {
-			case xdr.TransactionResultCodeTxBadSeq:
-				return TransactionBadSequence
-			case xdr.TransactionResultCodeTxBadAuth:
-				return TransactionBadAuth
-			case xdr.TransactionResultCodeTxInsufficientBalance:
-				return TransactionInsufficientBalance
-			case xdr.TransactionResultCodeTxNoAccount:
-				return TransactionNoAccount
-			case xdr.TransactionResultCodeTxInsufficientFee:
-				return TransactionInsufficientFee
-			case xdr.TransactionResultCodeTxBadAuthExtra:
-				return TransactionBadAuthExtra
-			default:
-				return protocols.InternalServerError
-			}
-		} else if operationsResult != nil {
-			if operationsResult.Tr.AllowTrustResult != nil {
-				switch operationsResult.Tr.AllowTrustResult.Code {
-				case xdr.AllowTrustResultCodeAllowTrustMalformed:
-					return AllowTrustMalformed
-				case xdr.AllowTrustResultCodeAllowTrustNoTrustLine:
-					return AllowTrustNoTrustline
-				case xdr.AllowTrustResultCodeAllowTrustTrustNotRequired:
-					return AllowTrustTrustNotRequired
-				case xdr.AllowTrustResultCodeAllowTrustCantRevoke:
-					return AllowTrustCantRevoke
-				default:
-					return protocols.InternalServerError
-				}
-			} else if operationsResult.Tr.PaymentResult != nil {
-				switch operationsResult.Tr.PaymentResult.Code {
-				case xdr.PaymentResultCodePaymentMalformed:
-					return PaymentMalformed
-				case xdr.PaymentResultCodePaymentUnderfunded:
-					return PaymentUnderfunded
-				case xdr.PaymentResultCodePaymentSrcNoTrust:
-					return PaymentSrcNoTrust
-				case xdr.PaymentResultCodePaymentSrcNotAuthorized:
-					return PaymentSrcNotAuthorized
-				case xdr.PaymentResultCodePaymentNoDestination:
-					return PaymentNoDestination
-				case xdr.PaymentResultCodePaymentNoTrust:
-					return PaymentNoTrust
-				case xdr.PaymentResultCodePaymentNotAuthorized:
-					return PaymentNotAuthorized
-				case xdr.PaymentResultCodePaymentLineFull:
-					return PaymentLineFull
-				case xdr.PaymentResultCodePaymentNoIssuer:
-					return PaymentNoIssuer
-				default:
-					return protocols.InternalServerError
-				}
-			} else if operationsResult.Tr.PathPaymentResult != nil {
-				switch operationsResult.Tr.PathPaymentResult.Code {
-				case xdr.PathPaymentResultCodePathPaymentMalformed:
-					return PaymentMalformed
-				case xdr.PathPaymentResultCodePathPaymentUnderfunded:
-					return PaymentUnderfunded
-				case xdr.PathPaymentResultCodePathPaymentSrcNoTrust:
-					return PaymentSrcNoTrust
-				case xdr.PathPaymentResultCodePathPaymentSrcNotAuthorized:
-					return PaymentSrcNotAuthorized
-				case xdr.PathPaymentResultCodePathPaymentNoDestination:
-					return PaymentNoDestination
-				case xdr.PathPaymentResultCodePathPaymentNoTrust:
-					return PaymentNoTrust
-				case xdr.PathPaymentResultCodePathPaymentNotAuthorized:
-					return PaymentNotAuthorized
-				case xdr.PathPaymentResultCodePathPaymentLineFull:
-					return PaymentLineFull
-				case xdr.PathPaymentResultCodePathPaymentNoIssuer:
-					return PaymentNoIssuer
-				case xdr.PathPaymentResultCodePathPaymentTooFewOffers:
-					return PaymentTooFewOffers
-				case xdr.PathPaymentResultCodePathPaymentOfferCrossSelf:
-					return PaymentOfferCrossSelf
-				case xdr.PathPaymentResultCodePathPaymentOverSendmax:
-					return PaymentOverSendmax
-				default:
-					return protocols.InternalServerError
-				}
-			}
-		} else {
-			return protocols.InternalServerError
-		}
+	if herr.Problem.Type == "transaction_malformed" {
+		return protocols.NewInternalServerError("transaction malformed", nil)
 	}
 
-	return nil
+	trc, err := herr.ResultCodes()
+	if err != nil {
+		return protocols.NewInternalServerError("Cannot retrieve error codes", nil)
+	}
+
+	// first, we see if the error code at the transaction
+	switch trc.TransactionCode {
+	case "tx_bad_seq":
+		return TransactionBadSequence
+	case "tx_bad_auth":
+		return TransactionBadAuth
+	case "tx_insufficient_balance":
+		return TransactionInsufficientBalance
+	case "tx_no_source_account":
+		return TransactionNoAccount
+	case "tx_insufficient_fee":
+		return TransactionInsufficientFee
+	case "tx_bad_auth_extra":
+		return TransactionBadAuthExtra
+	case "tx_internal_error":
+		return TransactionInternalError
+	case "tx_failed":
+		// noop; continue on to the operation inspection below
+	default:
+		panic(fmt.Sprintf("Unexpected transaction result code: %s", trc.TransactionCode))
+	}
+
+	if len(trc.OperationCodes) != 1 {
+		return protocols.NewInternalServerError("unexpected op codes: expected exactly one", nil)
+	}
+
+	txe, err := herr.Envelope()
+	if err != nil {
+		return protocols.NewInternalServerError("Cannot retrieve envelope from error", nil)
+	}
+
+	opcode := trc.OperationCodes[0]
+	optype := txe.Tx.Operations[0].Body.Type
+
+	// determine the error response based upon the operation
+	switch opcode {
+	case "op_malformed":
+		return malformedErrorResponse(optype)
+	case "op_no_trustline":
+		return AllowTrustNoTrustline
+	case "op_not_required":
+		return AllowTrustTrustNotRequired
+	case "op_cant_revoke":
+		return AllowTrustCantRevoke
+	case "op_underfunded":
+		return PaymentUnderfunded
+	case "op_src_no_trust":
+		return PaymentSrcNoTrust
+	case "op_src_not_authorized":
+		return PaymentSrcNotAuthorized
+	case "op_no_destination":
+		return PaymentNoDestination
+	case "op_no_trust":
+		return PaymentNoTrust
+	case "op_not_authorized":
+		return PaymentNotAuthorized
+	case "op_line_full":
+		return PaymentLineFull
+	case "op_no_issuer":
+		return PaymentNoIssuer
+	case "op_too_few_offers":
+		return PaymentTooFewOffers
+	case "op_cross_self":
+		return PaymentOfferCrossSelf
+	case "op_over_source_max":
+		return PaymentOverSendmax
+	default:
+		msg := fmt.Sprintf("unexpected operation result: %s", opcode)
+		return protocols.NewInternalServerError(msg, nil)
+	}
 }
 
-func unmarshalTransactionResult(transactionResult string) (txResult xdr.TransactionResult, err error) {
-	reader := strings.NewReader(transactionResult)
-	b64r := base64.NewDecoder(base64.StdEncoding, reader)
-	_, err = xdr.Unmarshal(b64r, &txResult)
-	return
+func malformedErrorResponse(optype xdr.OperationType) *protocols.ErrorResponse {
+	switch optype {
+	case xdr.OperationTypeAllowTrust:
+		return AllowTrustMalformed
+	case xdr.OperationTypePayment:
+		return PaymentMalformed
+	case xdr.OperationTypePathPayment:
+		return PaymentMalformed
+	default:
+		msg := fmt.Sprintf("unexpected operation type: %s", optype)
+		return protocols.NewInternalServerError(msg, nil)
+	}
 }

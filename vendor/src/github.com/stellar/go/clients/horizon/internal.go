@@ -12,6 +12,28 @@ import (
 
 var endEvent = regexp.MustCompile("(\r\n|\r|\n){2}")
 
+func decodeResponse(resp *http.Response, object interface{}) (err error) {
+	defer resp.Body.Close()
+	decoder := json.NewDecoder(resp.Body)
+
+	if !(resp.StatusCode >= 200 && resp.StatusCode < 300) {
+		horizonError := &Error{
+			Response: resp,
+		}
+		decodeError := decoder.Decode(&horizonError.Problem)
+		if decodeError != nil {
+			return decodeError
+		}
+		return horizonError
+	}
+
+	err = decoder.Decode(&object)
+	if err != nil {
+		return
+	}
+	return
+}
+
 func loadMemo(p *PaymentResponse) error {
 	res, err := http.Get(p.Links.Transaction.Href)
 	if err != nil {

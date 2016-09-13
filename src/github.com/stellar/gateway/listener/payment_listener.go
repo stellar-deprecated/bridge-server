@@ -2,7 +2,6 @@ package listener
 
 import (
 	"encoding/json"
-	"errors"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -13,10 +12,10 @@ import (
 	"github.com/stellar/gateway/bridge/config"
 	"github.com/stellar/gateway/db"
 	"github.com/stellar/gateway/db/entities"
-	"github.com/stellar/gateway/horizon"
 	"github.com/stellar/gateway/net"
 	"github.com/stellar/gateway/protocols/compliance"
 	"github.com/stellar/gateway/protocols/memo"
+	"github.com/stellar/go/clients/horizon"
 )
 
 // PaymentListener is listening for a new payments received by ReceivingAccount
@@ -24,7 +23,7 @@ type PaymentListener struct {
 	client        net.HTTPClientInterface
 	config        *config.Config
 	entityManager db.EntityManagerInterface
-	horizon       horizon.HorizonInterface
+	horizon       *horizon.Client
 	log           *logrus.Entry
 	repository    db.RepositoryInterface
 	now           func() time.Time
@@ -36,7 +35,7 @@ const callbackTimeout = 60 * time.Second
 func NewPaymentListener(
 	config *config.Config,
 	entityManager db.EntityManagerInterface,
-	horizon horizon.HorizonInterface,
+	horizon *horizon.Client,
 	repository db.RepositoryInterface,
 	now func() time.Time,
 ) (pl PaymentListener, err error) {
@@ -102,19 +101,19 @@ func (pl PaymentListener) Listen() (err error) {
 	return
 }
 
-func (pl PaymentListener) onPayment(payment horizon.PaymentResponse) (err error) {
+func (pl PaymentListener) onPayment(payment horizon.PaymentResponse) {
 	pl.log.WithFields(logrus.Fields{"id": payment.ID}).Info("New received payment")
 
 	id, err := strconv.ParseInt(payment.ID, 10, 64)
 	if err != nil {
 		pl.log.WithFields(logrus.Fields{"err": err}).Error("Error converting ID to int64")
-		return err
+		return
 	}
 
 	existingPayment, err := pl.repository.GetReceivedPaymentByID(id)
 	if err != nil {
 		pl.log.WithFields(logrus.Fields{"err": err}).Error("Error checking if receive payment exists")
-		return err
+		return
 	}
 
 	if existingPayment != nil {
@@ -142,19 +141,19 @@ func (pl PaymentListener) onPayment(payment horizon.PaymentResponse) (err error)
 	if payment.To != pl.config.Accounts.ReceivingAccountID {
 		dbPayment.Status = "Operation sent not received"
 		savePayment(&dbPayment)
-		return nil
+		return
 	}
 
 	if !pl.isAssetAllowed(payment.AssetCode, payment.AssetIssuer) {
 		dbPayment.Status = "Asset not allowed"
 		savePayment(&dbPayment)
-		return nil
+		return
 	}
 
 	err = pl.horizon.LoadMemo(&payment)
 	if err != nil {
-		pl.log.Error("Unable to load transaction memo")
-		return err
+		pl.log.Errorf("Unable to load transaction memo: %s", err)
+		return
 	}
 
 	var receiveResponse compliance.ReceiveResponse
@@ -168,14 +167,14 @@ func (pl PaymentListener) onPayment(payment horizon.PaymentResponse) (err error)
 		)
 		if err != nil {
 			pl.log.WithFields(logrus.Fields{"err": err}).Error("Error sending request to compliance server")
-			return err
+			return
 		}
 
 		defer resp.Body.Close()
 		body, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
 			pl.log.Error("Error reading compliance server response")
-			return err
+			return
 		}
 
 		if resp.StatusCode != 200 {
@@ -183,27 +182,27 @@ func (pl PaymentListener) onPayment(payment horizon.PaymentResponse) (err error)
 				"status": resp.StatusCode,
 				"body":   string(body),
 			}).Error("Error response from compliance server")
-			return err
+			return
 		}
 
 		err = json.Unmarshal([]byte(body), &receiveResponse)
 		if err != nil {
 			pl.log.WithFields(logrus.Fields{"err": err}).Error("Cannot unmarshal receiveResponse")
-			return err
+			return
 		}
 
 		var authData compliance.AuthData
 		err = json.Unmarshal([]byte(receiveResponse.Data), &authData)
 		if err != nil {
 			pl.log.WithFields(logrus.Fields{"err": err}).Error("Cannot unmarshal authData")
-			return err
+			return
 		}
 
 		var memo memo.Memo
 		err = json.Unmarshal([]byte(authData.Memo), &memo)
 		if err != nil {
 			pl.log.WithFields(logrus.Fields{"err": err}).Error("Cannot unmarshal memo")
-			return err
+			return
 		}
 
 		route = memo.Transaction.Route
@@ -226,7 +225,7 @@ func (pl PaymentListener) onPayment(payment horizon.PaymentResponse) (err error)
 	)
 	if err != nil {
 		pl.log.Error("Error sending request to receive callback")
-		return err
+		return
 	}
 
 	if resp.StatusCode != 200 {
@@ -234,24 +233,24 @@ func (pl PaymentListener) onPayment(payment horizon.PaymentResponse) (err error)
 		body, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
 			pl.log.Error("Error reading receive callback response")
-			return err
+			return
 		}
 
 		pl.log.WithFields(logrus.Fields{
 			"status": resp.StatusCode,
 			"body":   string(body),
 		}).Error("Error response from receive callback")
-		return errors.New("Error response from receive callback")
+		return
 	}
 
 	dbPayment.Status = "Success"
 	err = savePayment(&dbPayment)
 	if err != nil {
 		pl.log.Error("Error saving payment to the DB")
-		return err
+		return
 	}
 
-	return nil
+	return
 }
 
 func (pl PaymentListener) isAssetAllowed(code string, issuer string) bool {

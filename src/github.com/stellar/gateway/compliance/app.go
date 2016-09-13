@@ -2,9 +2,10 @@ package compliance
 
 import (
 	"fmt"
-	log "github.com/Sirupsen/logrus"
 	"net/http"
 	"os"
+
+	log "github.com/Sirupsen/logrus"
 
 	"github.com/facebookgo/inject"
 	"github.com/stellar/gateway/compliance/config"
@@ -13,9 +14,9 @@ import (
 	"github.com/stellar/gateway/db"
 	"github.com/stellar/gateway/db/drivers/mysql"
 	"github.com/stellar/gateway/db/drivers/postgres"
-	"github.com/stellar/gateway/protocols/federation"
-	"github.com/stellar/gateway/protocols/stellartoml"
 	"github.com/stellar/gateway/server"
+	"github.com/stellar/go/clients/federation"
+	"github.com/stellar/go/clients/stellartoml"
 	"github.com/zenazn/goji/graceful"
 	"github.com/zenazn/goji/web"
 )
@@ -68,8 +69,8 @@ func NewApp(config config.Config, migrateFlag bool) (app *App, err error) {
 		&inject.Object{Value: &entityManager},
 		&inject.Object{Value: &repository},
 		&inject.Object{Value: &crypto.SignerVerifier{}},
-		&inject.Object{Value: &stellartoml.Resolver{}},
-		&inject.Object{Value: &federation.Resolver{}},
+		&inject.Object{Value: &stellartoml.Client{}},
+		&inject.Object{Value: &federation.Client{}},
 		&inject.Object{Value: &http.Client{}},
 	)
 

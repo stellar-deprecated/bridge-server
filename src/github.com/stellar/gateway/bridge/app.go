@@ -4,10 +4,11 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	log "github.com/Sirupsen/logrus"
 	"net/http"
 	"os"
 	"time"
+
+	log "github.com/Sirupsen/logrus"
 
 	"github.com/facebookgo/inject"
 	"github.com/stellar/gateway/bridge/config"
@@ -15,12 +16,12 @@ import (
 	"github.com/stellar/gateway/db"
 	"github.com/stellar/gateway/db/drivers/mysql"
 	"github.com/stellar/gateway/db/drivers/postgres"
-	"github.com/stellar/gateway/horizon"
 	"github.com/stellar/gateway/listener"
-	"github.com/stellar/gateway/protocols/federation"
-	"github.com/stellar/gateway/protocols/stellartoml"
 	"github.com/stellar/gateway/server"
 	"github.com/stellar/gateway/submitter"
+	"github.com/stellar/go/clients/federation"
+	"github.com/stellar/go/clients/horizon"
+	"github.com/stellar/go/clients/stellartoml"
 	"github.com/zenazn/goji"
 	"github.com/zenazn/goji/web/middleware"
 )
@@ -79,7 +80,7 @@ func NewApp(config config.Config, migrateFlag bool) (app *App, err error) {
 		return
 	}
 
-	h := horizon.New(config.Horizon)
+	h := &horizon.Client{URL: config.Horizon}
 
 	log.Print("Creating and initializing TransactionSubmitter")
 	ts := submitter.NewTransactionSubmitter(&h, entityManager, config.NetworkPassphrase, time.Now)
@@ -138,15 +139,24 @@ func NewApp(config config.Config, migrateFlag bool) (app *App, err error) {
 
 	requestHandler := handlers.RequestHandler{}
 
+	httpclient := &http.Client{}
+
 	err = g.Provide(
 		&inject.Object{Value: &requestHandler},
 		&inject.Object{Value: &config},
-		&inject.Object{Value: &stellartoml.Resolver{}},
-		&inject.Object{Value: &federation.Resolver{}},
+		&inject.Object{Value: &stellartoml.Client{
+			HTTP:    httpclient,
+			UseHTTP: config.Debug,
+		}},
+		&inject.Object{Value: &federation.Client{
+			HTTP:      httpclient,
+			Horizon:   h,
+			AllowHTTP: config.Debug,
+		}},
 		&inject.Object{Value: &h},
 		&inject.Object{Value: &ts},
 		&inject.Object{Value: &paymentListener},
-		&inject.Object{Value: &http.Client{}},
+		&inject.Object{Value: httpclient},
 	)
 
 	if err != nil {

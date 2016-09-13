@@ -5,8 +5,8 @@ import (
 	"github.com/stellar/gateway/crypto"
 	"github.com/stellar/gateway/db"
 	"github.com/stellar/gateway/net"
-	"github.com/stellar/gateway/protocols/federation"
-	"github.com/stellar/gateway/protocols/stellartoml"
+	"github.com/stellar/go/clients/federation"
+	"github.com/stellar/go/clients/stellartoml"
 )
 
 // RequestHandler implements compliance server request handlers
@@ -16,6 +16,6 @@ type RequestHandler struct {
 	EntityManager           db.EntityManagerInterface      `inject:""`
 	Repository              db.RepositoryInterface         `inject:""`
 	SignatureSignerVerifier crypto.SignerVerifierInterface `inject:""`
-	StellarTomlResolver     stellartoml.ResolverInterface  `inject:""`
-	FederationResolver      federation.ResolverInterface   `inject:""`
+	StellarTomlClient       stellartoml.Client             `inject:""`
+	FederationClient        federation.Client              `inject:""`
 }

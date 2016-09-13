@@ -55,9 +55,10 @@ func (e *SentTransaction) SetExists() {
 }
 
 // MarkSucceeded marks transaction as succeeded
-func (e *SentTransaction) MarkSucceeded(ledger uint64) {
+func (e *SentTransaction) MarkSucceeded(ledger int32) {
 	e.Status = SentTransactionStatusSuccess
-	e.Ledger = &ledger
+	l := uint64(ledger)
+	e.Ledger = &l
 	now := time.Now()
 	e.SucceededAt = &now
 }

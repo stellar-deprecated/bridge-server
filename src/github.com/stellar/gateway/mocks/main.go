@@ -6,10 +6,8 @@ import (
 	"time"
 
 	"github.com/stellar/gateway/db/entities"
-	"github.com/stellar/gateway/horizon"
-	"github.com/stellar/gateway/protocols/federation"
-	"github.com/stellar/gateway/protocols/stellartoml"
 	"github.com/stellar/go-stellar-base/xdr"
+	"github.com/stellar/go/clients/horizon"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -30,23 +28,6 @@ func (m *MockEntityManager) Persist(object entities.Entity) (err error) {
 	return a.Error(0)
 }
 
-// MockFederationResolver ...
-type MockFederationResolver struct {
-	mock.Mock
-}
-
-// Resolve is a mocking a method
-func (m *MockFederationResolver) Resolve(address string) (response federation.Response, stellarToml stellartoml.StellarToml, err error) {
-	a := m.Called(address)
-	return a.Get(0).(federation.Response), a.Get(1).(stellartoml.StellarToml), a.Error(2)
-}
-
-// GetDestination is a mocking a method
-func (m *MockFederationResolver) GetDestination(federationURL, address string) (response federation.Response, err error) {
-	a := m.Called(federationURL, address)
-	return a.Get(0).(federation.Response), a.Error(1)
-}
-
 // MockHTTPClient ...
 type MockHTTPClient struct {
 	mock.Mock
@@ -56,35 +37,6 @@ type MockHTTPClient struct {
 func (m *MockHTTPClient) PostForm(url string, data url.Values) (resp *http.Response, err error) {
 	a := m.Called(url, data)
 	return a.Get(0).(*http.Response), a.Error(1)
-}
-
-// MockHorizon ...
-type MockHorizon struct {
-	mock.Mock
-}
-
-// LoadAccount is a mocking a method
-func (m *MockHorizon) LoadAccount(accountID string) (response horizon.AccountResponse, err error) {
-	a := m.Called(accountID)
-	return a.Get(0).(horizon.AccountResponse), a.Error(1)
-}
-
-// LoadMemo is a mocking a method
-func (m *MockHorizon) LoadMemo(p *horizon.PaymentResponse) (err error) {
-	a := m.Called(p)
-	return a.Error(0)
-}
-
-// StreamPayments is a mocking a method
-func (m *MockHorizon) StreamPayments(accountID string, cursor *string, onPaymentHandler horizon.PaymentHandler) (err error) {
-	a := m.Called(accountID, cursor, onPaymentHandler)
-	return a.Error(0)
-}
-
-// SubmitTransaction is a mocking a method
-func (m *MockHorizon) SubmitTransaction(txeBase64 string) (response horizon.SubmitTransactionResponse, err error) {
-	a := m.Called(txeBase64)
-	return a.Get(0).(horizon.SubmitTransactionResponse), a.Error(1)
 }
 
 // MockRepository ...
@@ -151,38 +103,21 @@ func (m *MockSignerVerifier) Verify(publicKey string, message, signature []byte)
 	return a.Error(0)
 }
 
-// MockStellartomlResolver ...
-type MockStellartomlResolver struct {
-	mock.Mock
-}
-
-// GetStellarToml is a mocking a method
-func (m *MockStellartomlResolver) GetStellarToml(domain string) (stellarToml stellartoml.StellarToml, err error) {
-	a := m.Called(domain)
-	return a.Get(0).(stellartoml.StellarToml), a.Error(1)
-}
-
-// GetStellarTomlByAddress is a mocking a method
-func (m *MockStellartomlResolver) GetStellarTomlByAddress(address string) (stellarToml stellartoml.StellarToml, err error) {
-	a := m.Called(address)
-	return a.Get(0).(stellartoml.StellarToml), a.Error(1)
-}
-
 // MockTransactionSubmitter ...
 type MockTransactionSubmitter struct {
 	mock.Mock
 }
 
 // SubmitTransaction is a mocking a method
-func (ts *MockTransactionSubmitter) SubmitTransaction(seed string, operation, memo interface{}) (response horizon.SubmitTransactionResponse, err error) {
+func (ts *MockTransactionSubmitter) SubmitTransaction(seed string, operation, memo interface{}) (response horizon.TransactionSuccess, err error) {
 	a := ts.Called(seed, operation, memo)
-	return a.Get(0).(horizon.SubmitTransactionResponse), a.Error(1)
+	return a.Get(0).(horizon.TransactionSuccess), a.Error(1)
 }
 
 // SignAndSubmitRawTransaction is a mocking a method
-func (ts *MockTransactionSubmitter) SignAndSubmitRawTransaction(seed string, tx *xdr.Transaction) (response horizon.SubmitTransactionResponse, err error) {
+func (ts *MockTransactionSubmitter) SignAndSubmitRawTransaction(seed string, tx *xdr.Transaction) (response horizon.TransactionSuccess, err error) {
 	a := ts.Called(seed, tx)
-	return a.Get(0).(horizon.SubmitTransactionResponse), a.Error(1)
+	return a.Get(0).(horizon.TransactionSuccess), a.Error(1)
 }
 
 // PredefinedTime is a time.Time object that will be returned by Now() function

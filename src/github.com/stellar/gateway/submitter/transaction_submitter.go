@@ -1,33 +1,34 @@
 package submitter
 
 import (
-	"bytes"
 	"encoding/hex"
-	"errors"
 	"fmt"
 	"strconv"
 	"sync"
 	"time"
 
+	"encoding/json"
+
 	"github.com/Sirupsen/logrus"
 	"github.com/stellar/gateway/db"
 	"github.com/stellar/gateway/db/entities"
-	"github.com/stellar/gateway/horizon"
-	"github.com/stellar/go-stellar-base/build"
-	"github.com/stellar/go-stellar-base/hash"
-	"github.com/stellar/go-stellar-base/keypair"
-	"github.com/stellar/go-stellar-base/xdr"
+	"github.com/stellar/go/build"
+	"github.com/stellar/go/clients/horizon"
+	"github.com/stellar/go/keypair"
+	"github.com/stellar/go/network"
+	"github.com/stellar/go/support/errors"
+	"github.com/stellar/go/xdr"
 )
 
 // TransactionSubmitterInterface helps mocking TransactionSubmitter
 type TransactionSubmitterInterface interface {
-	SubmitTransaction(seed string, operation, memo interface{}) (response horizon.SubmitTransactionResponse, err error)
-	SignAndSubmitRawTransaction(seed string, tx *xdr.Transaction) (response horizon.SubmitTransactionResponse, err error)
+	SubmitTransaction(seed string, operation, memo interface{}) (response horizon.TransactionSuccess, err error)
+	SignAndSubmitRawTransaction(seed string, tx *xdr.Transaction) (response horizon.TransactionSuccess, err error)
 }
 
 // TransactionSubmitter submits transactions to Stellar Network
 type TransactionSubmitter struct {
-	Horizon       horizon.HorizonInterface
+	Horizon       *horizon.Client
 	Accounts      map[string]*Account // seed => *Account
 	EntityManager db.EntityManagerInterface
 	Network       build.Network
@@ -45,7 +46,7 @@ type Account struct {
 
 // NewTransactionSubmitter creates a new TransactionSubmitter
 func NewTransactionSubmitter(
-	horizon horizon.HorizonInterface,
+	horizon *horizon.Client,
 	entityManager db.EntityManagerInterface,
 	networkPassphrase string,
 	now func() time.Time,
@@ -76,7 +77,7 @@ func (ts *TransactionSubmitter) LoadAccount(seed string) (account *Account, err 
 	}
 
 	account.Seed = seed
-	account.SequenceNumber, err = strconv.ParseUint(accountResponse.SequenceNumber, 10, 64)
+	account.SequenceNumber, err = strconv.ParseUint(accountResponse.Sequence, 10, 64)
 	return
 }
 
@@ -100,26 +101,23 @@ func (ts *TransactionSubmitter) GetAccount(seed string) (account *Account, err e
 // - update sequence number of the transaction to the current one,
 // - sign it,
 // - submit it to the network.
-func (ts *TransactionSubmitter) SignAndSubmitRawTransaction(seed string, tx *xdr.Transaction) (response horizon.SubmitTransactionResponse, err error) {
+func (ts *TransactionSubmitter) SignAndSubmitRawTransaction(seed string, tx *xdr.Transaction) (response Response, err error) {
 	account, err := ts.GetAccount(seed)
 	if err != nil {
 		return
 	}
 
-	account.Mutex.Lock()
-	account.SequenceNumber++
-	tx.SeqNum = xdr.SequenceNumber(account.SequenceNumber)
-	account.Mutex.Unlock()
+	tx.SeqNum = account.nextSequence()
 
-	hash, err := TransactionHash(tx, ts.Network.Passphrase)
+	hash, err := network.HashTransaction(tx, ts.Network.Passphrase)
 	if err != nil {
-		ts.log.Print("Error calculating transaction hash")
+		err = errors.Wrap(err, "hashing failed")
 		return
 	}
 
 	sig, err := account.Keypair.SignDecorated(hash[:])
 	if err != nil {
-		ts.log.Print("Error signing a transaction")
+		err = errors.Wrap(err, "signing failed")
 		return
 	}
 
@@ -130,18 +128,12 @@ func (ts *TransactionSubmitter) SignAndSubmitRawTransaction(seed string, tx *xdr
 
 	txeB64, err := xdr.MarshalBase64(envelopeXdr)
 	if err != nil {
-		ts.log.Print("Cannot encode transaction envelope")
-		return
-	}
-
-	transactionHashBytes, err := TransactionHash(tx, ts.Network.Passphrase)
-	if err != nil {
-		ts.log.WithFields(logrus.Fields{"err": err}).Warn("Error calculating tx hash")
+		err = errors.Wrap(err, "marshal envelope failed")
 		return
 	}
 
 	sentTransaction := &entities.SentTransaction{
-		TransactionID: hex.EncodeToString(transactionHashBytes[:]),
+		TransactionID: hex.EncodeToString(hash[:]),
 		Status:        entities.SentTransactionStatusSending,
 		Source:        account.Keypair.Address(),
 		SubmittedAt:   ts.now(),
@@ -149,48 +141,70 @@ func (ts *TransactionSubmitter) SignAndSubmitRawTransaction(seed string, tx *xdr
 	}
 	err = ts.EntityManager.Persist(sentTransaction)
 	if err != nil {
+		err = errors.Wrap(err, "initial save tx failed")
 		return
 	}
 
-	response, err = ts.Horizon.SubmitTransaction(txeB64)
+	hresp, err := ts.Horizon.SubmitTransaction(txeB64)
+
 	if err != nil {
-		ts.log.Error("Error submitting transaction ", err)
-		return
+
+		// NOTE: on any error, always reload the account state from horizon.  Yes,
+		// this causes more loads against horizon than is strictly necessary, but it
+		// greatly simplifies to code flow until we can take the time to refactor
+		// this whole module.
+		//
+		// BUG(scott): a failure here will cause the currently processing
+		// transaction to have no status recorded.
+		rerr := account.resetSequence(ts.Horizon)
+		if rerr != nil {
+			err = errors.Wrap(err, "failed to reset account sequence after tx failure")
+			return
+		}
+
+		switch cerr := errors.Cause(err).(type) {
+		case *horizon.Error:
+			var result string
+			xdri, ok := cerr.Problem.Extras["result_xdr"]
+			if ok {
+				err := json.Unmarshal(xdri, &result)
+				if err != nil {
+					result = fmt.Sprintf("<error: %s>", err)
+				}
+			} else {
+				result = "<empty>"
+			}
+
+			sentTransaction.MarkFailed(result)
+		default:
+			err = errors.Wrap(err, "submit transaction failed")
+			return
+		}
+	} else {
+		sentTransaction.MarkSucceeded(hresp.Ledger)
 	}
 
-	if response.Ledger != nil {
-		sentTransaction.MarkSucceeded(*response.Ledger)
-	} else {
-		var result string
-		if response.Extras != nil {
-			result = response.Extras.ResultXdr
-		} else {
-			result = "<empty>"
-		}
-		sentTransaction.MarkFailed(result)
-	}
 	err = ts.EntityManager.Persist(sentTransaction)
 	if err != nil {
+		err = errors.Wrap(err, "save tx status failed")
 		return
 	}
 
-	// Sync sequence number
-	if response.Extras != nil && response.Extras.ResultXdr == "AAAAAAAAAAD////7AAAAAA==" {
-		account.Mutex.Lock()
-		ts.log.Print("Syncing sequence number for ", account.Keypair.Address())
-		accountResponse, err2 := ts.Horizon.LoadAccount(account.Keypair.Address())
-		if err2 != nil {
-			ts.log.Error("Error updating sequence number ", err)
-		} else {
-			account.SequenceNumber, _ = strconv.ParseUint(accountResponse.SequenceNumber, 10, 64)
-		}
-		account.Mutex.Unlock()
+	err = response.Populate(&hresp)
+	if err != nil {
+		err = errors.Wrap(err, "populate response failed")
+		return
 	}
+
 	return
 }
 
 // SubmitTransaction builds and submits transaction to Stellar network
-func (ts *TransactionSubmitter) SubmitTransaction(seed string, operation, memo interface{}) (response horizon.SubmitTransactionResponse, err error) {
+func (ts *TransactionSubmitter) SubmitTransaction(
+	seed string,
+	operation interface{},
+	memo interface{},
+) (response Response, err error) {
 	account, err := ts.GetAccount(seed)
 	if err != nil {
 		return
@@ -251,26 +265,4 @@ func BuildTransaction(accountID, networkPassphrase string, operation, memo inter
 	txBuilder := build.Transaction(mutators...)
 
 	return txBuilder.TX, txBuilder.Err
-}
-
-// TransactionHash returns transaction hash for a given Transaction based on the network
-func TransactionHash(tx *xdr.Transaction, networkPassphrase string) ([32]byte, error) {
-	var txBytes bytes.Buffer
-
-	_, err := fmt.Fprintf(&txBytes, "%s", hash.Hash([]byte(networkPassphrase)))
-	if err != nil {
-		return [32]byte{}, err
-	}
-
-	_, err = xdr.Marshal(&txBytes, xdr.EnvelopeTypeEnvelopeTypeTx)
-	if err != nil {
-		return [32]byte{}, err
-	}
-
-	_, err = xdr.Marshal(&txBytes, tx)
-	if err != nil {
-		return [32]byte{}, err
-	}
-
-	return hash.Hash(txBytes.Bytes()), nil
 }

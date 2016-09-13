@@ -10,6 +10,7 @@ import (
 // Config contains config params of the bridge server
 type Config struct {
 	Port              *int
+	Debug             bool
 	Horizon           string
 	Compliance        string
 	LogFormat         string `mapstructure:"log_format"`

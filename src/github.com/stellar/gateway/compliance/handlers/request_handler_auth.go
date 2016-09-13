@@ -6,21 +6,22 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
-	log "github.com/Sirupsen/logrus"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
 
+	log "github.com/Sirupsen/logrus"
+
 	"github.com/stellar/gateway/db/entities"
 	"github.com/stellar/gateway/protocols"
 	"github.com/stellar/gateway/protocols/compliance"
 	"github.com/stellar/gateway/protocols/memo"
 	"github.com/stellar/gateway/server"
-	"github.com/stellar/gateway/submitter"
-	baseAmount "github.com/stellar/go-stellar-base/amount"
-	"github.com/stellar/go-stellar-base/xdr"
+	baseAmount "github.com/stellar/go/amount"
+	"github.com/stellar/go/network"
+	"github.com/stellar/go/xdr"
 	"github.com/zenazn/goji/web"
 )
 
@@ -46,7 +47,7 @@ func (rh *RequestHandler) HandlerAuth(c web.C, w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	senderStellarToml, err := rh.StellarTomlResolver.GetStellarTomlByAddress(authData.Sender)
+	senderStellarToml, err := rh.StellarTomlClient.GetStellarTomlByAddress(authData.Sender)
 	if err != nil {
 		log.WithFields(log.Fields{"err": err, "sender": authData.Sender}).Warn("Cannot get stellar.toml of sender")
 		server.Write(w, protocols.InvalidParameterError)
@@ -137,7 +138,7 @@ func (rh *RequestHandler) HandlerAuth(c web.C, w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	transactionHash, err := submitter.TransactionHash(&tx, rh.Config.NetworkPassphrase)
+	transactionHash, err := network.HashTransaction(&tx, rh.Config.NetworkPassphrase)
 	if err != nil {
 		log.WithFields(log.Fields{"err": err}).Warn("Error calculating tx hash")
 		server.Write(w, protocols.InternalServerError)

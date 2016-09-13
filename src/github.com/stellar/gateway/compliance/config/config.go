@@ -9,8 +9,9 @@ import (
 
 // Config contains config params of the compliance server
 type Config struct {
-	ExternalPort      *int   `mapstructure:"external_port"`
-	InternalPort      *int   `mapstructure:"internal_port"`
+	ExternalPort      *int `mapstructure:"external_port"`
+	InternalPort      *int `mapstructure:"internal_port"`
+	Debug             bool
 	LogFormat         string `mapstructure:"log_format"`
 	NeedsAuth         bool   `mapstructure:"needs_auth"`
 	NetworkPassphrase string `mapstructure:"network_passphrase"`

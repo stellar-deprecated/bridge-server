@@ -1,13 +1,17 @@
 package handlers
 
 import (
-	log "github.com/Sirupsen/logrus"
 	"net/http"
+
+	log "github.com/Sirupsen/logrus"
 
 	"github.com/stellar/gateway/protocols"
 	"github.com/stellar/gateway/protocols/bridge"
 	"github.com/stellar/gateway/server"
-	b "github.com/stellar/go-stellar-base/build"
+	"github.com/stellar/gateway/submitter"
+	b "github.com/stellar/go/build"
+	"github.com/stellar/go/clients/horizon"
+	"github.com/stellar/go/support/errors"
 )
 
 // Authorize implements /authorize endpoint
@@ -35,18 +39,24 @@ func (rh *RequestHandler) Authorize(w http.ResponseWriter, r *http.Request) {
 		nil,
 	)
 
-	if err != nil {
-		log.WithFields(log.Fields{"err": err}).Error("Error submitting transaction")
-		server.Write(w, protocols.InternalServerError)
-		return
-	}
+	// on success
+	if err == nil {
+		var response submitter.Response
+		response.Populate(&submitResponse)
+		server.Write(w, &response)
 
-	errorResponse := bridge.ErrorFromHorizonResponse(submitResponse)
-	if errorResponse != nil {
+		// on horizon error
+	} else if err, ok := errors.Cause(err).(*horizon.Error); ok {
+
+		errorResponse := bridge.ErrorFromHorizonResponse(err)
 		log.WithFields(errorResponse.LogData).Error(errorResponse.Error())
 		server.Write(w, errorResponse)
-		return
+
+		// on unknown error
+	} else {
+		log.WithFields(log.Fields{"error": err}).Error("Error submitting transaction")
+		server.Write(w, protocols.InternalServerError)
 	}
 
-	server.Write(w, &submitResponse)
+	return
 }
