@@ -60,7 +60,7 @@ var (
 // PaymentRequest represents request made to /payment endpoint of the bridge server
 type PaymentRequest struct {
 	// Source account secret
-	Source string `name:"source" required:""`
+	Source string `name:"source"`
 	// Sender address (like alice*stellar.org)
 	Sender string `name:"sender"`
 	// Destination address (like bob*stellar.org)
@@ -125,9 +125,11 @@ func (request *PaymentRequest) Validate() error {
 		return err
 	}
 
-	_, err = keypair.Parse(request.Source)
-	if err != nil {
-		return protocols.NewInvalidParameterError("source", request.Source)
+	if request.Source != "" {
+		_, err = keypair.Parse(request.Source)
+		if err != nil {
+			return protocols.NewInvalidParameterError("source", request.Source)
+		}
 	}
 
 	// Memo

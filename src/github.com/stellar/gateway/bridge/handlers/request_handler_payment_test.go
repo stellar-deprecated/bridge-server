@@ -28,6 +28,10 @@ func TestRequestHandlerPayment(t *testing.T) {
 	c := &config.Config{
 		NetworkPassphrase: "Test SDF Network ; September 2015",
 		Compliance:        "http://compliance",
+		Accounts: config.Accounts{
+			// GAHA6GRCLCCN7XE2NEEUDSIVOFBOQ6GLSYXVLYCJXJKLPMDR5XB5XZZJ
+			BaseSeed: "SBKKWO3ZVDDEHDJILGHPHCJCFD2GNUAYIUDMRAS326HLUEQ7ZFXWIGQK",
+		},
 	}
 	mockHorizon := new(mocks.MockHorizon)
 	mockHTTPClient := new(mocks.MockHTTPClient)
@@ -398,6 +402,61 @@ func TestRequestHandlerPayment(t *testing.T) {
     "name": "amount"
   }
 }`)
+				assert.Equal(t, expected, test.StringToJSONMap(responseString))
+			})
+		})
+
+		Convey("When params are valid - base account (no source param)", func() {
+			validParams := url.Values{
+				"destination":  {"GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632"},
+				"amount":       {"20"},
+				"asset_code":   {"USD"},
+				"asset_issuer": {"GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632"},
+			}
+
+			// Federation response
+			mockFederationResolver.On(
+				"Resolve",
+				"GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632",
+			).Return(
+				federation.Response{AccountID: "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632"},
+				stellartoml.StellarToml{},
+				nil,
+			).Once()
+
+			// Loading sequence number
+			mockHorizon.On(
+				"LoadAccount",
+				"GAHA6GRCLCCN7XE2NEEUDSIVOFBOQ6GLSYXVLYCJXJKLPMDR5XB5XZZJ",
+			).Return(
+				horizon.AccountResponse{
+					SequenceNumber: "100",
+				},
+				nil,
+			).Once()
+
+			var ledger uint64
+			ledger = 1988728
+			horizonResponse := horizon.SubmitTransactionResponse{
+				Hash:   "ad71fc31bfae25b0bd14add4cc5306661edf84cdd73f1353d2906363899167e1",
+				Ledger: &ledger,
+				Extras: nil,
+			}
+
+			mockHorizon.On(
+				"SubmitTransaction",
+				"AAAAAA4PGiJYhN/cmmkJQckVcULoeMuWL1XgSbpUt7Bx7cPbAAAAZAAAAAAAAABlAAAAAAAAAAAAAAABAAAAAAAAAAEAAAAA5IVbm6A8mbgc/apAizxmBf4zZmqbedR3Ke+MTa7pjVYAAAABVVNEAAAAAADkhVuboDyZuBz9qkCLPGYF/jNmapt51Hcp74xNrumNVgAAAAAL68IAAAAAAAAAAAFx7cPbAAAAQM79l7Zvi+elYIZ09aELJbBDYVeAwx9lqpNYXpvZ+3MHe5fftO0EQN1IlzQUPgXKNfpo/eJWWHuCEdOyWSSTOwE=",
+			).Return(horizonResponse, nil).Once()
+
+			Convey("it should return success", func() {
+				statusCode, response := net.GetResponse(testServer, validParams)
+				responseString := strings.TrimSpace(string(response))
+
+				assert.Equal(t, 200, statusCode)
+				expected := test.StringToJSONMap(`{
+				  "hash": "ad71fc31bfae25b0bd14add4cc5306661edf84cdd73f1353d2906363899167e1",
+				  "ledger": 1988728
+				}`)
 				assert.Equal(t, expected, test.StringToJSONMap(responseString))
 			})
 		})

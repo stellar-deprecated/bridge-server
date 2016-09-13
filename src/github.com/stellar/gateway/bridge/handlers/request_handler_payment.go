@@ -35,6 +35,10 @@ func (rh *RequestHandler) Payment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if request.Source == "" {
+		request.Source = rh.Config.Accounts.BaseSeed
+	}
+
 	sourceKeypair, _ := keypair.Parse(request.Source)
 
 	var submitResponse horizon.SubmitTransactionResponse
