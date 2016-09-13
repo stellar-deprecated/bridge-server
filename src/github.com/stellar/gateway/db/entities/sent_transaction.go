@@ -1,11 +1,19 @@
 package entities
 
 import (
+	"database/sql/driver"
 	"time"
 )
 
 // SentTransactionStatus type represents sent transaction status
 type SentTransactionStatus string
+
+// Value implements driver.Valuer
+func (status SentTransactionStatus) Value() (driver.Value, error) {
+	return driver.Value(string(status)), nil
+}
+
+var _ driver.Valuer = SentTransactionStatus("")
 
 const (
 	// SentTransactionStatusSending is a status indicating that transaction is sending
