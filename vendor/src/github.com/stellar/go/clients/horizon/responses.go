@@ -1,12 +1,14 @@
 package horizon
 
+import "encoding/json"
+
 type Problem struct {
-	Type     string                 `json:"type"`
-	Title    string                 `json:"title"`
-	Status   int                    `json:"status"`
-	Detail   string                 `json:"detail,omitempty"`
-	Instance string                 `json:"instance,omitempty"`
-	Extras   map[string]interface{} `json:"extras,omitempty"`
+	Type     string                     `json:"type"`
+	Title    string                     `json:"title"`
+	Status   int                        `json:"status"`
+	Detail   string                     `json:"detail,omitempty"`
+	Instance string                     `json:"instance,omitempty"`
+	Extras   map[string]json.RawMessage `json:"extras,omitempty"`
 }
 
 type Account struct {
@@ -85,7 +87,40 @@ type TransactionSuccess struct {
 	Meta   string `json:"result_meta_xdr"`
 }
 
+// TransactionResultCodes represent a summary of result codes returned from
+// a single xdr TransactionResult
+type TransactionResultCodes struct {
+	TransactionCode string   `json:"transaction"`
+	OperationCodes  []string `json:"operations,omitempty"`
+}
+
 type Signer struct {
 	PublicKey string `json:"public_key"`
 	Weight    int32  `json:"weight"`
+}
+
+type PaymentResponse struct {
+	ID          string `json:"id"`
+	Type        string `json:"type"`
+	PagingToken string `json:"paging_token"`
+
+	Links struct {
+		Transaction struct {
+			Href string `json:"href"`
+		} `json:"transaction"`
+	} `json:"_links"`
+
+	// payment/path_payment fields
+	From        string `json:"from"`
+	To          string `json:"to"`
+	AssetType   string `json:"asset_type"`
+	AssetCode   string `json:"asset_code"`
+	AssetIssuer string `json:"asset_issuer"`
+	Amount      string `json:"amount"`
+
+	// transaction fields
+	Memo struct {
+		Type  string `json:"memo_type"`
+		Value string `json:"memo"`
+	}
 }

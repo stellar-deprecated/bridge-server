@@ -1,12 +1,10 @@
 package build
 
 import (
-	"bytes"
 	"encoding/hex"
 	"errors"
-	"fmt"
 
-	"github.com/stellar/go/hash"
+	"github.com/stellar/go/network"
 	"github.com/stellar/go/xdr"
 )
 
@@ -28,9 +26,9 @@ type TransactionMutator interface {
 
 // TransactionBuilder represents a Transaction that is being constructed.
 type TransactionBuilder struct {
-	TX        *xdr.Transaction
-	NetworkID [32]byte
-	Err       error
+	TX                *xdr.Transaction
+	NetworkPassphrase string
+	Err               error
 }
 
 // Mutate applies the provided TransactionMutators to this builder's transaction
@@ -50,24 +48,7 @@ func (b *TransactionBuilder) Mutate(muts ...TransactionMutator) {
 
 // Hash returns the hash of this builder's transaction.
 func (b *TransactionBuilder) Hash() ([32]byte, error) {
-	var txBytes bytes.Buffer
-
-	_, err := fmt.Fprintf(&txBytes, "%s", b.NetworkID)
-	if err != nil {
-		return [32]byte{}, err
-	}
-
-	_, err = xdr.Marshal(&txBytes, xdr.EnvelopeTypeEnvelopeTypeTx)
-	if err != nil {
-		return [32]byte{}, err
-	}
-
-	_, err = xdr.Marshal(&txBytes, b.TX)
-	if err != nil {
-		return [32]byte{}, err
-	}
-
-	return hash.Hash(txBytes.Bytes()), nil
+	return network.HashTransaction(b.TX, b.NetworkPassphrase)
 }
 
 // HashHex returns the hex-encoded hash of this builder's transaction
@@ -175,8 +156,8 @@ func (m Defaults) MutateTransaction(o *TransactionBuilder) error {
 		o.TX.Fee = xdr.Uint32(100 * len(o.TX.Operations))
 	}
 
-	if o.NetworkID == [32]byte{} {
-		o.NetworkID = DefaultNetwork.ID()
+	if o.NetworkPassphrase == "" {
+		o.NetworkPassphrase = DefaultNetwork.Passphrase
 	}
 	return nil
 }
@@ -257,7 +238,7 @@ func (m MemoText) MutateTransaction(o *TransactionBuilder) (err error) {
 
 // MutateTransaction for Network sets the Network ID to use when signing this transaction
 func (m Network) MutateTransaction(o *TransactionBuilder) error {
-	o.NetworkID = m.ID()
+	o.NetworkPassphrase = m.Passphrase
 	return nil
 }
 

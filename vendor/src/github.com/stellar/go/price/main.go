@@ -1,3 +1,7 @@
+// Package price implements functions to ease working with stellar price values.
+// At present, prices are only used within the offer system, and are represented
+// by a fraction whose numberator and denominator are both 32-bit signed
+// integers.
 package price
 
 import (
@@ -9,12 +13,16 @@ import (
 	"github.com/stellar/go/xdr"
 )
 
-// Parse  calculates and returns the best rational approximation of the given real number price.
+// Parse  calculates and returns the best rational approximation of the given
+// real number price while still keeping both the numerator and the denominator
+// of the resulting value within the precision limits of a 32-bit signed
+// integer..
 func Parse(v string) (xdr.Price, error) {
 	return continuedFraction(v)
 }
 
-// continuedFraction calculates and returns the best rational approximation of the given real number.
+// continuedFraction calculates and returns the best rational approximation of
+// the given real number.
 func continuedFraction(price string) (xdrPrice xdr.Price, err error) {
 	number := &big.Rat{}
 	maxInt32 := &big.Rat{}

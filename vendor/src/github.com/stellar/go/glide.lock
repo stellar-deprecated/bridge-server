@@ -1,5 +1,5 @@
-hash: 9c1652a73f35bbad40c76ccfd9a7460bdf9cbecf9a54bc849bbfde8dd5d52011
-updated: 2016-08-17T08:31:13.332086432-07:00
+hash: 16fe0b731a9a76e736f87e7f34179ad3ccd2dc577a95067f5c39f035ee350e79
+updated: 2016-08-30T14:06:41.303176771-07:00
 imports:
 - name: github.com/agl/ed25519
   version: 278e1ec8e8a6e017cd07577924d6766039146ced
@@ -67,6 +67,8 @@ imports:
   version: b9781c93ae51c8b4fc3af1b1426909721af0a624
 - name: github.com/inconshreveable/mousetrap
   version: 76626ae9c91c4f2a10f34cad8ce83ea42c93bb75
+- name: github.com/jarcoal/httpmock
+  version: 145b10d659265440f062c31ea15326166bae56ee
 - name: github.com/jmespath/go-jmespath
   version: bd40a432e4c76585ef6b72d3fd96fb9b6dc7b68d
 - name: github.com/jmoiron/sqlx
@@ -93,6 +95,8 @@ imports:
   version: 80f8150043c80fb52dee6bc863a709cdac7ec8f8
   subpackages:
   - oid
+- name: github.com/manucorporat/sse
+  version: ee05b128a739a0fb76c7ebd3ae4810c1de808d6d
 - name: github.com/mattn/go-sqlite3
   version: c3e9588849195eefa783417c3a53d092f6e93526
 - name: github.com/moul/http2curl
@@ -102,7 +106,7 @@ imports:
   subpackages:
   - xdr3
 - name: github.com/onsi/ginkgo
-  version: 120efcfd33906beedc53369a8659c41cc9190e81
+  version: 43e2af1f01ace55adbb6d7d0f30416476db1baae
   subpackages:
   - extensions/table
   - config
@@ -120,7 +124,7 @@ imports:
   - internal/spec
   - internal/specrunner
 - name: github.com/onsi/gomega
-  version: 9ed8da19f2156b87a803a8fdf6d126f627a12db1
+  version: b48c9a8b2644326d0a44eaaacc8d83e35174a05d
   subpackages:
   - types
   - internal/assertion
@@ -134,7 +138,7 @@ imports:
   - matchers/support/goraph/node
   - matchers/support/goraph/util
 - name: github.com/pkg/errors
-  version: 01fa4104b9c248c8945d14d9f128454d5b28d595
+  version: 17b591df37844cde689f4d5813e5cea0927d8dd2
 - name: github.com/pmezard/go-difflib
   version: d8ed2627bdf02c080bf22230dbb337003b7aba2d
   subpackages:
@@ -155,9 +159,12 @@ imports:
   version: 7c674d9e72017ed25f6d2b5e497a1368086b6a6f
 - name: github.com/spf13/pflag
   version: f676131e2660dc8cd88de99f7486d34aa8172635
+- name: github.com/stretchr/objx
+  version: cbeaeb16a013161a98496fad62933b1d21786672
 - name: github.com/stretchr/testify
   version: d77da356e56a7428ad25149ca77381849a6a5232
   subpackages:
+  - mock
   - assert
   - require
 - name: github.com/valyala/bytebufferpool
