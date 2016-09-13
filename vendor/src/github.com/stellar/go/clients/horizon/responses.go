@@ -1,12 +1,14 @@
 package horizon
 
+import "encoding/json"
+
 type Problem struct {
-	Type     string                 `json:"type"`
-	Title    string                 `json:"title"`
-	Status   int                    `json:"status"`
-	Detail   string                 `json:"detail,omitempty"`
-	Instance string                 `json:"instance,omitempty"`
-	Extras   map[string]interface{} `json:"extras,omitempty"`
+	Type     string                     `json:"type"`
+	Title    string                     `json:"title"`
+	Status   int                        `json:"status"`
+	Detail   string                     `json:"detail,omitempty"`
+	Instance string                     `json:"instance,omitempty"`
+	Extras   map[string]json.RawMessage `json:"extras,omitempty"`
 }
 
 type Account struct {
@@ -74,7 +76,6 @@ type Link struct {
 	Templated bool   `json:"templated,omitempty"`
 }
 
-
 type TransactionSuccess struct {
 	Links struct {
 		Transaction Link `json:"transaction"`
@@ -84,6 +85,13 @@ type TransactionSuccess struct {
 	Env    string `json:"envelope_xdr"`
 	Result string `json:"result_xdr"`
 	Meta   string `json:"result_meta_xdr"`
+}
+
+// TransactionResultCodes represent a summary of result codes returned from
+// a single xdr TransactionResult
+type TransactionResultCodes struct {
+	TransactionCode string   `json:"transaction"`
+	OperationCodes  []string `json:"operations,omitempty"`
 }
 
 type Signer struct {

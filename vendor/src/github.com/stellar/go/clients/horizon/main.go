@@ -11,6 +11,7 @@ import (
 	"net/url"
 
 	"github.com/stellar/go/build"
+	"github.com/stellar/go/support/errors"
 )
 
 // DefaultTestNetClient is a default client to connect to test network
@@ -24,6 +25,22 @@ var DefaultPublicNetClient = &Client{
 	URL:  "https://horizon.stellar.org",
 	HTTP: http.DefaultClient,
 }
+
+var (
+	// ErrTransactionNotFailed is the error returned from a call to ResultCodes()
+	// against a `Problem` value that is not of type "transaction_failed".
+	ErrTransactionNotFailed = errors.New("cannot get result codes from transaction that did not fail")
+
+	// ErrResultCodesNotPopulated is the error returned from a call to
+	// ResultCodes() against a `Problem` value that doesn't have the
+	// "result_codes" extra field populated when it is expected to be.
+	ErrResultCodesNotPopulated = errors.New("result_codes not populated")
+
+	// ErrEnvelopeNotPopulated is the error returned from a call to
+	// Envelope() against a `Problem` value that doesn't have the
+	// "envelope_xdr" extra field populated when it is expected to be.
+	ErrEnvelopeNotPopulated = errors.New("envelope_xdr not populated")
+)
 
 // Client struct contains data required to connect to Horizon instance
 type Client struct {
