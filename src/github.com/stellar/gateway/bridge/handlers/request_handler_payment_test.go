@@ -1039,6 +1039,39 @@ func TestRequestHandlerPayment(t *testing.T) {
 				}`)
 				assert.Equal(t, expected, test.StringToJSONMap(responseString))
 			})
+
+			Convey("it should return error when transaction submitter fails", func() {
+				complianceResponse := compliance.SendResponse{
+					TransactionXdr: "AAAAAC3/58Z9rycNLmF6voWX9VmDETFVGhFoWf66mcMuir/DAAAAZAAAAAAAAAAAAAAAAAAAAAO5TSe5k00+CKUuUtfafav6xITv43pTgO6QiPes4u/N6QAAAAEAAAAAAAAAAQAAAAAZUvzcMkXAfSwqbLoAiAlgPsZ7GIPRi7NIyKgEIBQ4nAAAAAFVU0QAAAAAABlS/NwyRcB9LCpsugCICWA+xnsYg9GLs0jIqAQgFDicAAAAAAvrwgAAAAAA",
+				}
+
+				mockHTTPClient.On(
+					"PostForm",
+					"http://compliance/send",
+					mock.AnythingOfType("url.Values"),
+				).Return(
+					net.BuildHTTPResponse(200, string(complianceResponse.Marshal())),
+					nil,
+				).Once()
+
+				mockTransactionSubmitter.On(
+					"SignAndSubmitRawTransaction",
+					mock.AnythingOfType("string"),
+					mock.AnythingOfType("*xdr.Transaction"),
+				).Return(
+					horizon.SubmitTransactionResponse{},
+					errors.New("Transaction submitter error"),
+				).Once()
+
+				statusCode, response := net.GetResponse(testServer, params)
+				responseString := strings.TrimSpace(string(response))
+				assert.Equal(t, 500, statusCode)
+				expected := test.StringToJSONMap(`{
+					"code": "internal_server_error",
+					"message": "Internal Server Error, please try again."
+				}`)
+				assert.Equal(t, expected, test.StringToJSONMap(responseString))
+			})
 		})
 	})
 }
