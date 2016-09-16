@@ -10,6 +10,7 @@ CREATE TABLE ReceivedPayment (
 
 CREATE TABLE SentTransaction (
   id serial,
+  transaction_id varchar(64) NOT NULL, 
   status varchar(10) NOT NULL,
   source varchar(56) NOT NULL,
   submitted_at timestamp NOT NULL,
