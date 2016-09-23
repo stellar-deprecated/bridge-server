@@ -116,7 +116,7 @@ Returns [`ReceiveResponse`]().
 
 ### POST :internal_port/allow_access
 
-Allows access to users data for external user or FI.
+Marks a particular transaction sender or sending domain as allowed to receive user data when they post to the [auth endpoint](#post-external_port-auth-endpoint) with the `need_info` parameter. If you have not marked the sender as allowed using this endpoint, the [`ask_user` callback](#callbacksask_user) will be called to determine whether user data can be sent.
 
 #### Request Parameters
 
@@ -133,7 +133,7 @@ Will response with `200 OK` if saved. Any other status is an error.
 
 ### POST :internal_port/remove_access
 
-Allows access to users data for external user or FI.
+Remove a user or domain from list of allowed senders (as above in `:internal_port/allow_access`).
 
 #### Request Parameters
 
@@ -183,7 +183,11 @@ When `202 Accepted` is returned the response body should contain JSON object wit
 
 ### `callbacks.ask_user`
 
-If set in the config file, this callback will be called when the sender needs your customer KYC info to send a payment. If not set then the customer information won't be given to the other FI.
+If set in the config file, this callback will be called when the sender of a transaction has requested information about the receiver of the transaction. The result of this callback indicates whether you are willing to share the receiver’s information (the `fetch_info` callback is used to actually retrieve the information that will be shared).
+
+If you have previously marked the transaction’s sender as allowed using the [`/allow_access` endpoint](#post-internal_portallow_access), this callback will be skipped.
+
+In cases where a person must manually approve information sharing, this callback should return a `202 Accepted` response with a `pending` time for the sender to retry (see below for details).
 
 #### Request
 
