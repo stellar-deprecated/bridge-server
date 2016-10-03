@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 
@@ -54,7 +55,11 @@ func (r *Resolver) GetDestination(federationURL, address string) (response Respo
 		return
 	}
 
-	resp, err := http.Get(federationURL + "?type=name&q=" + address)
+	qstr := url.Values{}
+	qstr.Add("type", "name")
+	qstr.Add("q", address)
+
+	resp, err := http.Get(federationURL + "?" + qstr.Encode())
 	if err != nil {
 		return
 	}
