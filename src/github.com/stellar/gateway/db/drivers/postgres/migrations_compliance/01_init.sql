@@ -1,7 +1,7 @@
 -- +migrate Up
 CREATE TABLE AuthorizedTransaction (
   id bigserial,
-  transaction_id varchar(64) UNIQUE NOT NULL,
+  transaction_id varchar(64) NOT NULL,
   memo varchar(64) NOT NULL,
   transaction_xdr text NOT NULL,
   authorized_at timestamp NOT NULL,
