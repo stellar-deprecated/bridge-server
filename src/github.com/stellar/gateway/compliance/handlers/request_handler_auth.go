@@ -6,12 +6,13 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
-	log "github.com/Sirupsen/logrus"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
+
+	log "github.com/Sirupsen/logrus"
 
 	"github.com/stellar/gateway/db/entities"
 	"github.com/stellar/gateway/protocols"
@@ -26,10 +27,10 @@ import (
 
 // HandlerAuth implements authorize endpoint
 func (rh *RequestHandler) HandlerAuth(c web.C, w http.ResponseWriter, r *http.Request) {
-	request := &compliance.AuthRequest{}
-	request.FromRequest(r)
+	authreq := &compliance.AuthRequest{}
+	authreq.FromRequest(r)
 
-	err := request.Validate()
+	err := authreq.Validate()
 	if err != nil {
 		errorResponse := err.(*protocols.ErrorResponse)
 		log.WithFields(errorResponse.LogData).Error(errorResponse.Error())
@@ -38,9 +39,9 @@ func (rh *RequestHandler) HandlerAuth(c web.C, w http.ResponseWriter, r *http.Re
 	}
 
 	var authData compliance.AuthData
-	err = json.Unmarshal([]byte(request.Data), &authData)
+	err = json.Unmarshal([]byte(authreq.Data), &authData)
 	if err != nil {
-		errorResponse := protocols.NewInvalidParameterError("data", request.Data)
+		errorResponse := protocols.NewInvalidParameterError("data", authreq.Data)
 		log.WithFields(errorResponse.LogData).Warn(errorResponse.Error())
 		server.Write(w, errorResponse)
 		return
@@ -61,21 +62,21 @@ func (rh *RequestHandler) HandlerAuth(c web.C, w http.ResponseWriter, r *http.Re
 	}
 
 	// Verify signature
-	signatureBytes, err := base64.StdEncoding.DecodeString(request.Signature)
+	signatureBytes, err := base64.StdEncoding.DecodeString(authreq.Signature)
 	if err != nil {
-		errorResponse := protocols.NewInvalidParameterError("sig", request.Signature)
+		errorResponse := protocols.NewInvalidParameterError("sig", authreq.Signature)
 		log.WithFields(errorResponse.LogData).Warn("Error decoding signature")
 		server.Write(w, errorResponse)
 		return
 	}
-	err = rh.SignatureSignerVerifier.Verify(senderStellarToml.SigningKey, []byte(request.Data), signatureBytes)
+	err = rh.SignatureSignerVerifier.Verify(senderStellarToml.SigningKey, []byte(authreq.Data), signatureBytes)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"signing_key": senderStellarToml.SigningKey,
-			"data":        request.Data,
-			"sig":         request.Signature,
+			"data":        authreq.Data,
+			"sig":         authreq.Signature,
 		}).Warn("Invalid signature")
-		errorResponse := protocols.NewInvalidParameterError("sig", request.Signature)
+		errorResponse := protocols.NewInvalidParameterError("sig", authreq.Signature)
 		server.Write(w, errorResponse)
 		return
 	}
@@ -351,7 +352,7 @@ func (rh *RequestHandler) HandlerAuth(c web.C, w http.ResponseWriter, r *http.Re
 			Memo:           base64.StdEncoding.EncodeToString(memoBytes[:]),
 			TransactionXdr: authData.Tx,
 			AuthorizedAt:   time.Now(),
-			Data:           request.Data,
+			Data:           authreq.Data,
 		}
 		err = rh.EntityManager.Persist(authorizedTransaction)
 		if err != nil {

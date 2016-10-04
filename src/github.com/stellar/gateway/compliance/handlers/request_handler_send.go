@@ -5,10 +5,10 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
-	log "github.com/Sirupsen/logrus"
 	"io/ioutil"
 	"net/http"
 
+	log "github.com/Sirupsen/logrus"
 	"github.com/stellar/gateway/protocols"
 	"github.com/stellar/gateway/protocols/compliance"
 	"github.com/stellar/gateway/protocols/memo"
@@ -143,7 +143,7 @@ func (rh *RequestHandler) HandlerSend(c web.C, w http.ResponseWriter, r *http.Re
 	memoPreimage := &memo.Memo{
 		Transaction: memo.Transaction{
 			SenderInfo: senderInfo,
-			Route:      request.Destination,
+			Route:      destinationObject.Memo,
 			Extra:      request.ExtraMemo,
 		},
 	}
@@ -182,7 +182,6 @@ func (rh *RequestHandler) HandlerSend(c web.C, w http.ResponseWriter, r *http.Re
 		server.Write(w, protocols.InternalServerError)
 		return
 	}
-
 	sig, err := rh.SignatureSignerVerifier.Sign(rh.Config.Keys.SigningSeed, data)
 	if err != nil {
 		log.Error("Error signing authData")
