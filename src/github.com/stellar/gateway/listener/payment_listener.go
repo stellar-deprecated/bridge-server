@@ -55,7 +55,7 @@ func NewPaymentListener(
 }
 
 // Listen starts listening for new payments
-func (pl PaymentListener) Listen() (err error) {
+func (pl *PaymentListener) Listen() (err error) {
 	accountID := pl.config.Accounts.ReceivingAccountID
 
 	_, err = pl.horizon.LoadAccount(accountID)
@@ -102,7 +102,7 @@ func (pl PaymentListener) Listen() (err error) {
 	return
 }
 
-func (pl PaymentListener) onPayment(payment horizon.PaymentResponse) (err error) {
+func (pl *PaymentListener) onPayment(payment horizon.PaymentResponse) (err error) {
 	pl.log.WithFields(logrus.Fields{"id": payment.ID}).Info("New received payment")
 
 	id, err := strconv.ParseInt(payment.ID, 10, 64)
@@ -254,7 +254,7 @@ func (pl PaymentListener) onPayment(payment horizon.PaymentResponse) (err error)
 	return nil
 }
 
-func (pl PaymentListener) isAssetAllowed(code string, issuer string) bool {
+func (pl *PaymentListener) isAssetAllowed(code string, issuer string) bool {
 	for _, asset := range pl.config.Assets {
 		if asset.Code == code && asset.Issuer == issuer {
 			return true
