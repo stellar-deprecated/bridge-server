@@ -1,33 +1,44 @@
 package listener
 
 import (
+	"crypto/hmac"
+	"crypto/sha256"
 	"encoding/json"
-	"errors"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 	"time"
+
+	"encoding/base64"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/stellar/gateway/bridge/config"
 	"github.com/stellar/gateway/db"
 	"github.com/stellar/gateway/db/entities"
 	"github.com/stellar/gateway/horizon"
-	"github.com/stellar/gateway/net"
 	"github.com/stellar/gateway/protocols/compliance"
 	"github.com/stellar/gateway/protocols/memo"
+	"github.com/stellar/go/strkey"
+	"github.com/stellar/go/support/errors"
 )
 
 // PaymentListener is listening for a new payments received by ReceivingAccount
 type PaymentListener struct {
-	client        net.HTTPClientInterface
+	client        HTTP
 	config        *config.Config
 	entityManager db.EntityManagerInterface
 	horizon       horizon.HorizonInterface
 	log           *logrus.Entry
 	repository    db.RepositoryInterface
 	now           func() time.Time
+}
+
+// HTTP represents an http client that a payment listener can use to make HTTP
+// requests.
+type HTTP interface {
+	Do(req *http.Request) (resp *http.Response, err error)
 }
 
 const callbackTimeout = 60 * time.Second
@@ -162,7 +173,7 @@ func (pl *PaymentListener) onPayment(payment horizon.PaymentResponse) (err error
 
 	// Request extra_memo from compliance server
 	if pl.config.Compliance != "" && payment.Memo.Type == "hash" {
-		resp, err := pl.client.PostForm(
+		resp, err := pl.postForm(
 			pl.config.Compliance+"/receive",
 			url.Values{"memo": {string(payment.Memo.Value)}},
 		)
@@ -211,7 +222,7 @@ func (pl *PaymentListener) onPayment(payment horizon.PaymentResponse) (err error
 		route = payment.Memo.Value
 	}
 
-	resp, err := pl.client.PostForm(
+	resp, err := pl.postForm(
 		pl.config.Callbacks.Receive,
 		url.Values{
 			"id":         {payment.ID},
@@ -261,4 +272,47 @@ func (pl *PaymentListener) isAssetAllowed(code string, issuer string) bool {
 		}
 	}
 	return false
+}
+
+func (pl *PaymentListener) postForm(
+	url string,
+	form url.Values,
+) (*http.Response, error) {
+
+	strbody := form.Encode()
+
+	req, err := http.NewRequest("POST", url, strings.NewReader(strbody))
+	if err != nil {
+		return nil, errors.Wrap(err, "configure http request failed")
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	if pl.config.MACKey != "" {
+		rawMAC, err := pl.getMAC(pl.config.MACKey, []byte(strbody))
+		if err != nil {
+			return nil, errors.Wrap(err, "getMAC failed")
+		}
+
+		encMAC := base64.StdEncoding.EncodeToString(rawMAC)
+		req.Header.Set("X_PAYLOAD_MAC", encMAC)
+	}
+
+	resp, err := pl.client.Do(req)
+	if err != nil {
+		return nil, errors.Wrap(err, "http request errored")
+	}
+
+	return resp, nil
+}
+
+func (pl *PaymentListener) getMAC(key string, raw []byte) ([]byte, error) {
+
+	rawkey, err := strkey.Decode(strkey.VersionByteSeed, pl.config.MACKey)
+	if err != nil {
+		return nil, errors.Wrap(err, "invalid MAC key")
+	}
+
+	macer := hmac.New(sha256.New, rawkey)
+	macer.Write(raw)
+	return macer.Sum(nil), nil
 }
