@@ -4,6 +4,7 @@ port = 8001
 horizon = "https://horizon-testnet.stellar.org"
 network_passphrase = "Test SDF Network ; September 2015"
 api_key = ""
+mac_key = ""
 
 [[assets]]
 code="USD"

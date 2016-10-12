@@ -1,8 +1,14 @@
 package listener
 
 import (
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"io/ioutil"
+	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"testing"
 	"time"
@@ -15,7 +21,10 @@ import (
 	"github.com/stellar/gateway/net"
 	"github.com/stellar/gateway/protocols/compliance"
 	"github.com/stellar/gateway/protocols/memo"
+	"github.com/stellar/go/strkey"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 )
 
 func TestPaymentListener(t *testing.T) {
@@ -38,13 +47,14 @@ func TestPaymentListener(t *testing.T) {
 		},
 	}
 
-	paymentListener, _ := NewPaymentListener(
+	paymentListener, err := NewPaymentListener(
 		config,
 		mockEntityManager,
 		mockHorizon,
 		mockRepository,
 		mocks.Now,
 	)
+	require.NoError(t, err)
 
 	paymentListener.client = mockHTTPClient
 
@@ -163,18 +173,10 @@ func TestPaymentListener(t *testing.T) {
 			mockHorizon.On("LoadMemo", &operation).Return(nil).Once()
 
 			mockHTTPClient.On(
-				"PostForm",
-				"http://receive_callback",
-				url.Values{
-					"id":         {"1"},
-					"from":       {"GBIHSMPXC2KJ3NJVHEYTG3KCHYEUQRT45X6AWYWXMAXZOAX4F5LFZYYQ"},
-					"route":      {"testing"},
-					"amount":     {"200"},
-					"asset_code": {"USD"},
-					"memo_type":  {"text"},
-					"memo":       {"testing"},
-					"data":       {""},
-				},
+				"Do",
+				mock.MatchedBy(func(req *http.Request) bool {
+					return req.URL.String() == "http://receive_callback"
+				}),
 			).Return(
 				net.BuildHTTPResponse(503, "ok"),
 				nil,
@@ -203,18 +205,10 @@ func TestPaymentListener(t *testing.T) {
 			mockEntityManager.On("Persist", &dbPayment).Return(nil).Once()
 
 			mockHTTPClient.On(
-				"PostForm",
-				"http://receive_callback",
-				url.Values{
-					"id":         {"1"},
-					"from":       {"GBIHSMPXC2KJ3NJVHEYTG3KCHYEUQRT45X6AWYWXMAXZOAX4F5LFZYYQ"},
-					"route":      {"testing"},
-					"amount":     {"200"},
-					"asset_code": {"USD"},
-					"memo_type":  {"text"},
-					"memo":       {"testing"},
-					"data":       {""},
-				},
+				"Do",
+				mock.MatchedBy(func(req *http.Request) bool {
+					return req.URL.String() == "http://receive_callback"
+				}),
 			).Return(
 				net.BuildHTTPResponse(200, "ok"),
 				nil,
@@ -241,18 +235,10 @@ func TestPaymentListener(t *testing.T) {
 			mockEntityManager.On("Persist", &dbPayment).Return(nil).Once()
 
 			mockHTTPClient.On(
-				"PostForm",
-				"http://receive_callback",
-				url.Values{
-					"id":         {"1"},
-					"from":       {"GBIHSMPXC2KJ3NJVHEYTG3KCHYEUQRT45X6AWYWXMAXZOAX4F5LFZYYQ"},
-					"route":      {""},
-					"amount":     {"200"},
-					"asset_code": {"USD"},
-					"memo_type":  {""},
-					"memo":       {""},
-					"data":       {""},
-				},
+				"Do",
+				mock.MatchedBy(func(req *http.Request) bool {
+					return req.URL.String() == "http://receive_callback"
+				}),
 			).Return(
 				net.BuildHTTPResponse(200, "ok"),
 				nil,
@@ -303,27 +289,20 @@ func TestPaymentListener(t *testing.T) {
 			responseString, _ := json.Marshal(response)
 
 			mockHTTPClient.On(
-				"PostForm",
-				"http://compliance/receive",
-				url.Values{"memo": {"b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9"}},
+				"Do",
+				mock.MatchedBy(func(req *http.Request) bool {
+					return req.URL.String() == "http://compliance/receive"
+				}),
 			).Return(
 				net.BuildHTTPResponse(200, string(responseString)),
 				nil,
 			).Once()
 
 			mockHTTPClient.On(
-				"PostForm",
-				"http://receive_callback",
-				url.Values{
-					"id":         {"1"},
-					"from":       {"GBIHSMPXC2KJ3NJVHEYTG3KCHYEUQRT45X6AWYWXMAXZOAX4F5LFZYYQ"},
-					"route":      {"jed*stellar.org"},
-					"amount":     {"200"},
-					"asset_code": {"USD"},
-					"memo_type":  {"hash"},
-					"memo":       {"b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9"},
-					"data":       {string(authString)},
-				},
+				"Do",
+				mock.MatchedBy(func(req *http.Request) bool {
+					return req.URL.String() == "http://receive_callback"
+				}),
 			).Return(
 				net.BuildHTTPResponse(200, "ok"),
 				nil,
@@ -337,4 +316,50 @@ func TestPaymentListener(t *testing.T) {
 			})
 		})
 	})
+}
+
+func TestPostForm_MACKey(t *testing.T) {
+	validKey := "SABLR5HOI2IUOYB27TR4TO7HWDJIGSRJTT4UUTXXZOFVVPGQKJ5ME43J"
+	rawkey, err := strkey.Decode(strkey.VersionByteSeed, validKey)
+	require.NoError(t, err)
+
+	handler := http.NewServeMux()
+	handler.HandleFunc("/no_mac", func(w http.ResponseWriter, req *http.Request) {
+		assert.Empty(t, req.Header.Get("X_PAYLOAD_MAC"), "unexpected MAC present")
+	})
+	handler.HandleFunc("/mac", func(w http.ResponseWriter, req *http.Request) {
+		body, err := ioutil.ReadAll(req.Body)
+		require.NoError(t, err)
+
+		macer := hmac.New(sha256.New, rawkey)
+		macer.Write(body)
+		rawExpected := macer.Sum(nil)
+		encExpected := base64.StdEncoding.EncodeToString(rawExpected)
+
+		assert.Equal(t, encExpected, req.Header.Get("X_PAYLOAD_MAC"), "MAC is wrong")
+	})
+
+	srv := httptest.NewServer(handler)
+	defer srv.Close()
+
+	cfg := &config.Config{}
+	pl, err := NewPaymentListener(cfg, nil, nil, nil, nil)
+	require.NoError(t, err)
+
+	// no mac if the key is not set
+	_, err = pl.postForm(srv.URL+"/no_mac", url.Values{"foo": []string{"base"}})
+	require.NoError(t, err)
+
+	// generates a valid mac if a key is set.
+	cfg.MACKey = validKey
+	_, err = pl.postForm(srv.URL+"/mac", url.Values{"foo": []string{"base"}})
+	require.NoError(t, err)
+
+	// errors is the key is invalid
+	cfg.MACKey = "broken"
+	_, err = pl.postForm(srv.URL+"/mac", url.Values{"foo": []string{"base"}})
+
+	if assert.Error(t, err) {
+		assert.Contains(t, err.Error(), "invalid MAC key")
+	}
 }

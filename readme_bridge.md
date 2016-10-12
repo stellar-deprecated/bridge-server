@@ -45,6 +45,7 @@ The `config_bridge.toml` file must be present in a working directory. Here is an
   * `receive` - URL of the webhook where requests will be sent when a new payment is sent to the receiving account. The bridge server will keep calling the receive callback indefinitely until 200 OK status is returned by it. **WARNING** The bridge server can send multiple requests to this webhook for a single payment! You need to be prepared for it. See: [Security](#security).
   * `error` - URL of the webhook where requests will be sent when there is an error with an incoming payment
 * `log_format` - set to `json` for JSON logs
+* `mac_key` - a stellar secret key used to add MAC headers to a payment notification.
 
 Check [`config_bridge_example.toml`](./config_bridge_example.toml).
 
@@ -392,6 +393,12 @@ name | description
 #### Response
 
 Respond with `200 OK` when processing succeeded. Any other status code will be considered an error.
+
+#### Payload Authentication
+
+When the `mac_key` configuration value is set, the bridge server will attach HTTP headers to each payment notification that allow the receiver to verify that the notification is not forged.  A header named `X_PAYLOAD_MAC` that contains a base64-encoded MAC value will be included. This MAC is derived by calculating the HMAC-SHA256 of the raw request body using the decoded value of the `mac_key` configuration option as the key.
+
+This MAC can be used on the receiving side of the notification to verify that the payment notifications was generated from the bridge server, rather than from some other actor, to increase security.
 
 ## Security
 

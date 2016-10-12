@@ -13,6 +13,7 @@ type Config struct {
 	Horizon           string
 	Compliance        string
 	LogFormat         string `mapstructure:"log_format"`
+	MACKey            string `mapstructure:"mac_key"`
 	APIKey            string `mapstructure:"api_key"`
 	NetworkPassphrase string `mapstructure:"network_passphrase"`
 	Assets            []Asset
