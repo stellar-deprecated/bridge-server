@@ -74,7 +74,7 @@ Returns [Auth response](https://www.stellar.org/developers/learn/integration-gui
 
 ### POST :internal_port/send
 
-Sends Auth request to another organization.
+Typically called by the bridge server when a user initiates a payment. This endpoint causes the compliance server to send an Auth request to another organization. It will call the Auth endpoint of the receiving instition. 
 
 #### Request Parameters
 
@@ -102,7 +102,7 @@ Returns [`SendResponse`]().
 
 ### POST :internal_port/receive
 
-Returns memo preimage.
+Typically called by the bridge server when a payment comes in. It is used to check that the payment was authorized by this compliance server. The call will return a memo preimage in the payment was authorized.
 
 #### Request Parameters
 
