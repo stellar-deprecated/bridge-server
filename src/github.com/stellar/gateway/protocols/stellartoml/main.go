@@ -2,6 +2,7 @@ package stellartoml
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -20,12 +21,15 @@ type Resolver struct{}
 // GetStellarToml returns stellar.toml file for a given domain
 func (r *Resolver) GetStellarToml(domain string) (stellarToml StellarToml, err error) {
 	var resp *http.Response
-	resp, err = http.Get("https://www." + domain + "/.well-known/stellar.toml")
+	resp, err = http.Get("https://" + domain + "/.well-known/stellar.toml")
 	if err != nil {
 		return
 	}
 	if resp.StatusCode != 200 {
-		err = errors.New("stellar.toml response status code indicates error")
+		err = fmt.Errorf(
+			"stellar.toml response status code indicates error (%d)",
+			resp.StatusCode,
+		)
 		return
 	}
 
