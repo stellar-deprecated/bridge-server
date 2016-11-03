@@ -2,6 +2,7 @@ package stellartoml
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -25,7 +26,7 @@ func (r *Resolver) GetStellarToml(domain string) (stellarToml StellarToml, err e
 		return
 	}
 	if resp.StatusCode != 200 {
-		err = errors.Errorf(
+		err = fmt.Errorf(
 			"stellar.toml response status code indicates error (%d)",
 			resp.StatusCode,
 		)
