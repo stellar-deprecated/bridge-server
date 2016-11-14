@@ -35,7 +35,9 @@ The `config_bridge.toml` file must be present in a working directory. Here is an
 * `assets` - array of approved assets codes that this server can authorize or receive. These are currency code/issuer pairs. 
 * `database`
   * `type` - database type (mysql, postgres)
-  * `url` - url to database connection
+  * `url` - url to database connection:
+    * for `mysql`: `user:password@(host:port)/dbname` ([more info](https://github.com/go-sql-driver/mysql#dsn-data-source-name))
+    * for `postgres`: `postgres://user:password@host/dbname?sslmode=sslmode` ([more info](https://godoc.org/github.com/lib/pq#hdr-Connection_String_Parameters))
 * `accounts`
   * `base_seed` - The secret seed of the account used to send payments. If left blank you will need to pass it in calls to `/payment`. 
   * `authorizing_seed` - The secret seed of the public key that is able to submit `allow_trust` operations on the issuing account.

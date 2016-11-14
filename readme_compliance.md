@@ -24,7 +24,9 @@ The `config_compliance.toml` file must be present in a working directory. Config
    * public network: `Public Global Stellar Network ; September 2015`
 * `database` - This database is used internally to store memo information and to keep track of what FIs have been authorized to receive customer info.
   * `type` - database type (mysql, postgres)
-  * `url` - url to database connection
+  * `url` - url to database connection:
+    * for `mysql`: `user:password@(host:port)/dbname` ([more info](https://github.com/go-sql-driver/mysql#dsn-data-source-name))
+    * for `postgres`: `postgres://user:password@host/dbname?sslmode=sslmode` ([more info](https://godoc.org/github.com/lib/pq#hdr-Connection_String_Parameters))
 * `keys`
   * `signing_seed` - The secret seed that will be used to sign messages. Public key derived from this secret key should be in your `stellar.toml` file.
   * `encryption_key` - The secret key used to decrypt messages. _Not working yet._
