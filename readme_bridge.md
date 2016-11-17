@@ -394,7 +394,7 @@ name | description
 
 #### Response
 
-Respond with `200 OK` when processing succeeded. Any other status code will be considered an error.
+Respond with `200 OK` when processing succeeded. Any other status code will be considered an error and bridge server will keep sending this payment request again and will not continue to next payments until it receives `200 OK` response.
 
 #### Payload Authentication
 
