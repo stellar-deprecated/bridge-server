@@ -383,7 +383,7 @@ The POST request with following parameters will be sent to this callback when a 
 
 name | description
 --- | ---
-`id` | Operation ID
+`id` | Operation ID (ex. `23110707918671873`)
 `from` | Account ID of the sender
 `route` | The recipient ID at the receiving FI. This will be the routing information contained in the memo or memo value if no compliance server is connected or memo type is not `hash`.
 `amount` | Amount that was sent
