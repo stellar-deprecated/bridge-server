@@ -10,7 +10,7 @@ import (
 )
 
 func TestSqlite(t *testing.T) {
-	tdb := Sqlite()
+	tdb := Sqlite(t)
 	t.Log(tdb.DSN)
 
 	db, err := sqlx.Open("sqlite3", tdb.DSN)

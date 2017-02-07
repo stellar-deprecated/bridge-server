@@ -47,6 +47,7 @@ func TestRequestHandlerReceive(t *testing.T) {
 		&inject.Object{Value: mockFederationResolver},
 		&inject.Object{Value: mockSignerVerifier},
 		&inject.Object{Value: mockStellartomlResolver},
+		&inject.Object{Value: &TestNonceGenerator{}},
 	)
 	if err != nil {
 		panic(err)

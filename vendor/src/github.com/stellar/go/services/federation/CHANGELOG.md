@@ -8,9 +8,18 @@ bumps.  A breaking change will get clearly notified in this log.
 
 ## [Unreleased]
 
+### Changed
+
+- BREAKING CHANGE: The `url` database configuration has been renamed to `dsn` to more accurately reflect its content.
+
+### Fixed
+
+- TLS support re-enabled.
+
 ### Added
 
 - Reverse federation is now optional.
+- Logging:  http requests will be logged at the "Info" log level
 
 ## [v0.2.0] - 2016-08-17
 

@@ -7,7 +7,7 @@ func (a *AccountEntry) SignerSummary() map[string]int32 {
 		ret[a.AccountId.Address()] = int32(a.Thresholds[0])
 	}
 	for _, signer := range a.Signers {
-		ret[signer.PubKey.Address()] = int32(signer.Weight)
+		ret[signer.Key.Address()] = int32(signer.Weight)
 	}
 
 	return ret

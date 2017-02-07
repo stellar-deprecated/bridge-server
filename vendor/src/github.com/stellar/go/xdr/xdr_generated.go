@@ -69,17 +69,23 @@ type Int64 int64
 //
 //   enum CryptoKeyType
 //    {
-//        KEY_TYPE_ED25519 = 0
+//        KEY_TYPE_ED25519 = 0,
+//        KEY_TYPE_HASH_TX = 1,
+//        KEY_TYPE_HASH_X = 2
 //    };
 //
 type CryptoKeyType int32
 
 const (
 	CryptoKeyTypeKeyTypeEd25519 CryptoKeyType = 0
+	CryptoKeyTypeKeyTypeHashTx  CryptoKeyType = 1
+	CryptoKeyTypeKeyTypeHashX   CryptoKeyType = 2
 )
 
 var cryptoKeyTypeMap = map[int32]string{
 	0: "CryptoKeyTypeKeyTypeEd25519",
+	1: "CryptoKeyTypeKeyTypeHashTx",
+	2: "CryptoKeyTypeKeyTypeHashX",
 }
 
 // ValidEnum validates a proposed value for this enum.  Implements
@@ -95,16 +101,82 @@ func (e CryptoKeyType) String() string {
 	return name
 }
 
+// PublicKeyType is an XDR Enum defines as:
+//
+//   enum PublicKeyType
+//    {
+//        PUBLIC_KEY_TYPE_ED25519 = KEY_TYPE_ED25519
+//    };
+//
+type PublicKeyType int32
+
+const (
+	PublicKeyTypePublicKeyTypeEd25519 PublicKeyType = 0
+)
+
+var publicKeyTypeMap = map[int32]string{
+	0: "PublicKeyTypePublicKeyTypeEd25519",
+}
+
+// ValidEnum validates a proposed value for this enum.  Implements
+// the Enum interface for PublicKeyType
+func (e PublicKeyType) ValidEnum(v int32) bool {
+	_, ok := publicKeyTypeMap[v]
+	return ok
+}
+
+// String returns the name of `e`
+func (e PublicKeyType) String() string {
+	name, _ := publicKeyTypeMap[int32(e)]
+	return name
+}
+
+// SignerKeyType is an XDR Enum defines as:
+//
+//   enum SignerKeyType
+//    {
+//        SIGNER_KEY_TYPE_ED25519 = KEY_TYPE_ED25519,
+//        SIGNER_KEY_TYPE_HASH_TX = KEY_TYPE_HASH_TX,
+//        SIGNER_KEY_TYPE_HASH_X = KEY_TYPE_HASH_X
+//    };
+//
+type SignerKeyType int32
+
+const (
+	SignerKeyTypeSignerKeyTypeEd25519 SignerKeyType = 0
+	SignerKeyTypeSignerKeyTypeHashTx  SignerKeyType = 1
+	SignerKeyTypeSignerKeyTypeHashX   SignerKeyType = 2
+)
+
+var signerKeyTypeMap = map[int32]string{
+	0: "SignerKeyTypeSignerKeyTypeEd25519",
+	1: "SignerKeyTypeSignerKeyTypeHashTx",
+	2: "SignerKeyTypeSignerKeyTypeHashX",
+}
+
+// ValidEnum validates a proposed value for this enum.  Implements
+// the Enum interface for SignerKeyType
+func (e SignerKeyType) ValidEnum(v int32) bool {
+	_, ok := signerKeyTypeMap[v]
+	return ok
+}
+
+// String returns the name of `e`
+func (e SignerKeyType) String() string {
+	name, _ := signerKeyTypeMap[int32(e)]
+	return name
+}
+
 // PublicKey is an XDR Union defines as:
 //
-//   union PublicKey switch (CryptoKeyType type)
+//   union PublicKey switch (PublicKeyType type)
 //    {
-//    case KEY_TYPE_ED25519:
+//    case PUBLIC_KEY_TYPE_ED25519:
 //        uint256 ed25519;
 //    };
 //
 type PublicKey struct {
-	Type    CryptoKeyType
+	Type    PublicKeyType
 	Ed25519 *Uint256
 }
 
@@ -117,18 +189,18 @@ func (u PublicKey) SwitchFieldName() string {
 // ArmForSwitch returns which field name should be used for storing
 // the value for an instance of PublicKey
 func (u PublicKey) ArmForSwitch(sw int32) (string, bool) {
-	switch CryptoKeyType(sw) {
-	case CryptoKeyTypeKeyTypeEd25519:
+	switch PublicKeyType(sw) {
+	case PublicKeyTypePublicKeyTypeEd25519:
 		return "Ed25519", true
 	}
 	return "-", false
 }
 
 // NewPublicKey creates a new  PublicKey.
-func NewPublicKey(aType CryptoKeyType, value interface{}) (result PublicKey, err error) {
+func NewPublicKey(aType PublicKeyType, value interface{}) (result PublicKey, err error) {
 	result.Type = aType
-	switch CryptoKeyType(aType) {
-	case CryptoKeyTypeKeyTypeEd25519:
+	switch PublicKeyType(aType) {
+	case PublicKeyTypePublicKeyTypeEd25519:
 		tv, ok := value.(Uint256)
 		if !ok {
 			err = fmt.Errorf("invalid value, must be Uint256")
@@ -158,6 +230,151 @@ func (u PublicKey) GetEd25519() (result Uint256, ok bool) {
 
 	if armName == "Ed25519" {
 		result = *u.Ed25519
+		ok = true
+	}
+
+	return
+}
+
+// SignerKey is an XDR Union defines as:
+//
+//   union SignerKey switch (SignerKeyType type)
+//    {
+//    case SIGNER_KEY_TYPE_ED25519:
+//        uint256 ed25519;
+//    case SIGNER_KEY_TYPE_HASH_TX:
+//        /* Hash of Transaction structure */
+//        uint256 hashTx;
+//    case SIGNER_KEY_TYPE_HASH_X:
+//        /* Hash of random 256 bit preimage X */
+//        uint256 hashX;
+//    };
+//
+type SignerKey struct {
+	Type    SignerKeyType
+	Ed25519 *Uint256
+	HashTx  *Uint256
+	HashX   *Uint256
+}
+
+// SwitchFieldName returns the field name in which this union's
+// discriminant is stored
+func (u SignerKey) SwitchFieldName() string {
+	return "Type"
+}
+
+// ArmForSwitch returns which field name should be used for storing
+// the value for an instance of SignerKey
+func (u SignerKey) ArmForSwitch(sw int32) (string, bool) {
+	switch SignerKeyType(sw) {
+	case SignerKeyTypeSignerKeyTypeEd25519:
+		return "Ed25519", true
+	case SignerKeyTypeSignerKeyTypeHashTx:
+		return "HashTx", true
+	case SignerKeyTypeSignerKeyTypeHashX:
+		return "HashX", true
+	}
+	return "-", false
+}
+
+// NewSignerKey creates a new  SignerKey.
+func NewSignerKey(aType SignerKeyType, value interface{}) (result SignerKey, err error) {
+	result.Type = aType
+	switch SignerKeyType(aType) {
+	case SignerKeyTypeSignerKeyTypeEd25519:
+		tv, ok := value.(Uint256)
+		if !ok {
+			err = fmt.Errorf("invalid value, must be Uint256")
+			return
+		}
+		result.Ed25519 = &tv
+	case SignerKeyTypeSignerKeyTypeHashTx:
+		tv, ok := value.(Uint256)
+		if !ok {
+			err = fmt.Errorf("invalid value, must be Uint256")
+			return
+		}
+		result.HashTx = &tv
+	case SignerKeyTypeSignerKeyTypeHashX:
+		tv, ok := value.(Uint256)
+		if !ok {
+			err = fmt.Errorf("invalid value, must be Uint256")
+			return
+		}
+		result.HashX = &tv
+	}
+	return
+}
+
+// MustEd25519 retrieves the Ed25519 value from the union,
+// panicing if the value is not set.
+func (u SignerKey) MustEd25519() Uint256 {
+	val, ok := u.GetEd25519()
+
+	if !ok {
+		panic("arm Ed25519 is not set")
+	}
+
+	return val
+}
+
+// GetEd25519 retrieves the Ed25519 value from the union,
+// returning ok if the union's switch indicated the value is valid.
+func (u SignerKey) GetEd25519() (result Uint256, ok bool) {
+	armName, _ := u.ArmForSwitch(int32(u.Type))
+
+	if armName == "Ed25519" {
+		result = *u.Ed25519
+		ok = true
+	}
+
+	return
+}
+
+// MustHashTx retrieves the HashTx value from the union,
+// panicing if the value is not set.
+func (u SignerKey) MustHashTx() Uint256 {
+	val, ok := u.GetHashTx()
+
+	if !ok {
+		panic("arm HashTx is not set")
+	}
+
+	return val
+}
+
+// GetHashTx retrieves the HashTx value from the union,
+// returning ok if the union's switch indicated the value is valid.
+func (u SignerKey) GetHashTx() (result Uint256, ok bool) {
+	armName, _ := u.ArmForSwitch(int32(u.Type))
+
+	if armName == "HashTx" {
+		result = *u.HashTx
+		ok = true
+	}
+
+	return
+}
+
+// MustHashX retrieves the HashX value from the union,
+// panicing if the value is not set.
+func (u SignerKey) MustHashX() Uint256 {
+	val, ok := u.GetHashX()
+
+	if !ok {
+		panic("arm HashX is not set")
+	}
+
+	return val
+}
+
+// GetHashX retrieves the HashX value from the union,
+// returning ok if the union's switch indicated the value is valid.
+func (u SignerKey) GetHashX() (result Uint256, ok bool) {
+	armName, _ := u.ArmForSwitch(int32(u.Type))
+
+	if armName == "HashX" {
+		result = *u.HashX
 		ok = true
 	}
 
@@ -195,7 +412,7 @@ func (u NodeId) ArmForSwitch(sw int32) (string, bool) {
 }
 
 // NewNodeId creates a new  NodeId.
-func NewNodeId(aType CryptoKeyType, value interface{}) (result NodeId, err error) {
+func NewNodeId(aType PublicKeyType, value interface{}) (result NodeId, err error) {
 	u, err := NewPublicKey(aType, value)
 	result = NodeId(u)
 	return
@@ -276,7 +493,7 @@ func (u AccountId) ArmForSwitch(sw int32) (string, bool) {
 }
 
 // NewAccountId creates a new  AccountId.
-func NewAccountId(aType CryptoKeyType, value interface{}) (result AccountId, err error) {
+func NewAccountId(aType PublicKeyType, value interface{}) (result AccountId, err error) {
 	u, err := NewPublicKey(aType, value)
 	result = AccountId(u)
 	return
@@ -615,12 +832,12 @@ func (e LedgerEntryType) String() string {
 //
 //   struct Signer
 //    {
-//        AccountID pubKey;
+//        SignerKey key;
 //        uint32 weight; // really only need 1byte
 //    };
 //
 type Signer struct {
-	PubKey AccountId
+	Key    SignerKey
 	Weight Uint32
 }
 
@@ -2349,7 +2566,7 @@ func (u Memo) GetRetHash() (result Hash, ok bool) {
 //   struct TimeBounds
 //    {
 //        uint64 minTime;
-//        uint64 maxTime;
+//        uint64 maxTime; // 0 here means no maxTime
 //    };
 //
 type TimeBounds struct {
@@ -2434,12 +2651,102 @@ type Transaction struct {
 	Ext           TransactionExt
 }
 
+// TransactionSignaturePayloadTaggedTransaction is an XDR NestedUnion defines as:
+//
+//   union switch (EnvelopeType type)
+//        {
+//        case ENVELOPE_TYPE_TX:
+//              Transaction tx;
+//        /* All other values of type are invalid */
+//        }
+//
+type TransactionSignaturePayloadTaggedTransaction struct {
+	Type EnvelopeType
+	Tx   *Transaction
+}
+
+// SwitchFieldName returns the field name in which this union's
+// discriminant is stored
+func (u TransactionSignaturePayloadTaggedTransaction) SwitchFieldName() string {
+	return "Type"
+}
+
+// ArmForSwitch returns which field name should be used for storing
+// the value for an instance of TransactionSignaturePayloadTaggedTransaction
+func (u TransactionSignaturePayloadTaggedTransaction) ArmForSwitch(sw int32) (string, bool) {
+	switch EnvelopeType(sw) {
+	case EnvelopeTypeEnvelopeTypeTx:
+		return "Tx", true
+	}
+	return "-", false
+}
+
+// NewTransactionSignaturePayloadTaggedTransaction creates a new  TransactionSignaturePayloadTaggedTransaction.
+func NewTransactionSignaturePayloadTaggedTransaction(aType EnvelopeType, value interface{}) (result TransactionSignaturePayloadTaggedTransaction, err error) {
+	result.Type = aType
+	switch EnvelopeType(aType) {
+	case EnvelopeTypeEnvelopeTypeTx:
+		tv, ok := value.(Transaction)
+		if !ok {
+			err = fmt.Errorf("invalid value, must be Transaction")
+			return
+		}
+		result.Tx = &tv
+	}
+	return
+}
+
+// MustTx retrieves the Tx value from the union,
+// panicing if the value is not set.
+func (u TransactionSignaturePayloadTaggedTransaction) MustTx() Transaction {
+	val, ok := u.GetTx()
+
+	if !ok {
+		panic("arm Tx is not set")
+	}
+
+	return val
+}
+
+// GetTx retrieves the Tx value from the union,
+// returning ok if the union's switch indicated the value is valid.
+func (u TransactionSignaturePayloadTaggedTransaction) GetTx() (result Transaction, ok bool) {
+	armName, _ := u.ArmForSwitch(int32(u.Type))
+
+	if armName == "Tx" {
+		result = *u.Tx
+		ok = true
+	}
+
+	return
+}
+
+// TransactionSignaturePayload is an XDR Struct defines as:
+//
+//   struct TransactionSignaturePayload {
+//        Hash networkId;
+//        union switch (EnvelopeType type)
+//        {
+//        case ENVELOPE_TYPE_TX:
+//              Transaction tx;
+//        /* All other values of type are invalid */
+//        } taggedTransaction;
+//    };
+//
+type TransactionSignaturePayload struct {
+	NetworkId         Hash
+	TaggedTransaction TransactionSignaturePayloadTaggedTransaction
+}
+
 // TransactionEnvelope is an XDR Struct defines as:
 //
 //   struct TransactionEnvelope
 //    {
 //        Transaction tx;
-//        DecoratedSignature signatures<20>;
+//        /* Each decorated signature is a signature over the SHA256 hash of
+//         * a TransactionSignaturePayload */
+//        DecoratedSignature
+//        signatures<20>;
 //    };
 //
 type TransactionEnvelope struct {
@@ -3279,17 +3586,19 @@ func NewSetOptionsResult(code SetOptionsResultCode, value interface{}) (result S
 //        CHANGE_TRUST_NO_ISSUER = -2,     // could not find issuer
 //        CHANGE_TRUST_INVALID_LIMIT = -3, // cannot drop limit below balance
 //                                         // cannot create with a limit of 0
-//        CHANGE_TRUST_LOW_RESERVE = -4 // not enough funds to create a new trust line
+//        CHANGE_TRUST_LOW_RESERVE = -4, // not enough funds to create a new trust line,
+//        CHANGE_TRUST_SELF_NOT_ALLOWED = -5 // trusting self is not allowed
 //    };
 //
 type ChangeTrustResultCode int32
 
 const (
-	ChangeTrustResultCodeChangeTrustSuccess      ChangeTrustResultCode = 0
-	ChangeTrustResultCodeChangeTrustMalformed    ChangeTrustResultCode = -1
-	ChangeTrustResultCodeChangeTrustNoIssuer     ChangeTrustResultCode = -2
-	ChangeTrustResultCodeChangeTrustInvalidLimit ChangeTrustResultCode = -3
-	ChangeTrustResultCodeChangeTrustLowReserve   ChangeTrustResultCode = -4
+	ChangeTrustResultCodeChangeTrustSuccess        ChangeTrustResultCode = 0
+	ChangeTrustResultCodeChangeTrustMalformed      ChangeTrustResultCode = -1
+	ChangeTrustResultCodeChangeTrustNoIssuer       ChangeTrustResultCode = -2
+	ChangeTrustResultCodeChangeTrustInvalidLimit   ChangeTrustResultCode = -3
+	ChangeTrustResultCodeChangeTrustLowReserve     ChangeTrustResultCode = -4
+	ChangeTrustResultCodeChangeTrustSelfNotAllowed ChangeTrustResultCode = -5
 )
 
 var changeTrustResultCodeMap = map[int32]string{
@@ -3298,6 +3607,7 @@ var changeTrustResultCodeMap = map[int32]string{
 	-2: "ChangeTrustResultCodeChangeTrustNoIssuer",
 	-3: "ChangeTrustResultCodeChangeTrustInvalidLimit",
 	-4: "ChangeTrustResultCodeChangeTrustLowReserve",
+	-5: "ChangeTrustResultCodeChangeTrustSelfNotAllowed",
 }
 
 // ValidEnum validates a proposed value for this enum.  Implements
@@ -3367,7 +3677,8 @@ func NewChangeTrustResult(code ChangeTrustResultCode, value interface{}) (result
 //        ALLOW_TRUST_NO_TRUST_LINE = -2, // trustor does not have a trustline
 //                                        // source account does not require trust
 //        ALLOW_TRUST_TRUST_NOT_REQUIRED = -3,
-//        ALLOW_TRUST_CANT_REVOKE = -4 // source account can't revoke trust
+//        ALLOW_TRUST_CANT_REVOKE = -4, // source account can't revoke trust,
+//        ALLOW_TRUST_SELF_NOT_ALLOWED = -5 // trusting self is not allowed
 //    };
 //
 type AllowTrustResultCode int32
@@ -3378,6 +3689,7 @@ const (
 	AllowTrustResultCodeAllowTrustNoTrustLine      AllowTrustResultCode = -2
 	AllowTrustResultCodeAllowTrustTrustNotRequired AllowTrustResultCode = -3
 	AllowTrustResultCodeAllowTrustCantRevoke       AllowTrustResultCode = -4
+	AllowTrustResultCodeAllowTrustSelfNotAllowed   AllowTrustResultCode = -5
 )
 
 var allowTrustResultCodeMap = map[int32]string{
@@ -3386,6 +3698,7 @@ var allowTrustResultCodeMap = map[int32]string{
 	-2: "AllowTrustResultCodeAllowTrustNoTrustLine",
 	-3: "AllowTrustResultCodeAllowTrustTrustNotRequired",
 	-4: "AllowTrustResultCodeAllowTrustCantRevoke",
+	-5: "AllowTrustResultCodeAllowTrustSelfNotAllowed",
 }
 
 // ValidEnum validates a proposed value for this enum.  Implements
@@ -5302,23 +5615,17 @@ func (u BucketEntry) GetDeadEntry() (result LedgerKey, ok bool) {
 	return
 }
 
-// MaxTxPerLedger is an XDR Const defines as:
-//
-//   const MAX_TX_PER_LEDGER = 5000;
-//
-const MaxTxPerLedger = 5000
-
 // TransactionSet is an XDR Struct defines as:
 //
 //   struct TransactionSet
 //    {
 //        Hash previousLedgerHash;
-//        TransactionEnvelope txs<MAX_TX_PER_LEDGER>;
+//        TransactionEnvelope txs<>;
 //    };
 //
 type TransactionSet struct {
 	PreviousLedgerHash Hash
-	Txs                []TransactionEnvelope `xdrmaxsize:"5000"`
+	Txs                []TransactionEnvelope
 }
 
 // TransactionResultPair is an XDR Struct defines as:
@@ -5338,11 +5645,11 @@ type TransactionResultPair struct {
 //
 //   struct TransactionResultSet
 //    {
-//        TransactionResultPair results<MAX_TX_PER_LEDGER>;
+//        TransactionResultPair results<>;
 //    };
 //
 type TransactionResultSet struct {
-	Results []TransactionResultPair `xdrmaxsize:"5000"`
+	Results []TransactionResultPair
 }
 
 // TransactionHistoryEntryExt is an XDR NestedUnion defines as:

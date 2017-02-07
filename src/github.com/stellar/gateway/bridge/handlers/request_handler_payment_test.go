@@ -19,7 +19,7 @@ import (
 	"github.com/stellar/gateway/protocols/federation"
 	"github.com/stellar/gateway/protocols/stellartoml"
 	"github.com/stellar/gateway/test"
-	"github.com/stellar/go-stellar-base/xdr"
+	"github.com/stellar/go/xdr"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -1021,7 +1021,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 
 				expectedTx := &xdr.Transaction{
 					SourceAccount: xdr.AccountId{
-						Type:    xdr.CryptoKeyTypeKeyTypeEd25519,
+						Type:    xdr.PublicKeyTypePublicKeyTypeEd25519,
 						Ed25519: &sourceXdr,
 					},
 					Fee:    100,
@@ -1033,7 +1033,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 								Type: xdr.OperationTypePayment,
 								PaymentOp: &xdr.PaymentOp{
 									Destination: xdr.AccountId{
-										Type:    xdr.CryptoKeyTypeKeyTypeEd25519,
+										Type:    xdr.PublicKeyTypePublicKeyTypeEd25519,
 										Ed25519: &destinationXdr,
 									},
 									Amount: 200000000,
@@ -1042,7 +1042,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 										AlphaNum4: &xdr.AssetAlphaNum4{
 											AssetCode: [4]byte{'U', 'S', 'D', 0},
 											Issuer: xdr.AccountId{
-												Type:    xdr.CryptoKeyTypeKeyTypeEd25519,
+												Type:    xdr.PublicKeyTypePublicKeyTypeEd25519,
 												Ed25519: &issuerXdr,
 											},
 										},

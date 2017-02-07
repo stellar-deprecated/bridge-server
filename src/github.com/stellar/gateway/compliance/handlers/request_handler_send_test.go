@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"crypto/sha256"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -12,10 +13,13 @@ import (
 	"github.com/stellar/gateway/compliance/config"
 	"github.com/stellar/gateway/mocks"
 	"github.com/stellar/gateway/net"
+	"github.com/stellar/gateway/protocols/attachment"
 	"github.com/stellar/gateway/protocols/compliance"
 	"github.com/stellar/gateway/protocols/federation"
 	"github.com/stellar/gateway/protocols/stellartoml"
 	"github.com/stellar/gateway/test"
+	"github.com/stellar/go/build"
+	"github.com/stellar/go/xdr"
 	"github.com/stretchr/testify/assert"
 	"github.com/zenazn/goji/web"
 )
@@ -52,6 +56,7 @@ func TestRequestHandlerSend(t *testing.T) {
 		&inject.Object{Value: mockFederationResolver},
 		&inject.Object{Value: mockSignerVerifier},
 		&inject.Object{Value: mockStellartomlResolver},
+		&inject.Object{Value: &TestNonceGenerator{}},
 	)
 	if err != nil {
 		panic(err)
@@ -132,8 +137,39 @@ func TestRequestHandlerSend(t *testing.T) {
 					AuthServer: authServer,
 				}, nil).Once()
 
-				transactionXdr := "AAAAAC3/58Z9rycNLmF6voWX9VmDETFVGhFoWf66mcMuir/DAAAAZAAAAAAAAAAAAAAAAAAAAANLw6drH5OZQsQFOcJZvFBrx8zFYFlryZWs/9cwBTVH5QAAAAEAAAAAAAAAAQAAAAAZUvzcMkXAfSwqbLoAiAlgPsZ7GIPRi7NIyKgEIBQ4nAAAAAFVU0QAAAAAABlS/NwyRcB9LCpsugCICWA+xnsYg9GLs0jIqAQgFDicAAAAAAvrwgAAAAAA"
-				data := "{\"sender\":\"alice*stellar.org\",\"need_info\":false,\"tx\":\"" + transactionXdr + "\",\"memo\":\"{\\n  \\\"transaction\\\": {\\n    \\\"sender_info\\\": \\\"{\\\\\\\"name\\\\\\\": \\\\\\\"Alice Doe\\\\\\\"}\\\",\\n    \\\"route\\\": \\\"bob\\\",\\n    \\\"extra\\\": \\\"hello world\\\",\\n    \\\"note\\\": \\\"\\\"\\n  },\\n  \\\"operations\\\": null\\n}\"}"
+				attachment := attachment.Attachment{
+					Transaction: attachment.Transaction{
+						Nonce:      "nonce",
+						Route:      "bob",
+						Note:       "",
+						SenderInfo: attachment.SenderInfo{FirstName: "John", LastName: "Doe"},
+						Extra:      "hello world",
+					},
+				}
+
+				attachHash := sha256.Sum256(attachment.Marshal())
+
+				txBuilder := build.Transaction(
+					build.SourceAccount{"GAW77Z6GPWXSODJOMF5L5BMX6VMYGEJRKUNBC2CZ725JTQZORK74HQQD"},
+					build.Sequence{0},
+					build.TestNetwork,
+					build.MemoHash{attachHash},
+					build.Payment(
+						build.Destination{"GAMVF7G4GJC4A7JMFJWLUAEIBFQD5RT3DCB5DC5TJDEKQBBACQ4JZVEE"},
+						build.CreditAmount{"USD", "GAMVF7G4GJC4A7JMFJWLUAEIBFQD5RT3DCB5DC5TJDEKQBBACQ4JZVEE", "20"},
+					),
+				)
+
+				txB64, _ := xdr.MarshalBase64(txBuilder.TX)
+
+				authData := compliance.AuthData{
+					Sender:   "alice*stellar.org",
+					NeedInfo: false,
+					Tx:       txB64,
+					Attach:   string(attachment.Marshal()),
+				}
+
+				data := string(authData.Marshal())
 				sig := "YeMlOYWNysyGBfsAe40z9dGgpRsKSQrqFIGAEsyJQ8osnXlLPynvJ2WQDGcBq2n5AA96YZdABhQz5ymqvxfQDw=="
 
 				authResponse := compliance.AuthResponse{
@@ -146,7 +182,7 @@ func TestRequestHandlerSend(t *testing.T) {
 					c.Callbacks.FetchInfo,
 					url.Values{"address": {"alice*stellar.org"}},
 				).Return(
-					net.BuildHTTPResponse(200, "{\"name\": \"Alice Doe\"}"),
+					net.BuildHTTPResponse(200, "{\"first_name\": \"John\", \"last_name\": \"Doe\"}"),
 					nil,
 				).Once()
 
@@ -173,7 +209,7 @@ func TestRequestHandlerSend(t *testing.T) {
 				    "info_status": "ok",
 				    "tx_status": "ok"
 				  },
-				  "transaction_xdr": "AAAAAC3/58Z9rycNLmF6voWX9VmDETFVGhFoWf66mcMuir/DAAAAZAAAAAAAAAAAAAAAAAAAAANLw6drH5OZQsQFOcJZvFBrx8zFYFlryZWs/9cwBTVH5QAAAAEAAAAAAAAAAQAAAAAZUvzcMkXAfSwqbLoAiAlgPsZ7GIPRi7NIyKgEIBQ4nAAAAAFVU0QAAAAAABlS/NwyRcB9LCpsugCICWA+xnsYg9GLs0jIqAQgFDicAAAAAAvrwgAAAAAA"
+				  "transaction_xdr": "` + txB64 + `"
 				}`)
 				assert.Equal(t, expected, test.StringToJSONMap(responseString))
 			})
@@ -203,8 +239,46 @@ func TestRequestHandlerSend(t *testing.T) {
 					AuthServer: authServer,
 				}, nil).Once()
 
-				transactionXdr := "AAAAAC3/58Z9rycNLmF6voWX9VmDETFVGhFoWf66mcMuir/DAAAAZAAAAAAAAAAAAAAAAAAAAANLw6drH5OZQsQFOcJZvFBrx8zFYFlryZWs/9cwBTVH5QAAAAEAAAAAAAAAAgAAAAFVU0QAAAAAAEbpO2riZmlZMkHuBxUBYAAas3hWyo9VL1IOdnfXAVFBAAAAADuaygAAAAAAGVL83DJFwH0sKmy6AIgJYD7GexiD0YuzSMioBCAUOJwAAAABVVNEAAAAAAAZUvzcMkXAfSwqbLoAiAlgPsZ7GIPRi7NIyKgEIBQ4nAAAAAAL68IAAAAAAgAAAAAAAAABRVVSAAAAAAALt4SwWfv1PIJvDRMenW0zu91YxZbphRFLA4O+gbAaigAAAAA="
-				data := "{\"sender\":\"alice*stellar.org\",\"need_info\":false,\"tx\":\"" + transactionXdr + "\",\"memo\":\"{\\n  \\\"transaction\\\": {\\n    \\\"sender_info\\\": \\\"{\\\\\\\"name\\\\\\\": \\\\\\\"Alice Doe\\\\\\\"}\\\",\\n    \\\"route\\\": \\\"bob\\\",\\n    \\\"extra\\\": \\\"hello world\\\",\\n    \\\"note\\\": \\\"\\\"\\n  },\\n  \\\"operations\\\": null\\n}\"}"
+				attachment := attachment.Attachment{
+					Transaction: attachment.Transaction{
+						Nonce:      "nonce",
+						Route:      "bob",
+						Note:       "",
+						SenderInfo: attachment.SenderInfo{FirstName: "John", LastName: "Doe"},
+						Extra:      "hello world",
+					},
+				}
+
+				attachHash := sha256.Sum256(attachment.Marshal())
+
+				txBuilder := build.Transaction(
+					build.SourceAccount{"GAW77Z6GPWXSODJOMF5L5BMX6VMYGEJRKUNBC2CZ725JTQZORK74HQQD"},
+					build.Sequence{0},
+					build.TestNetwork,
+					build.MemoHash{attachHash},
+					build.Payment(
+						build.Destination{"GAMVF7G4GJC4A7JMFJWLUAEIBFQD5RT3DCB5DC5TJDEKQBBACQ4JZVEE"},
+						build.CreditAmount{"USD", "GAMVF7G4GJC4A7JMFJWLUAEIBFQD5RT3DCB5DC5TJDEKQBBACQ4JZVEE", "20"},
+						build.PayWithPath{
+							build.CreditAsset("USD", "GBDOSO3K4JTGSWJSIHXAOFIBMAABVM3YK3FI6VJPKIHHM56XAFIUCGD6"),
+							"100",
+							[]build.Asset{
+								build.NativeAsset(),
+								build.CreditAsset("EUR", "GAF3PBFQLH57KPECN4GRGHU5NUZ3XXKYYWLOTBIRJMBYHPUBWANIUCZU"),
+							},
+						}),
+				)
+
+				txB64, _ := xdr.MarshalBase64(txBuilder.TX)
+
+				authData := compliance.AuthData{
+					Sender:   "alice*stellar.org",
+					NeedInfo: false,
+					Tx:       txB64,
+					Attach:   string(attachment.Marshal()),
+				}
+
+				data := string(authData.Marshal())
 				sig := "ACamNqa0dF8gf97URhFVKWSD7fmvZKc5At+8dCLM5ySR0HsHySF3G2WuwYP2nKjeqjKmu3U9Z3+u1P10w1KBCA=="
 
 				authResponse := compliance.AuthResponse{
@@ -217,7 +291,7 @@ func TestRequestHandlerSend(t *testing.T) {
 					c.Callbacks.FetchInfo,
 					url.Values{"address": {"alice*stellar.org"}},
 				).Return(
-					net.BuildHTTPResponse(200, "{\"name\": \"Alice Doe\"}"),
+					net.BuildHTTPResponse(200, "{\"first_name\": \"John\", \"last_name\": \"Doe\"}"),
 					nil,
 				).Once()
 
@@ -244,7 +318,7 @@ func TestRequestHandlerSend(t *testing.T) {
 				    "info_status": "ok",
 				    "tx_status": "ok"
 				  },
-				  "transaction_xdr": "AAAAAC3/58Z9rycNLmF6voWX9VmDETFVGhFoWf66mcMuir/DAAAAZAAAAAAAAAAAAAAAAAAAAANLw6drH5OZQsQFOcJZvFBrx8zFYFlryZWs/9cwBTVH5QAAAAEAAAAAAAAAAgAAAAFVU0QAAAAAAEbpO2riZmlZMkHuBxUBYAAas3hWyo9VL1IOdnfXAVFBAAAAADuaygAAAAAAGVL83DJFwH0sKmy6AIgJYD7GexiD0YuzSMioBCAUOJwAAAABVVNEAAAAAAAZUvzcMkXAfSwqbLoAiAlgPsZ7GIPRi7NIyKgEIBQ4nAAAAAAL68IAAAAAAgAAAAAAAAABRVVSAAAAAAALt4SwWfv1PIJvDRMenW0zu91YxZbphRFLA4O+gbAaigAAAAA="
+				  "transaction_xdr": "` + txB64 + `"
 				}`)
 				assert.Equal(t, expected, test.StringToJSONMap(responseString))
 			})

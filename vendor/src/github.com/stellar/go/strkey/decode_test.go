@@ -1,75 +1,88 @@
-package strkey_test
+package strkey
 
 import (
-	. "github.com/stellar/go/strkey"
+	"testing"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	"github.com/stretchr/testify/assert"
 )
 
-var _ = Describe("strkey.Decode", func() {
-	validAccount := "GA3D5KRYM6CB7OWQ6TWYRR3Z4T7GNZLKERYNZGGA5SOAOPIFY6YQHES5"
-	validAccountPayload := []byte{
-		0x36, 0x3e, 0xaa, 0x38, 0x67, 0x84, 0x1f, 0xba,
-		0xd0, 0xf4, 0xed, 0x88, 0xc7, 0x79, 0xe4, 0xfe,
-		0x66, 0xe5, 0x6a, 0x24, 0x70, 0xdc, 0x98, 0xc0,
-		0xec, 0x9c, 0x07, 0x3d, 0x05, 0xc7, 0xb1, 0x03,
+func TestDecode(t *testing.T) {
+	cases := []struct {
+		Name                string
+		Address             string
+		ExpectedVersionByte VersionByte
+		ExpectedPayload     []byte
+	}{
+		{
+			Name:                "AccountID",
+			Address:             "GA3D5KRYM6CB7OWQ6TWYRR3Z4T7GNZLKERYNZGGA5SOAOPIFY6YQHES5",
+			ExpectedVersionByte: VersionByteAccountID,
+			ExpectedPayload: []byte{
+				0x36, 0x3e, 0xaa, 0x38, 0x67, 0x84, 0x1f, 0xba,
+				0xd0, 0xf4, 0xed, 0x88, 0xc7, 0x79, 0xe4, 0xfe,
+				0x66, 0xe5, 0x6a, 0x24, 0x70, 0xdc, 0x98, 0xc0,
+				0xec, 0x9c, 0x07, 0x3d, 0x05, 0xc7, 0xb1, 0x03,
+			},
+		},
+		{
+			Name:                "Seed",
+			Address:             "SBU2RRGLXH3E5CQHTD3ODLDF2BWDCYUSSBLLZ5GNW7JXHDIYKXZWHOKR",
+			ExpectedVersionByte: VersionByteSeed,
+			ExpectedPayload: []byte{
+				0x69, 0xa8, 0xc4, 0xcb, 0xb9, 0xf6, 0x4e, 0x8a,
+				0x07, 0x98, 0xf6, 0xe1, 0xac, 0x65, 0xd0, 0x6c,
+				0x31, 0x62, 0x92, 0x90, 0x56, 0xbc, 0xf4, 0xcd,
+				0xb7, 0xd3, 0x73, 0x8d, 0x18, 0x55, 0xf3, 0x63,
+			},
+		},
+		{
+			Name:                "HashTx",
+			Address:             "TBU2RRGLXH3E5CQHTD3ODLDF2BWDCYUSSBLLZ5GNW7JXHDIYKXZWHXL7",
+			ExpectedVersionByte: VersionByteHashTx,
+			ExpectedPayload: []byte{
+				0x69, 0xa8, 0xc4, 0xcb, 0xb9, 0xf6, 0x4e, 0x8a,
+				0x07, 0x98, 0xf6, 0xe1, 0xac, 0x65, 0xd0, 0x6c,
+				0x31, 0x62, 0x92, 0x90, 0x56, 0xbc, 0xf4, 0xcd,
+				0xb7, 0xd3, 0x73, 0x8d, 0x18, 0x55, 0xf3, 0x63,
+			},
+		},
+		{
+			Name:                "HashX",
+			Address:             "XBU2RRGLXH3E5CQHTD3ODLDF2BWDCYUSSBLLZ5GNW7JXHDIYKXZWGTOG",
+			ExpectedVersionByte: VersionByteHashX,
+			ExpectedPayload: []byte{
+				0x69, 0xa8, 0xc4, 0xcb, 0xb9, 0xf6, 0x4e, 0x8a,
+				0x07, 0x98, 0xf6, 0xe1, 0xac, 0x65, 0xd0, 0x6c,
+				0x31, 0x62, 0x92, 0x90, 0x56, 0xbc, 0xf4, 0xcd,
+				0xb7, 0xd3, 0x73, 0x8d, 0x18, 0x55, 0xf3, 0x63,
+			},
+		},
 	}
-	validSeed := "SBU2RRGLXH3E5CQHTD3ODLDF2BWDCYUSSBLLZ5GNW7JXHDIYKXZWHOKR"
-	validSeedPayload := []byte{
-		0x69, 0xa8, 0xc4, 0xcb, 0xb9, 0xf6, 0x4e, 0x8a,
-		0x07, 0x98, 0xf6, 0xe1, 0xac, 0x65, 0xd0, 0x6c,
-		0x31, 0x62, 0x92, 0x90, 0x56, 0xbc, 0xf4, 0xcd,
-		0xb7, 0xd3, 0x73, 0x8d, 0x18, 0x55, 0xf3, 0x63,
+
+	for _, kase := range cases {
+		payload, err := Decode(kase.ExpectedVersionByte, kase.Address)
+		if assert.NoError(t, err, "An error occured decoding case %s", kase.Name) {
+			assert.Equal(t, kase.ExpectedPayload, payload, "Output mismatch in case %s", kase.Name)
+		}
 	}
 
-	It("decodes valid values", func() {
-		payload, err := Decode(VersionByteAccountID, validAccount)
-		Expect(err).To(BeNil())
-		Expect(payload).To(Equal(validAccountPayload))
+	// the expected version byte doesn't match the actual version byte
+	_, err := Decode(VersionByteSeed, cases[0].Address)
+	assert.Error(t, err)
 
-		payload, err = Decode(VersionByteSeed, validSeed)
-		Expect(err).To(BeNil())
-		Expect(payload).To(Equal(validSeedPayload))
-	})
+	// invalid version byte
+	_, err = Decode(VersionByte(2), cases[0].Address)
+	assert.Error(t, err)
 
-	Context("the expected version byte doesn't match the actual version byte", func() {
-		It("fails", func() {
-			_, err := Decode(VersionByteAccountID, validSeed)
-			Expect(err).To(HaveOccurred())
-			_, err = Decode(VersionByteSeed, validAccount)
-			Expect(err).To(HaveOccurred())
-		})
-	})
+	// empty input
+	_, err = Decode(VersionByteAccountID, "")
+	assert.Error(t, err)
 
-	Context("the expected version byte isn't a valid constant", func() {
-		It("fails", func() {
-			_, err := Decode(VersionByte(2), validAccount)
-			Expect(err).To(HaveOccurred())
-		})
-	})
+	// corrupted checksum
+	_, err = Decode(VersionByteAccountID, "GA3D5KRYM6CB7OWQ6TWYRR3Z4T7GNZLKERYNZGGA5SOAOPIFY6YQHE55")
+	assert.Error(t, err)
 
-	Context("the checksum has been corrupted", func() {
-		It("fails", func() {
-			corrupted := "GB" + validAccount[2:]
-			_, err := Decode(VersionByteAccountID, corrupted)
-			Expect(err).To(HaveOccurred())
-		})
-	})
-
-	Context("the payload has been corrupted", func() {
-		It("fails", func() {
-			corrupted := validAccount[0:len(validAccount)-2] + "Z5"
-			_, err := Decode(VersionByteAccountID, corrupted)
-			Expect(err).To(HaveOccurred())
-		})
-	})
-
-	Context("the input is empty", func() {
-		It("fails", func() {
-			_, err := Decode(VersionByteAccountID, "")
-			Expect(err).To(HaveOccurred())
-		})
-	})
-
-})
+	// corrupted payload
+	_, err = Decode(VersionByteAccountID, "GA3D5KRYM6CB7OWOOOORR3Z4T7GNZLKERYNZGGA5SOAOPIFY6YQHES5")
+	assert.Error(t, err)
+}

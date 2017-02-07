@@ -2,8 +2,10 @@ package log
 
 import (
 	"fmt"
+	"io/ioutil"
 
 	"github.com/Sirupsen/logrus"
+	"github.com/Sirupsen/logrus/hooks/test"
 	"github.com/stellar/go/support/errors"
 )
 
@@ -16,13 +18,17 @@ func (e *Entry) SetLevel(level logrus.Level) {
 // the return value from this function will cause the emitted log line to
 // include the provided value.
 func (e *Entry) WithField(key string, value interface{}) *Entry {
-	return &Entry{*e.Entry.WithField(key, value)}
+	return &Entry{
+		Entry: *e.Entry.WithField(key, value),
+	}
 }
 
 // WithFields creates a child logger annotated with the provided key value
 // pairs.
 func (e *Entry) WithFields(fields F) *Entry {
-	return &Entry{*e.Entry.WithFields(logrus.Fields(fields))}
+	return &Entry{
+		Entry: *e.Entry.WithFields(logrus.Fields(fields)),
+	}
 }
 
 // WithStack annotates this error with a stack trace from `stackProvider`, if
@@ -86,4 +92,48 @@ func (e *Entry) Panicf(format string, args ...interface{}) {
 // Panic logs a message at the Panic severity.
 func (e *Entry) Panic(args ...interface{}) {
 	e.Entry.Panic(args...)
+}
+
+// StartTest shifts this logger into "test" mode, ensuring that log lines will
+// be recorded (rather than outputted).  The returned function concludes the
+// test, switches the logger back into normal mode and returns a slice of all
+// raw logrus entries that were created during the test.
+func (e *Entry) StartTest(level logrus.Level) func() []*logrus.Entry {
+	if e.isTesting {
+		panic("cannot start logger test: already testing")
+	}
+
+	e.isTesting = true
+
+	hook := &test.Hook{}
+	e.Logger.Hooks.Add(hook)
+
+	old := e.Logger.Out
+	e.Logger.Out = ioutil.Discard
+
+	oldLevel := e.Logger.Level
+	e.Logger.Level = level
+
+	return func() []*logrus.Entry {
+		e.Logger.Level = oldLevel
+		e.Logger.Out = old
+		e.removeHook(hook)
+		e.isTesting = false
+		return hook.Entries
+	}
+}
+
+// removeHook removes a hook, in the most complicated way possible.
+func (e *Entry) removeHook(target logrus.Hook) {
+	for lvl, hooks := range e.Logger.Hooks {
+		kept := []logrus.Hook{}
+
+		for _, hook := range hooks {
+			if hook != target {
+				kept = append(kept, hook)
+			}
+		}
+
+		e.Logger.Hooks[lvl] = kept
+	}
 }

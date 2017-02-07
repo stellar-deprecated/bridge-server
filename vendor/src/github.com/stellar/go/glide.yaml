@@ -21,6 +21,7 @@ import:
 - package: github.com/rs/cors
 - package: goji.io
 - package: github.com/asaskevich/govalidator
+  repo: https://github.com/stellar/govalidator.git
 - package: github.com/BurntSushi/toml
 - package: github.com/spf13/cobra
 - package: gopkg.in/gavv/httpexpect.v1

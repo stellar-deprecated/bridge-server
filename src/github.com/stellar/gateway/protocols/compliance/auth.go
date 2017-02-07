@@ -38,8 +38,8 @@ type AuthData struct {
 	NeedInfo bool `json:"need_info"`
 	// The transaction that the sender would like to send in XDR format. This transaction is unsigned.
 	Tx string `json:"tx"`
-	// The full text of the memo the hash of this memo is included in the transaction.
-	Memo string `json:"memo"`
+	// The full text of the attachment. The hash of this attachment is included in the transaction memo.
+	Attach string `json:"attach"`
 }
 
 // Marshal marshals AuthData

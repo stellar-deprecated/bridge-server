@@ -6,7 +6,7 @@ import (
 
 	"github.com/stellar/gateway/bridge/config"
 	"github.com/stellar/gateway/protocols"
-	"github.com/stellar/go-stellar-base/keypair"
+	"github.com/stellar/go/keypair"
 )
 
 var (

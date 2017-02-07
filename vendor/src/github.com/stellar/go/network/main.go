@@ -6,6 +6,8 @@ import (
 	"bytes"
 	"fmt"
 
+	"strings"
+
 	"github.com/stellar/go/hash"
 	"github.com/stellar/go/support/errors"
 	"github.com/stellar/go/xdr"
@@ -31,6 +33,10 @@ func ID(passphrase string) [32]byte {
 // authorize the transaction identified by the hash to stellar validators.
 func HashTransaction(tx *xdr.Transaction, passphrase string) ([32]byte, error) {
 	var txBytes bytes.Buffer
+
+	if strings.TrimSpace(passphrase) == "" {
+		return [32]byte{}, errors.New("empty network passphrase")
+	}
 
 	_, err := fmt.Fprintf(&txBytes, "%s", ID(passphrase))
 	if err != nil {

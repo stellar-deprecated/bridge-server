@@ -9,7 +9,7 @@ import (
 	"github.com/stellar/gateway/db/entities"
 	"github.com/stellar/gateway/horizon"
 	"github.com/stellar/gateway/mocks"
-	b "github.com/stellar/go-stellar-base/build"
+	b "github.com/stellar/go/build"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )

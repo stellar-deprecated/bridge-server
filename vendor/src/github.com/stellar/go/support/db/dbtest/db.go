@@ -2,8 +2,8 @@ package dbtest
 
 import (
 	"github.com/jmoiron/sqlx"
-	"github.com/pkg/errors"
 	"github.com/stellar/go/support/db/sqlutils"
+	"github.com/stretchr/testify/require"
 )
 
 // Close closes and deletes the database represented by `db`
@@ -24,26 +24,17 @@ func (db *DB) Load(sql string) *DB {
 	defer conn.Close()
 
 	tx, err := conn.Begin()
-	if err != nil {
-		err = errors.Wrap(err, "begin failed")
-		panic(err)
-	}
+	require.NoError(db.t, err)
 
 	defer tx.Rollback()
 
 	for i, cmd := range sqlutils.AllStatements(sql) {
 		_, err = tx.Exec(cmd)
-		if err != nil {
-			err = errors.Wrapf(err, "failed execing statement: %d", i)
-			panic(err)
-		}
+		require.NoError(db.t, err, "failed execing statement: %d", i)
 	}
 
 	err = tx.Commit()
-	if err != nil {
-		err = errors.Wrap(err, "commit failed")
-		panic(err)
-	}
+	require.NoError(db.t, err)
 
 	return db
 }
@@ -51,10 +42,7 @@ func (db *DB) Load(sql string) *DB {
 // Open opens a sqlx connection to the db.
 func (db *DB) Open() *sqlx.DB {
 	conn, err := sqlx.Open(db.Dialect, db.DSN)
-	if err != nil {
-		err = errors.Wrap(err, "open failed")
-		panic(err)
-	}
+	require.NoError(db.t, err)
 
 	return conn
 }

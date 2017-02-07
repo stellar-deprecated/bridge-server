@@ -4,7 +4,7 @@ import (
 	"errors"
 	"net/url"
 
-	"github.com/stellar/go-stellar-base/keypair"
+	"github.com/stellar/go/keypair"
 )
 
 // Config contains config params of the compliance server

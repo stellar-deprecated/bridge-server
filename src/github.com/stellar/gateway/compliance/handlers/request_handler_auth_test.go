@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"encoding/base64"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -9,16 +10,19 @@ import (
 	"testing"
 	"time"
 
+	"crypto/sha256"
 	"github.com/facebookgo/inject"
 	. "github.com/smartystreets/goconvey/convey"
 	"github.com/stellar/gateway/compliance/config"
 	"github.com/stellar/gateway/db/entities"
 	"github.com/stellar/gateway/mocks"
 	"github.com/stellar/gateway/net"
+	"github.com/stellar/gateway/protocols/attachment"
 	"github.com/stellar/gateway/protocols/compliance"
-	"github.com/stellar/gateway/protocols/memo"
 	"github.com/stellar/gateway/protocols/stellartoml"
 	"github.com/stellar/gateway/test"
+	"github.com/stellar/go/build"
+	"github.com/stellar/go/xdr"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/zenazn/goji/web"
@@ -53,6 +57,7 @@ func TestRequestHandlerAuth(t *testing.T) {
 		&inject.Object{Value: mockFederationResolver},
 		&inject.Object{Value: mockSignerVerifier},
 		&inject.Object{Value: mockStellartomlResolver},
+		&inject.Object{Value: &TestNonceGenerator{}},
 	)
 	if err != nil {
 		panic(err)
@@ -161,8 +166,25 @@ func TestRequestHandlerAuth(t *testing.T) {
 		})
 
 		Convey("When all params are valid", func() {
+			attachHash := sha256.Sum256([]byte("{}"))
+			attachHashB64 := base64.StdEncoding.EncodeToString(attachHash[:])
+
+			txBuilder := build.Transaction(
+				build.SourceAccount{"GAW77Z6GPWXSODJOMF5L5BMX6VMYGEJRKUNBC2CZ725JTQZORK74HQQD"},
+				build.Sequence{0},
+				build.TestNetwork,
+				build.MemoHash{attachHash},
+				build.Payment(
+					build.Destination{"GAMVF7G4GJC4A7JMFJWLUAEIBFQD5RT3DCB5DC5TJDEKQBBACQ4JZVEE"},
+					build.CreditAmount{"USD", "GAMVF7G4GJC4A7JMFJWLUAEIBFQD5RT3DCB5DC5TJDEKQBBACQ4JZVEE", "20"},
+				),
+			)
+
+			txB64, _ := xdr.MarshalBase64(txBuilder.TX)
+			txHash, _ := txBuilder.HashHex()
+
 			params := url.Values{
-				"data": {"{\"sender\":\"alice*stellar.org\",\"need_info\":false,\"tx\":\"AAAAAC3/58Z9rycNLmF6voWX9VmDETFVGhFoWf66mcMuir/DAAAAZAAAAAAAAAAAAAAAAAAAAANEE2+jVbNnihFGrRb36GSelPtPwh/nfoMQwGD2HKr/igAAAAEAAAAAAAAAAgAAAAFVU0QAAAAAAEbpO2riZmlZMkHuBxUBYAAas3hWyo9VL1IOdnfXAVFBAAAAADuaygAAAAAAGVL83DJFwH0sKmy6AIgJYD7GexiD0YuzSMioBCAUOJwAAAABVVNEAAAAAAAZUvzcMkXAfSwqbLoAiAlgPsZ7GIPRi7NIyKgEIBQ4nAAAAAAL68IAAAAAAgAAAAAAAAABRVVSAAAAAAALt4SwWfv1PIJvDRMenW0zu91YxZbphRFLA4O+gbAaigAAAAA=\",\"memo\":\"{}\"}"},
+				"data": {`{"sender":"alice*stellar.org","need_info":false,"tx":"` + txB64 + `","attach":"{}"}`},
 				"sig":  {"ACamNqa0dF8gf97URhFVKWSD7fmvZKc5At+8dCLM5ySR0HsHySF3G2WuwYP2nKjeqjKmu3U9Z3+u1P10w1KBCA=="},
 			}
 
@@ -182,9 +204,9 @@ func TestRequestHandlerAuth(t *testing.T) {
 
 			Convey("it returns AuthResponse", func() {
 				authorizedTransaction := &entities.AuthorizedTransaction{
-					TransactionID:  "29ec92f95b00dd8e8bbb0d2a2fc90db8ed5b26c396c44ac978bb13ccd8d25524",
-					Memo:           "RBNvo1WzZ4oRRq0W9+hknpT7T8If536DEMBg9hyq/4o=",
-					TransactionXdr: "AAAAAC3/58Z9rycNLmF6voWX9VmDETFVGhFoWf66mcMuir/DAAAAZAAAAAAAAAAAAAAAAAAAAANEE2+jVbNnihFGrRb36GSelPtPwh/nfoMQwGD2HKr/igAAAAEAAAAAAAAAAgAAAAFVU0QAAAAAAEbpO2riZmlZMkHuBxUBYAAas3hWyo9VL1IOdnfXAVFBAAAAADuaygAAAAAAGVL83DJFwH0sKmy6AIgJYD7GexiD0YuzSMioBCAUOJwAAAABVVNEAAAAAAAZUvzcMkXAfSwqbLoAiAlgPsZ7GIPRi7NIyKgEIBQ4nAAAAAAL68IAAAAAAgAAAAAAAAABRVVSAAAAAAALt4SwWfv1PIJvDRMenW0zu91YxZbphRFLA4O+gbAaigAAAAA=",
+					TransactionID:  txHash,
+					Memo:           attachHashB64,
+					TransactionXdr: txB64,
 					Data:           params["data"][0],
 				}
 
@@ -219,21 +241,38 @@ func TestRequestHandlerAuth(t *testing.T) {
 			FetchInfo: "http://fetch_info",
 		}
 
-		memoPreimage := memo.Memo{
-			Transaction: memo.Transaction{
+		attachment := attachment.Attachment{
+			Transaction: attachment.Transaction{
 				Route:      "bob*acme.com",
 				Note:       "Happy birthday",
-				SenderInfo: "senderInfoJson",
+				SenderInfo: attachment.SenderInfo{FirstName: "John", LastName: "Doe"},
 				Extra:      "extra",
 			},
 		}
+
+		attachHash := sha256.Sum256(attachment.Marshal())
+		attachHashB64 := base64.StdEncoding.EncodeToString(attachHash[:])
+
+		txBuilder := build.Transaction(
+			build.SourceAccount{"GAW77Z6GPWXSODJOMF5L5BMX6VMYGEJRKUNBC2CZ725JTQZORK74HQQD"},
+			build.Sequence{0},
+			build.TestNetwork,
+			build.MemoHash{attachHash},
+			build.Payment(
+				build.Destination{"GAMVF7G4GJC4A7JMFJWLUAEIBFQD5RT3DCB5DC5TJDEKQBBACQ4JZVEE"},
+				build.CreditAmount{"USD", "GAMVF7G4GJC4A7JMFJWLUAEIBFQD5RT3DCB5DC5TJDEKQBBACQ4JZVEE", "20"},
+			),
+		)
+
+		txB64, _ := xdr.MarshalBase64(txBuilder.TX)
+		txHash, _ := txBuilder.HashHex()
 
 		Convey("When all params are valid (NeedInfo = `false`)", func() {
 			authData := compliance.AuthData{
 				Sender:   "alice*stellar.org",
 				NeedInfo: false,
-				Tx:       "AAAAAC3/58Z9rycNLmF6voWX9VmDETFVGhFoWf66mcMuir/DAAAAZAAAAAAAAAAAAAAAAAAAAANeCnOi6ZSpMNIMFUUVIfbBc5OA5kpzDbg+AJ6X8/WynAAAAAEAAAAAAAAAAgAAAAFVU0QAAAAAAEbpO2riZmlZMkHuBxUBYAAas3hWyo9VL1IOdnfXAVFBAAAAADuaygAAAAAAGVL83DJFwH0sKmy6AIgJYD7GexiD0YuzSMioBCAUOJwAAAABVVNEAAAAAAAZUvzcMkXAfSwqbLoAiAlgPsZ7GIPRi7NIyKgEIBQ4nAAAAAAL68IAAAAAAgAAAAAAAAABRVVSAAAAAAALt4SwWfv1PIJvDRMenW0zu91YxZbphRFLA4O+gbAaigAAAAA=",
-				Memo:     string(memoPreimage.Marshal()),
+				Tx:       txB64,
+				Attach:   string(attachment.Marshal()),
 			}
 
 			params := url.Values{
@@ -259,7 +298,7 @@ func TestRequestHandlerAuth(t *testing.T) {
 				mockHTTPClient.On(
 					"PostForm",
 					"http://sanctions",
-					url.Values{"sender": {memoPreimage.Transaction.SenderInfo}},
+					url.Values{"sender": {string(attachment.Transaction.SenderInfo.Marshal())}},
 				).Return(
 					net.BuildHTTPResponse(403, "forbidden"),
 					nil,
@@ -279,7 +318,7 @@ func TestRequestHandlerAuth(t *testing.T) {
 				mockHTTPClient.On(
 					"PostForm",
 					"http://sanctions",
-					url.Values{"sender": {memoPreimage.Transaction.SenderInfo}},
+					url.Values{"sender": {string(attachment.Transaction.SenderInfo.Marshal())}},
 				).Return(
 					net.BuildHTTPResponse(202, "pending"),
 					nil,
@@ -300,16 +339,16 @@ func TestRequestHandlerAuth(t *testing.T) {
 				mockHTTPClient.On(
 					"PostForm",
 					"http://sanctions",
-					url.Values{"sender": {memoPreimage.Transaction.SenderInfo}},
+					url.Values{"sender": {string(attachment.Transaction.SenderInfo.Marshal())}},
 				).Return(
 					net.BuildHTTPResponse(200, "ok"),
 					nil,
 				).Once()
 
 				authorizedTransaction := &entities.AuthorizedTransaction{
-					TransactionID:  "f62589932eb9fcf0bf28fe95510bf614caf3169c67a85e75475a390a79b5ecc9",
-					Memo:           "XgpzoumUqTDSDBVFFSH2wXOTgOZKcw24PgCel/P1spw=",
-					TransactionXdr: "AAAAAC3/58Z9rycNLmF6voWX9VmDETFVGhFoWf66mcMuir/DAAAAZAAAAAAAAAAAAAAAAAAAAANeCnOi6ZSpMNIMFUUVIfbBc5OA5kpzDbg+AJ6X8/WynAAAAAEAAAAAAAAAAgAAAAFVU0QAAAAAAEbpO2riZmlZMkHuBxUBYAAas3hWyo9VL1IOdnfXAVFBAAAAADuaygAAAAAAGVL83DJFwH0sKmy6AIgJYD7GexiD0YuzSMioBCAUOJwAAAABVVNEAAAAAAAZUvzcMkXAfSwqbLoAiAlgPsZ7GIPRi7NIyKgEIBQ4nAAAAAAL68IAAAAAAgAAAAAAAAABRVVSAAAAAAALt4SwWfv1PIJvDRMenW0zu91YxZbphRFLA4O+gbAaigAAAAA=",
+					TransactionID:  txHash,
+					Memo:           attachHashB64,
+					TransactionXdr: txB64,
 					Data:           params["data"][0],
 				}
 
@@ -340,8 +379,8 @@ func TestRequestHandlerAuth(t *testing.T) {
 			authData := compliance.AuthData{
 				Sender:   "alice*stellar.org",
 				NeedInfo: true,
-				Tx:       "AAAAAC3/58Z9rycNLmF6voWX9VmDETFVGhFoWf66mcMuir/DAAAAZAAAAAAAAAAAAAAAAAAAAANeCnOi6ZSpMNIMFUUVIfbBc5OA5kpzDbg+AJ6X8/WynAAAAAEAAAAAAAAAAgAAAAFVU0QAAAAAAEbpO2riZmlZMkHuBxUBYAAas3hWyo9VL1IOdnfXAVFBAAAAADuaygAAAAAAGVL83DJFwH0sKmy6AIgJYD7GexiD0YuzSMioBCAUOJwAAAABVVNEAAAAAAAZUvzcMkXAfSwqbLoAiAlgPsZ7GIPRi7NIyKgEIBQ4nAAAAAAL68IAAAAAAgAAAAAAAAABRVVSAAAAAAALt4SwWfv1PIJvDRMenW0zu91YxZbphRFLA4O+gbAaigAAAAA=",
-				Memo:     string(memoPreimage.Marshal()),
+				Tx:       txB64,
+				Attach:   string(attachment.Marshal()),
 			}
 
 			params := url.Values{
@@ -368,7 +407,7 @@ func TestRequestHandlerAuth(t *testing.T) {
 				"PostForm",
 				"http://sanctions",
 				url.Values{
-					"sender": {memoPreimage.Transaction.SenderInfo},
+					"sender": {string(attachment.Transaction.SenderInfo.Marshal())},
 				},
 			).Return(
 				net.BuildHTTPResponse(200, "ok"),
@@ -380,8 +419,8 @@ func TestRequestHandlerAuth(t *testing.T) {
 					"PostForm",
 					"http://ask_user",
 					url.Values{
-						"sender":       {memoPreimage.Transaction.SenderInfo},
-						"note":         {memoPreimage.Transaction.Note},
+						"sender":       {string(attachment.Transaction.SenderInfo.Marshal())},
+						"note":         {attachment.Transaction.Note},
 						"amount":       {"20.0000000"},
 						"asset_code":   {"USD"},
 						"asset_issuer": {"GAMVF7G4GJC4A7JMFJWLUAEIBFQD5RT3DCB5DC5TJDEKQBBACQ4JZVEE"},
@@ -406,8 +445,8 @@ func TestRequestHandlerAuth(t *testing.T) {
 					"PostForm",
 					"http://ask_user",
 					url.Values{
-						"sender":       {memoPreimage.Transaction.SenderInfo},
-						"note":         {memoPreimage.Transaction.Note},
+						"sender":       {string(attachment.Transaction.SenderInfo.Marshal())},
+						"note":         {attachment.Transaction.Note},
 						"amount":       {"20.0000000"},
 						"asset_code":   {"USD"},
 						"asset_issuer": {"GAMVF7G4GJC4A7JMFJWLUAEIBFQD5RT3DCB5DC5TJDEKQBBACQ4JZVEE"},
@@ -433,8 +472,8 @@ func TestRequestHandlerAuth(t *testing.T) {
 					"PostForm",
 					"http://ask_user",
 					url.Values{
-						"sender":       {memoPreimage.Transaction.SenderInfo},
-						"note":         {memoPreimage.Transaction.Note},
+						"sender":       {string(attachment.Transaction.SenderInfo.Marshal())},
+						"note":         {attachment.Transaction.Note},
 						"amount":       {"20.0000000"},
 						"asset_code":   {"USD"},
 						"asset_issuer": {"GAMVF7G4GJC4A7JMFJWLUAEIBFQD5RT3DCB5DC5TJDEKQBBACQ4JZVEE"},
@@ -460,8 +499,8 @@ func TestRequestHandlerAuth(t *testing.T) {
 					"PostForm",
 					"http://ask_user",
 					url.Values{
-						"sender":       {memoPreimage.Transaction.SenderInfo},
-						"note":         {memoPreimage.Transaction.Note},
+						"sender":       {string(attachment.Transaction.SenderInfo.Marshal())},
+						"note":         {attachment.Transaction.Note},
 						"amount":       {"20.0000000"},
 						"asset_code":   {"USD"},
 						"asset_issuer": {"GAMVF7G4GJC4A7JMFJWLUAEIBFQD5RT3DCB5DC5TJDEKQBBACQ4JZVEE"},
@@ -481,9 +520,9 @@ func TestRequestHandlerAuth(t *testing.T) {
 				).Once()
 
 				authorizedTransaction := &entities.AuthorizedTransaction{
-					TransactionID:  "f62589932eb9fcf0bf28fe95510bf614caf3169c67a85e75475a390a79b5ecc9",
-					Memo:           "XgpzoumUqTDSDBVFFSH2wXOTgOZKcw24PgCel/P1spw=",
-					TransactionXdr: "AAAAAC3/58Z9rycNLmF6voWX9VmDETFVGhFoWf66mcMuir/DAAAAZAAAAAAAAAAAAAAAAAAAAANeCnOi6ZSpMNIMFUUVIfbBc5OA5kpzDbg+AJ6X8/WynAAAAAEAAAAAAAAAAgAAAAFVU0QAAAAAAEbpO2riZmlZMkHuBxUBYAAas3hWyo9VL1IOdnfXAVFBAAAAADuaygAAAAAAGVL83DJFwH0sKmy6AIgJYD7GexiD0YuzSMioBCAUOJwAAAABVVNEAAAAAAAZUvzcMkXAfSwqbLoAiAlgPsZ7GIPRi7NIyKgEIBQ4nAAAAAAL68IAAAAAAgAAAAAAAAABRVVSAAAAAAALt4SwWfv1PIJvDRMenW0zu91YxZbphRFLA4O+gbAaigAAAAA=",
+					TransactionID:  txHash,
+					Memo:           attachHashB64,
+					TransactionXdr: txB64,
 					Data:           params["data"][0],
 				}
 
@@ -532,9 +571,9 @@ func TestRequestHandlerAuth(t *testing.T) {
 					).Once()
 
 					authorizedTransaction := &entities.AuthorizedTransaction{
-						TransactionID:  "f62589932eb9fcf0bf28fe95510bf614caf3169c67a85e75475a390a79b5ecc9",
-						Memo:           "XgpzoumUqTDSDBVFFSH2wXOTgOZKcw24PgCel/P1spw=",
-						TransactionXdr: "AAAAAC3/58Z9rycNLmF6voWX9VmDETFVGhFoWf66mcMuir/DAAAAZAAAAAAAAAAAAAAAAAAAAANeCnOi6ZSpMNIMFUUVIfbBc5OA5kpzDbg+AJ6X8/WynAAAAAEAAAAAAAAAAgAAAAFVU0QAAAAAAEbpO2riZmlZMkHuBxUBYAAas3hWyo9VL1IOdnfXAVFBAAAAADuaygAAAAAAGVL83DJFwH0sKmy6AIgJYD7GexiD0YuzSMioBCAUOJwAAAABVVNEAAAAAAAZUvzcMkXAfSwqbLoAiAlgPsZ7GIPRi7NIyKgEIBQ4nAAAAAAL68IAAAAAAgAAAAAAAAABRVVSAAAAAAALt4SwWfv1PIJvDRMenW0zu91YxZbphRFLA4O+gbAaigAAAAA=",
+						TransactionID:  txHash,
+						Memo:           attachHashB64,
+						TransactionXdr: txB64,
 						Data:           params["data"][0],
 					}
 
@@ -589,9 +628,9 @@ func TestRequestHandlerAuth(t *testing.T) {
 					).Once()
 
 					authorizedTransaction := &entities.AuthorizedTransaction{
-						TransactionID:  "f62589932eb9fcf0bf28fe95510bf614caf3169c67a85e75475a390a79b5ecc9",
-						Memo:           "XgpzoumUqTDSDBVFFSH2wXOTgOZKcw24PgCel/P1spw=",
-						TransactionXdr: "AAAAAC3/58Z9rycNLmF6voWX9VmDETFVGhFoWf66mcMuir/DAAAAZAAAAAAAAAAAAAAAAAAAAANeCnOi6ZSpMNIMFUUVIfbBc5OA5kpzDbg+AJ6X8/WynAAAAAEAAAAAAAAAAgAAAAFVU0QAAAAAAEbpO2riZmlZMkHuBxUBYAAas3hWyo9VL1IOdnfXAVFBAAAAADuaygAAAAAAGVL83DJFwH0sKmy6AIgJYD7GexiD0YuzSMioBCAUOJwAAAABVVNEAAAAAAAZUvzcMkXAfSwqbLoAiAlgPsZ7GIPRi7NIyKgEIBQ4nAAAAAAL68IAAAAAAgAAAAAAAAABRVVSAAAAAAALt4SwWfv1PIJvDRMenW0zu91YxZbphRFLA4O+gbAaigAAAAA=",
+						TransactionID:  txHash,
+						Memo:           attachHashB64,
+						TransactionXdr: txB64,
 						Data:           params["data"][0],
 					}
 

@@ -35,7 +35,7 @@ var _ = Describe("xdr.AccountEntry#SignerSummary()", func() {
 		}
 		summary := account.SignerSummary()
 		for _, signer := range account.Signers {
-			addy := signer.PubKey.Address()
+			addy := signer.Key.Address()
 			Expect(summary).To(HaveKey(addy))
 			Expect(summary[addy]).To(Equal(int32(signer.Weight)))
 		}
@@ -43,7 +43,8 @@ var _ = Describe("xdr.AccountEntry#SignerSummary()", func() {
 })
 
 func signer(address string, weight int) (ret Signer) {
-	ret.PubKey.SetAddress(address)
+
+	ret.Key.SetAddress(address)
 	ret.Weight = Uint32(weight)
 	return
 }

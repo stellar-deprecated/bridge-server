@@ -16,10 +16,10 @@ import (
 	"github.com/stellar/gateway/protocols/bridge"
 	"github.com/stellar/gateway/protocols/compliance"
 	"github.com/stellar/gateway/server"
-	"github.com/stellar/go-stellar-base/amount"
-	b "github.com/stellar/go-stellar-base/build"
-	"github.com/stellar/go-stellar-base/keypair"
-	"github.com/stellar/go-stellar-base/xdr"
+	"github.com/stellar/go/amount"
+	b "github.com/stellar/go/build"
+	"github.com/stellar/go/keypair"
+	"github.com/stellar/go/xdr"
 )
 
 // Payment implements /payment endpoint

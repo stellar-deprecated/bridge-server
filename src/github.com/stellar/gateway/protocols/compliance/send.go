@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/stellar/gateway/protocols"
-	"github.com/stellar/go-stellar-base/keypair"
+	"github.com/stellar/go/keypair"
 )
 
 // SendRequest represents request sent to /send endpoint of compliance server

@@ -3,6 +3,7 @@ package federation
 import (
 	"errors"
 	"net/http"
+	"strings"
 	"testing"
 
 	"github.com/stellar/go/clients/stellartoml"
@@ -32,6 +33,22 @@ func TestLookupByAddress(t *testing.T) {
 		assert.Equal(t, "GASTNVNLHVR3NFO3QACMHCJT3JUSIV4NBXDHDO4VTPDTNN65W3B2766C", resp.AccountID)
 		assert.Equal(t, "id", resp.MemoType)
 		assert.Equal(t, "123", resp.Memo)
+	}
+
+	// response exceeds limit
+	tomlmock.On("GetStellarToml", "toobig.org").Return(&stellartoml.Response{
+		FederationServer: "https://toobig.org/federation",
+	}, nil)
+	hmock.On("GET", "https://toobig.org/federation").
+		ReturnJSON(http.StatusOK, map[string]string{
+			"stellar_address": strings.Repeat("0", FederationResponseMaxSize) + "*stellar.org",
+			"account_id":      "GASTNVNLHVR3NFO3QACMHCJT3JUSIV4NBXDHDO4VTPDTNN65W3B2766C",
+			"memo_type":       "id",
+			"memo":            "123",
+		})
+	_, err = c.LookupByAddress("response*toobig.org")
+	if assert.Error(t, err) {
+		assert.Contains(t, err.Error(), "federation response exceeds")
 	}
 
 	// failed toml resolution
@@ -74,4 +91,12 @@ func TestLookupByID(t *testing.T) {
 	_, err := DefaultPublicNetClient.LookupByAccountID("GASTNVNLHVR3NFO3QACMHCJT3JUSIV4NBXDHDO4VTPDTNN65W3B2766C")
 	assert.Error(t, err)
 	assert.Equal(t, "homedomain not set", err.Error())
+}
+
+func Test_url(t *testing.T) {
+	c := &Client{}
+
+	// regression: ensure that query is properly URI encoded
+	url := c.url("", "q", "scott+receiver1@stellar.org*stellar.org")
+	assert.Equal(t, "?q=scott%2Breceiver1%40stellar.org%2Astellar.org&type=q", url)
 }

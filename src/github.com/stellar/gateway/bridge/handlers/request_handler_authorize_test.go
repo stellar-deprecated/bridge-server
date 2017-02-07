@@ -15,7 +15,7 @@ import (
 	"github.com/stellar/gateway/mocks"
 	"github.com/stellar/gateway/net"
 	"github.com/stellar/gateway/test"
-	b "github.com/stellar/go-stellar-base/build"
+	b "github.com/stellar/go/build"
 	"github.com/stretchr/testify/assert"
 )
 

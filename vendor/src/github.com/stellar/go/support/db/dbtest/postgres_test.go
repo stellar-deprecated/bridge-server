@@ -8,7 +8,7 @@ import (
 )
 
 func TestPostgres(t *testing.T) {
-	db := Postgres()
+	db := Postgres(t)
 	t.Log("tempdb url", db.DSN)
 
 	err := exec.Command("psql", db.DSN, "-c", "SELECT 1").Run()

@@ -7,6 +7,9 @@ import (
 	"github.com/stellar/go/clients/stellartoml"
 )
 
+// FederationResponseMaxSize is the maximum size of response from a federation server
+const FederationResponseMaxSize = 100 * 1024
+
 // DefaultTestNetClient is a default federation client for testnet
 var DefaultTestNetClient = &Client{
 	HTTP:        http.DefaultClient,

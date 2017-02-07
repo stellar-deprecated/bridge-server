@@ -2,6 +2,7 @@ package stellartoml
 
 import (
 	"fmt"
+	"io"
 	"net/http"
 
 	"github.com/BurntSushi/toml"
@@ -24,7 +25,17 @@ func (c *Client) GetStellarToml(domain string) (resp *Response, err error) {
 		return
 	}
 
-	_, err = toml.DecodeReader(hresp.Body, &resp)
+	limitReader := io.LimitReader(hresp.Body, StellarTomlMaxSize)
+	_, err = toml.DecodeReader(limitReader, &resp)
+
+	// There is one corner case not handled here: response is exactly
+	// StellarTomlMaxSize long and is incorrect toml. Check discussion:
+	// https://github.com/stellar/go/pull/24#discussion_r89909696
+	if err != nil && limitReader.(*io.LimitedReader).N == 0 {
+		err = errors.Errorf("stellar.toml response exceeds %d bytes limit", StellarTomlMaxSize)
+		return
+	}
+
 	if err != nil {
 		err = errors.Wrap(err, "toml decode failed")
 		return
@@ -55,5 +66,5 @@ func (c *Client) url(domain string) string {
 		scheme = "https"
 	}
 
-	return fmt.Sprintf("%s://www.%s%s", scheme, domain, WellKnownPath)
+	return fmt.Sprintf("%s://%s%s", scheme, domain, WellKnownPath)
 }

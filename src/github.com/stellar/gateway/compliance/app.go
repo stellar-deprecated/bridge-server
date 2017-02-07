@@ -71,6 +71,7 @@ func NewApp(config config.Config, migrateFlag bool) (app *App, err error) {
 		&inject.Object{Value: &stellartoml.Resolver{}},
 		&inject.Object{Value: &federation.Resolver{}},
 		&inject.Object{Value: &http.Client{}},
+		&inject.Object{Value: &handlers.NonceGenerator{}},
 	)
 
 	if err != nil {

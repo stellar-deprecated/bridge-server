@@ -2,7 +2,7 @@ package bridge
 
 import (
 	"github.com/stellar/gateway/protocols"
-	b "github.com/stellar/go-stellar-base/build"
+	b "github.com/stellar/go/build"
 )
 
 // ChangeTrustOperationBody represents change_trust operation

@@ -2,7 +2,7 @@ package bridge
 
 import (
 	"github.com/stellar/gateway/protocols"
-	b "github.com/stellar/go-stellar-base/build"
+	b "github.com/stellar/go/build"
 )
 
 // AccountMergeOperationBody represents account_merge operation
@@ -11,7 +11,7 @@ type AccountMergeOperationBody struct {
 	Destination string
 }
 
-// ToTransactionMutator returns go-stellar-base TransactionMutator
+// ToTransactionMutator returns stellar/go TransactionMutator
 func (op AccountMergeOperationBody) ToTransactionMutator() b.TransactionMutator {
 	mutators := []interface{}{b.Destination{op.Destination}}
 

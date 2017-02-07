@@ -9,7 +9,7 @@ import (
 	"github.com/stellar/gateway/horizon"
 	"github.com/stellar/gateway/protocols/federation"
 	"github.com/stellar/gateway/protocols/stellartoml"
-	"github.com/stellar/go-stellar-base/xdr"
+	"github.com/stellar/go/xdr"
 	"github.com/stretchr/testify/mock"
 )
 

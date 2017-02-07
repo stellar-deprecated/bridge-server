@@ -32,6 +32,11 @@ func main() {
 	log.SetLevel(log.InfoLevel)
 	bin, version := extractFromTag(os.Getenv("TRAVIS_TAG"))
 	pkg := packageName(bin)
+	repo := "github.com/stellar/go"
+
+	if os.Getenv("REPO") != "" {
+		repo = os.Getenv("REPO")
+	}
 
 	run("rm", "-rf", "dist/*")
 
@@ -53,7 +58,7 @@ func main() {
 
 		// rebuild the binary with the version variable set
 		build(
-			fmt.Sprintf("github.com/stellar/go/%s", pkg),
+			fmt.Sprintf("%s/%s", repo, pkg),
 			filepath.Join(dest, bin),
 			version,
 			cfg.OS,

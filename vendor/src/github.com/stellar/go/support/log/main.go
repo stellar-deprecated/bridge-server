@@ -1,10 +1,13 @@
 package log
 
 import (
+	"net/http"
 	"os"
+	"time"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/segmentio/go-loggly"
+	"github.com/stellar/go/support/http/mutil"
 	"golang.org/x/net/context"
 )
 
@@ -23,6 +26,8 @@ const (
 // Entry repre
 type Entry struct {
 	logrus.Entry
+
+	isTesting bool
 }
 
 // F wraps the logrus.Fields type for the convenience of typing less.
@@ -41,7 +46,9 @@ func New() (result *Entry) {
 	l := logrus.New()
 	l.Level = logrus.WarnLevel
 
-	result = &Entry{*logrus.NewEntry(l).WithField("pid", os.Getpid())}
+	result = &Entry{
+		Entry: *logrus.NewEntry(l).WithField("pid", os.Getpid()),
+	}
 	return
 }
 
@@ -60,6 +67,27 @@ func Ctx(ctx context.Context) *Entry {
 	}
 
 	return found.(*Entry)
+}
+
+// HTTPMiddleware is a middleware function that wraps the provided handler in a
+// middleware that logs requests to the default logger.
+func HTTPMiddleware(in http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mw := mutil.WrapWriter(w)
+		// TODO: migrate to go 1.7 context
+		ctx := context.TODO()
+
+		// TODO: add request id support
+		// logger := log.WithField("req", middleware.GetReqID(*c))
+
+		logStartOfRequest(ctx, r)
+
+		then := time.Now()
+		in.ServeHTTP(mw, r)
+		duration := time.Now().Sub(then)
+
+		logEndOfRequest(ctx, duration, mw)
+	})
 }
 
 // PushContext is a helper method to derive a new context with a modified logger
@@ -138,6 +166,12 @@ func Panicf(format string, args ...interface{}) {
 // Panic logs a message at the Panic severity.
 func Panic(args ...interface{}) {
 	DefaultLogger.Panic(args...)
+}
+
+// StartTest shifts the default logger into "test" mode.  See Entry's
+// documentation for the StartTest() method for more info.
+func StartTest(level logrus.Level) func() []*logrus.Entry {
+	return DefaultLogger.StartTest(level)
 }
 
 var contextKey = 0

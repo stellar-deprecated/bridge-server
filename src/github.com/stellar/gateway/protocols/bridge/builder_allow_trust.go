@@ -2,7 +2,7 @@ package bridge
 
 import (
 	"github.com/stellar/gateway/protocols"
-	b "github.com/stellar/go-stellar-base/build"
+	b "github.com/stellar/go/build"
 )
 
 // AllowTrustOperationBody represents allow_trust operation
@@ -13,7 +13,7 @@ type AllowTrustOperationBody struct {
 	Authorize bool
 }
 
-// ToTransactionMutator returns go-stellar-base TransactionMutator
+// ToTransactionMutator returns stellar/go TransactionMutator
 func (op AllowTrustOperationBody) ToTransactionMutator() b.TransactionMutator {
 	mutators := []interface{}{
 		b.AllowTrustAsset{op.AssetCode},

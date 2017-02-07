@@ -2,6 +2,7 @@ package stellartoml
 
 import (
 	"net/http"
+	"strings"
 	"testing"
 
 	"github.com/stellar/go/support/http/httptest"
@@ -14,10 +15,10 @@ func TestClientURL(t *testing.T) {
 	//mock.
 
 	c := &Client{UseHTTP: false}
-	assert.Equal(t, "https://www.stellar.org/.well-known/stellar.toml", c.url("stellar.org"))
+	assert.Equal(t, "https://stellar.org/.well-known/stellar.toml", c.url("stellar.org"))
 
 	c = &Client{UseHTTP: true}
-	assert.Equal(t, "http://www.stellar.org/.well-known/stellar.toml", c.url("stellar.org"))
+	assert.Equal(t, "http://stellar.org/.well-known/stellar.toml", c.url("stellar.org"))
 }
 
 func TestClient(t *testing.T) {
@@ -26,7 +27,7 @@ func TestClient(t *testing.T) {
 
 	// happy path
 	h.
-		On("GET", "https://www.stellar.org/.well-known/stellar.toml").
+		On("GET", "https://stellar.org/.well-known/stellar.toml").
 		ReturnString(http.StatusOK,
 			`FEDERATION_SERVER="https://localhost/federation"`,
 		)
@@ -34,16 +35,27 @@ func TestClient(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "https://localhost/federation", stoml.FederationServer)
 
+	// stellar.toml exceeds limit
+	h.
+		On("GET", "https://toobig.org/.well-known/stellar.toml").
+		ReturnString(http.StatusOK,
+			`FEDERATION_SERVER="https://localhost/federation`+strings.Repeat("0", StellarTomlMaxSize)+`"`,
+		)
+	stoml, err = c.GetStellarToml("toobig.org")
+	if assert.Error(t, err) {
+		assert.Contains(t, err.Error(), "stellar.toml response exceeds")
+	}
+
 	// not found
 	h.
-		On("GET", "https://www.missing.org/.well-known/stellar.toml").
+		On("GET", "https://missing.org/.well-known/stellar.toml").
 		ReturnNotFound()
 	stoml, err = c.GetStellarToml("missing.org")
 	assert.EqualError(t, err, "http request failed with non-200 status code")
 
 	// invalid toml
 	h.
-		On("GET", "https://www.json.org/.well-known/stellar.toml").
+		On("GET", "https://json.org/.well-known/stellar.toml").
 		ReturnJSON(http.StatusOK, map[string]string{"hello": "world"})
 	stoml, err = c.GetStellarToml("json.org")
 

@@ -2,10 +2,10 @@ package build
 
 import (
 	"encoding/hex"
-	"errors"
 
 	"github.com/stellar/go/network"
 	"github.com/stellar/go/xdr"
+	"github.com/stellar/go/support/errors"
 )
 
 // Transaction groups the creation of a new TransactionBuilder with a call

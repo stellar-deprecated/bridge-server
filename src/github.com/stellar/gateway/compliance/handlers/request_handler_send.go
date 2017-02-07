@@ -1,21 +1,19 @@
 package handlers
 
 import (
-	"bytes"
 	"crypto/sha256"
-	"encoding/base64"
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/stellar/gateway/protocols"
+	"github.com/stellar/gateway/protocols/attachment"
 	"github.com/stellar/gateway/protocols/compliance"
-	"github.com/stellar/gateway/protocols/memo"
 	"github.com/stellar/gateway/server"
 	"github.com/stellar/gateway/submitter"
-	b "github.com/stellar/go-stellar-base/build"
-	"github.com/stellar/go-stellar-base/xdr"
+	b "github.com/stellar/go/build"
+	"github.com/stellar/go/xdr"
 	"github.com/zenazn/goji/web"
 )
 
@@ -99,7 +97,7 @@ func (rh *RequestHandler) HandlerSend(c web.C, w http.ResponseWriter, r *http.Re
 	}
 
 	// Fetch Sender Info
-	senderInfo := ""
+	senderInfo := attachment.SenderInfo{}
 
 	if rh.Config.Callbacks.FetchInfo != "" {
 		fetchInfoRequest := compliance.FetchInfoRequest{Address: request.Sender}
@@ -137,20 +135,29 @@ func (rh *RequestHandler) HandlerSend(c web.C, w http.ResponseWriter, r *http.Re
 			return
 		}
 
-		senderInfo = string(body)
+		err = json.Unmarshal(body, &senderInfo)
+		if err != nil {
+			log.WithFields(log.Fields{
+				"fetch_info": rh.Config.Callbacks.FetchInfo,
+				"err":        err,
+			}).Error("Error unmarshalling sender_info server response")
+			server.Write(w, protocols.InternalServerError)
+			return
+		}
 	}
 
-	memoPreimage := &memo.Memo{
-		Transaction: memo.Transaction{
+	attachment := &attachment.Attachment{
+		Transaction: attachment.Transaction{
+			Nonce:      rh.NonceGenerator.Generate(),
 			SenderInfo: senderInfo,
 			Route:      destinationObject.Memo,
 			Extra:      request.ExtraMemo,
 		},
 	}
 
-	memoJSON := memoPreimage.Marshal()
-	memoHashBytes := sha256.Sum256(memoJSON)
-	memoMutator := &b.MemoHash{xdr.Hash(memoHashBytes)}
+	attachmentJSON := attachment.Marshal()
+	attachmentHashBytes := sha256.Sum256(attachmentJSON)
+	memoMutator := &b.MemoHash{xdr.Hash(attachmentHashBytes)}
 
 	transaction, err := submitter.BuildTransaction(
 		request.Source,
@@ -159,21 +166,18 @@ func (rh *RequestHandler) HandlerSend(c web.C, w http.ResponseWriter, r *http.Re
 		memoMutator,
 	)
 
-	var txBytes bytes.Buffer
-	_, err = xdr.Marshal(&txBytes, transaction)
+	txBase64, err := xdr.MarshalBase64(transaction)
 	if err != nil {
-		log.Error("Error mashaling transaction")
+		log.WithFields(log.Fields{"err": err}).Error("Error mashaling transaction")
 		server.Write(w, protocols.InternalServerError)
 		return
 	}
-
-	txBase64 := base64.StdEncoding.EncodeToString(txBytes.Bytes())
 
 	authData := compliance.AuthData{
 		Sender:   request.Sender,
 		NeedInfo: rh.Config.NeedsAuth,
 		Tx:       txBase64,
-		Memo:     string(memoJSON),
+		Attach:   string(attachmentJSON),
 	}
 
 	data, err := json.Marshal(authData)

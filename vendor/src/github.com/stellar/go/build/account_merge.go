@@ -1,12 +1,12 @@
 package build
 
 import (
-	"errors"
-
+	"github.com/stellar/go/support/errors"
 	"github.com/stellar/go/xdr"
 )
 
-// AccountMerge groups the creation of a new AccountMergeBuilder with a call to Mutate.
+// AccountMerge groups the creation of a new AccountMergeBuilder with a call to
+// Mutate.
 func AccountMerge(muts ...interface{}) (result AccountMergeBuilder) {
 	result.Mutate(muts...)
 	return

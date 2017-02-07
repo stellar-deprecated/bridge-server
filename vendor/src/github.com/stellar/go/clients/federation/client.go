@@ -3,6 +3,8 @@ package federation
 import (
 	"encoding/json"
 	"fmt"
+	"io"
+	"net/url"
 	"strings"
 
 	"github.com/stellar/go/address"
@@ -101,7 +103,13 @@ func (c *Client) getJSON(url string, dest interface{}) error {
 		return errors.Errorf("http get failed with (%d) status code", hresp.StatusCode)
 	}
 
-	err = json.NewDecoder(hresp.Body).Decode(dest)
+	limitReader := io.LimitReader(hresp.Body, FederationResponseMaxSize)
+
+	err = json.NewDecoder(limitReader).Decode(dest)
+	if err == io.ErrUnexpectedEOF && limitReader.(*io.LimitedReader).N == 0 {
+		return errors.Errorf("federation response exceeds %d bytes limit", FederationResponseMaxSize)
+	}
+
 	if err != nil {
 		return errors.Wrap(err, "json decode errored")
 	}
@@ -110,5 +118,9 @@ func (c *Client) getJSON(url string, dest interface{}) error {
 }
 
 func (c *Client) url(endpoint string, typ string, q string) string {
-	return fmt.Sprintf("%s?type=%s&q=%s", endpoint, typ, q)
+	qstr := url.Values{}
+	qstr.Add("type", typ)
+	qstr.Add("q", q)
+
+	return fmt.Sprintf("%s?%s", endpoint, qstr.Encode())
 }

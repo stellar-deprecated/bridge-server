@@ -1,6 +1,9 @@
 package handlers
 
 import (
+	"strconv"
+	"time"
+
 	"github.com/stellar/gateway/compliance/config"
 	"github.com/stellar/gateway/crypto"
 	"github.com/stellar/gateway/db"
@@ -18,4 +21,21 @@ type RequestHandler struct {
 	SignatureSignerVerifier crypto.SignerVerifierInterface `inject:""`
 	StellarTomlResolver     stellartoml.ResolverInterface  `inject:""`
 	FederationResolver      federation.ResolverInterface   `inject:""`
+	NonceGenerator          NonceGeneratorInterface        `inject:""`
+}
+
+type NonceGeneratorInterface interface {
+	Generate() string
+}
+
+type NonceGenerator struct{}
+
+func (n *NonceGenerator) Generate() string {
+	return strconv.FormatInt(time.Now().UnixNano(), 10)
+}
+
+type TestNonceGenerator struct{}
+
+func (n *TestNonceGenerator) Generate() string {
+	return "nonce"
 }

@@ -16,12 +16,12 @@ import (
 
 	"github.com/stellar/gateway/db/entities"
 	"github.com/stellar/gateway/protocols"
+	"github.com/stellar/gateway/protocols/attachment"
 	"github.com/stellar/gateway/protocols/compliance"
-	"github.com/stellar/gateway/protocols/memo"
 	"github.com/stellar/gateway/server"
 	"github.com/stellar/gateway/submitter"
-	baseAmount "github.com/stellar/go-stellar-base/amount"
-	"github.com/stellar/go-stellar-base/xdr"
+	baseAmount "github.com/stellar/go/amount"
+	"github.com/stellar/go/xdr"
 	"github.com/zenazn/goji/web"
 )
 
@@ -102,7 +102,7 @@ func (rh *RequestHandler) HandlerAuth(c web.C, w http.ResponseWriter, r *http.Re
 	}
 
 	// Validate memo preimage hash
-	memoPreimageHashBytes := sha256.Sum256([]byte(authData.Memo))
+	memoPreimageHashBytes := sha256.Sum256([]byte(authData.Attach))
 	memoBytes := [32]byte(*tx.Memo.Hash)
 
 	if memoPreimageHashBytes != memoBytes {
@@ -126,14 +126,14 @@ func (rh *RequestHandler) HandlerAuth(c web.C, w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	var memoPreimage memo.Memo
-	err = json.Unmarshal([]byte(authData.Memo), &memoPreimage)
+	var attachment attachment.Attachment
+	err = json.Unmarshal([]byte(authData.Attach), &attachment)
 	if err != nil {
-		errorResponse := protocols.NewInvalidParameterError("data.memo", authData.Memo)
+		errorResponse := protocols.NewInvalidParameterError("data.attach", authData.Attach)
 		log.WithFields(log.Fields{
 			"err":  err,
-			"memo": authData.Memo,
-		}).Warn("Cannot unmarshal memo preimage")
+			"memo": authData.Attach,
+		}).Warn("Cannot unmarshal attachment")
 		server.Write(w, errorResponse)
 		return
 	}
@@ -153,7 +153,7 @@ func (rh *RequestHandler) HandlerAuth(c web.C, w http.ResponseWriter, r *http.Re
 	} else {
 		resp, err := rh.Client.PostForm(
 			rh.Config.Callbacks.Sanctions,
-			url.Values{"sender": {memoPreimage.Transaction.SenderInfo}},
+			url.Values{"sender": {string(attachment.Transaction.SenderInfo.Marshal())}},
 		)
 		if err != nil {
 			log.WithFields(log.Fields{
@@ -256,8 +256,8 @@ func (rh *RequestHandler) HandlerAuth(c web.C, w http.ResponseWriter, r *http.Re
 					"amount":       {amount},
 					"asset_code":   {assetCode},
 					"asset_issuer": {assetIssuer},
-					"sender":       {memoPreimage.Transaction.SenderInfo},
-					"note":         {memoPreimage.Transaction.Note},
+					"sender":       {string(attachment.Transaction.SenderInfo.Marshal())},
+					"note":         {attachment.Transaction.Note},
 				},
 			)
 			if err != nil {
@@ -305,7 +305,7 @@ func (rh *RequestHandler) HandlerAuth(c web.C, w http.ResponseWriter, r *http.Re
 
 		if response.InfoStatus == compliance.AuthStatusOk {
 			// Fetch Info
-			fetchInfoRequest := compliance.FetchInfoRequest{Address: memoPreimage.Transaction.Route}
+			fetchInfoRequest := compliance.FetchInfoRequest{Address: attachment.Transaction.Route}
 			resp, err := rh.Client.PostForm(
 				rh.Config.Callbacks.FetchInfo,
 				fetchInfoRequest.ToValues(),

@@ -13,10 +13,10 @@ import (
 	"github.com/stellar/gateway/db"
 	"github.com/stellar/gateway/db/entities"
 	"github.com/stellar/gateway/horizon"
-	"github.com/stellar/go-stellar-base/build"
-	"github.com/stellar/go-stellar-base/hash"
-	"github.com/stellar/go-stellar-base/keypair"
-	"github.com/stellar/go-stellar-base/xdr"
+	"github.com/stellar/go/build"
+	"github.com/stellar/go/hash"
+	"github.com/stellar/go/keypair"
+	"github.com/stellar/go/xdr"
 )
 
 // TransactionSubmitterInterface helps mocking TransactionSubmitter

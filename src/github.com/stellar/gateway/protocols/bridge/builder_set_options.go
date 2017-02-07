@@ -2,7 +2,7 @@ package bridge
 
 import (
 	"github.com/stellar/gateway/protocols"
-	b "github.com/stellar/go-stellar-base/build"
+	b "github.com/stellar/go/build"
 )
 
 // SetOptionsOperationBody represents set_options operation
@@ -67,8 +67,8 @@ func (op SetOptionsOperationBody) ToTransactionMutator() b.TransactionMutator {
 
 	if op.Signer != nil {
 		mutators = append(mutators, b.Signer{
-			PublicKey: op.Signer.PublicKey,
-			Weight:    op.Signer.Weight,
+			Address: op.Signer.PublicKey,
+			Weight:  op.Signer.Weight,
 		})
 	}
 
