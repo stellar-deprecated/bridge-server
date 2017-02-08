@@ -184,7 +184,7 @@ func TestRequestHandlerAuth(t *testing.T) {
 			txHash, _ := txBuilder.HashHex()
 
 			params := url.Values{
-				"data": {`{"sender":"alice*stellar.org","need_info":false,"tx":"` + txB64 + `","attach":"{}"}`},
+				"data": {`{"sender":"alice*stellar.org","need_info":false,"tx":"` + txB64 + `","attachment":"{}"}`},
 				"sig":  {"ACamNqa0dF8gf97URhFVKWSD7fmvZKc5At+8dCLM5ySR0HsHySF3G2WuwYP2nKjeqjKmu3U9Z3+u1P10w1KBCA=="},
 			}
 
@@ -269,10 +269,10 @@ func TestRequestHandlerAuth(t *testing.T) {
 
 		Convey("When all params are valid (NeedInfo = `false`)", func() {
 			authData := compliance.AuthData{
-				Sender:   "alice*stellar.org",
-				NeedInfo: false,
-				Tx:       txB64,
-				Attach:   string(attachment.Marshal()),
+				Sender:     "alice*stellar.org",
+				NeedInfo:   false,
+				Tx:         txB64,
+				Attachment: string(attachment.Marshal()),
 			}
 
 			params := url.Values{
@@ -377,10 +377,10 @@ func TestRequestHandlerAuth(t *testing.T) {
 
 		Convey("When all params are valid (NeedInfo = `true`)", func() {
 			authData := compliance.AuthData{
-				Sender:   "alice*stellar.org",
-				NeedInfo: true,
-				Tx:       txB64,
-				Attach:   string(attachment.Marshal()),
+				Sender:     "alice*stellar.org",
+				NeedInfo:   true,
+				Tx:         txB64,
+				Attachment: string(attachment.Marshal()),
 			}
 
 			params := url.Values{

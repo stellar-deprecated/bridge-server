@@ -163,10 +163,10 @@ func TestRequestHandlerSend(t *testing.T) {
 				txB64, _ := xdr.MarshalBase64(txBuilder.TX)
 
 				authData := compliance.AuthData{
-					Sender:   "alice*stellar.org",
-					NeedInfo: false,
-					Tx:       txB64,
-					Attach:   string(attachment.Marshal()),
+					Sender:     "alice*stellar.org",
+					NeedInfo:   false,
+					Tx:         txB64,
+					Attachment: string(attachment.Marshal()),
 				}
 
 				data := string(authData.Marshal())
@@ -272,10 +272,10 @@ func TestRequestHandlerSend(t *testing.T) {
 				txB64, _ := xdr.MarshalBase64(txBuilder.TX)
 
 				authData := compliance.AuthData{
-					Sender:   "alice*stellar.org",
-					NeedInfo: false,
-					Tx:       txB64,
-					Attach:   string(attachment.Marshal()),
+					Sender:     "alice*stellar.org",
+					NeedInfo:   false,
+					Tx:         txB64,
+					Attachment: string(attachment.Marshal()),
 				}
 
 				data := string(authData.Marshal())

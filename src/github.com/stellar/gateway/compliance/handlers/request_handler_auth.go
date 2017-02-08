@@ -102,7 +102,7 @@ func (rh *RequestHandler) HandlerAuth(c web.C, w http.ResponseWriter, r *http.Re
 	}
 
 	// Validate memo preimage hash
-	memoPreimageHashBytes := sha256.Sum256([]byte(authData.Attach))
+	memoPreimageHashBytes := sha256.Sum256([]byte(authData.Attachment))
 	memoBytes := [32]byte(*tx.Memo.Hash)
 
 	if memoPreimageHashBytes != memoBytes {
@@ -127,12 +127,12 @@ func (rh *RequestHandler) HandlerAuth(c web.C, w http.ResponseWriter, r *http.Re
 	}
 
 	var attachment attachment.Attachment
-	err = json.Unmarshal([]byte(authData.Attach), &attachment)
+	err = json.Unmarshal([]byte(authData.Attachment), &attachment)
 	if err != nil {
-		errorResponse := protocols.NewInvalidParameterError("data.attach", authData.Attach)
+		errorResponse := protocols.NewInvalidParameterError("data.attachment", authData.Attachment)
 		log.WithFields(log.Fields{
-			"err":  err,
-			"memo": authData.Attach,
+			"err":        err,
+			"attachment": authData.Attachment,
 		}).Warn("Cannot unmarshal attachment")
 		server.Write(w, errorResponse)
 		return

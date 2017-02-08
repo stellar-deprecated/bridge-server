@@ -39,7 +39,7 @@ type AuthData struct {
 	// The transaction that the sender would like to send in XDR format. This transaction is unsigned.
 	Tx string `json:"tx"`
 	// The full text of the attachment. The hash of this attachment is included in the transaction memo.
-	Attach string `json:"attach"`
+	Attachment string `json:"attachment"`
 }
 
 // Marshal marshals AuthData

@@ -211,7 +211,7 @@ func (pl *PaymentListener) onPayment(payment horizon.PaymentResponse) (err error
 		}
 
 		var attachment attachment.Attachment
-		err = json.Unmarshal([]byte(authData.Attach), &attachment)
+		err = json.Unmarshal([]byte(authData.Attachment), &attachment)
 		if err != nil {
 			pl.log.WithFields(logrus.Fields{"err": err}).Error("Cannot unmarshal memo")
 			return err

@@ -277,7 +277,7 @@ func TestPaymentListener(t *testing.T) {
 			attachmentString, _ := json.Marshal(attachment)
 
 			auth := compliance.AuthData{
-				Attach: string(attachmentString),
+				Attachment: string(attachmentString),
 			}
 
 			authString, _ := json.Marshal(auth)

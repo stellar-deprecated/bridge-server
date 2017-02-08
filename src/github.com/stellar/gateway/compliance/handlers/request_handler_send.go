@@ -174,10 +174,10 @@ func (rh *RequestHandler) HandlerSend(c web.C, w http.ResponseWriter, r *http.Re
 	}
 
 	authData := compliance.AuthData{
-		Sender:   request.Sender,
-		NeedInfo: rh.Config.NeedsAuth,
-		Tx:       txBase64,
-		Attach:   string(attachmentJSON),
+		Sender:     request.Sender,
+		NeedInfo:   rh.Config.NeedsAuth,
+		Tx:         txBase64,
+		Attachment: string(attachmentJSON),
 	}
 
 	data, err := json.Marshal(authData)
