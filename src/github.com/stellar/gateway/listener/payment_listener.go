@@ -218,7 +218,7 @@ func (pl *PaymentListener) onPayment(payment horizon.PaymentResponse) (err error
 		}
 
 		route = memo.Transaction.Route
-	} else if payment.Memo.Type != "hash" {
+	} else {
 		route = payment.Memo.Value
 	}
 
