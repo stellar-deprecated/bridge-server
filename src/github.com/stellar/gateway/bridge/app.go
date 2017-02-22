@@ -17,10 +17,10 @@ import (
 	"github.com/stellar/gateway/db/drivers/postgres"
 	"github.com/stellar/gateway/horizon"
 	"github.com/stellar/gateway/listener"
-	"github.com/stellar/gateway/protocols/federation"
-	"github.com/stellar/gateway/protocols/stellartoml"
 	"github.com/stellar/gateway/server"
 	"github.com/stellar/gateway/submitter"
+	"github.com/stellar/go/clients/federation"
+	"github.com/stellar/go/clients/stellartoml"
 	"github.com/zenazn/goji"
 	"github.com/zenazn/goji/web/middleware"
 )
@@ -138,11 +138,16 @@ func NewApp(config config.Config, migrateFlag bool) (app *App, err error) {
 
 	requestHandler := handlers.RequestHandler{}
 
+	federationClient := &federation.Client{
+		HTTP:        http.DefaultClient,
+		StellarTOML: stellartoml.DefaultClient,
+	}
+
 	err = g.Provide(
 		&inject.Object{Value: &requestHandler},
 		&inject.Object{Value: &config},
-		&inject.Object{Value: &stellartoml.Resolver{}},
-		&inject.Object{Value: &federation.Resolver{}},
+		&inject.Object{Value: stellartoml.DefaultClient},
+		&inject.Object{Value: federationClient},
 		&inject.Object{Value: &h},
 		&inject.Object{Value: &ts},
 		&inject.Object{Value: &paymentListener},

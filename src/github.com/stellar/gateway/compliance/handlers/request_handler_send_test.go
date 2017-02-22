@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"crypto/sha256"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -13,14 +12,15 @@ import (
 	"github.com/stellar/gateway/compliance/config"
 	"github.com/stellar/gateway/mocks"
 	"github.com/stellar/gateway/net"
-	"github.com/stellar/gateway/protocols/attachment"
-	"github.com/stellar/gateway/protocols/compliance"
-	"github.com/stellar/gateway/protocols/federation"
-	"github.com/stellar/gateway/protocols/stellartoml"
 	"github.com/stellar/gateway/test"
 	"github.com/stellar/go/build"
+	"github.com/stellar/go/clients/stellartoml"
+	"github.com/stellar/go/protocols/attachment"
+	"github.com/stellar/go/protocols/compliance"
+	"github.com/stellar/go/protocols/federation"
 	"github.com/stellar/go/xdr"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/zenazn/goji/web"
 )
 
@@ -123,31 +123,39 @@ func TestRequestHandlerSend(t *testing.T) {
 				"extra_memo":   {"hello world"},
 			}
 
+			senderInfo := attachment.SenderInfo{FirstName: "John", LastName: "Doe"}
+
 			Convey("it returns SendResponse when success (payment)", func() {
 				authServer := "https://acme.com/auth"
 
 				mockFederationResolver.On(
-					"Resolve",
+					"LookupByAddress",
 					"bob*stellar.org",
-				).Return(federation.Response{
+				).Return(&federation.Response{
 					AccountID: "GAMVF7G4GJC4A7JMFJWLUAEIBFQD5RT3DCB5DC5TJDEKQBBACQ4JZVEE",
 					MemoType:  "text",
 					Memo:      "bob",
-				}, stellartoml.StellarToml{
-					AuthServer: authServer,
 				}, nil).Once()
 
+				mockStellartomlResolver.On(
+					"GetStellarToml",
+					"stellar.org",
+				).Return(&stellartoml.Response{AuthServer: authServer}, nil).Once()
+
 				attachment := attachment.Attachment{
+					Nonce: "nonce",
 					Transaction: attachment.Transaction{
-						Nonce:      "nonce",
 						Route:      "bob",
 						Note:       "",
-						SenderInfo: attachment.SenderInfo{FirstName: "John", LastName: "Doe"},
+						SenderInfo: senderInfo.Map(),
 						Extra:      "hello world",
 					},
 				}
 
-				attachHash := sha256.Sum256(attachment.Marshal())
+				attachmentJSON, err := attachment.Marshal()
+				require.NoError(t, err)
+				attachHash, err := attachment.Hash()
+				require.NoError(t, err)
 
 				txBuilder := build.Transaction(
 					build.SourceAccount{"GAW77Z6GPWXSODJOMF5L5BMX6VMYGEJRKUNBC2CZ725JTQZORK74HQQD"},
@@ -160,22 +168,31 @@ func TestRequestHandlerSend(t *testing.T) {
 					),
 				)
 
-				txB64, _ := xdr.MarshalBase64(txBuilder.TX)
+				txB64, err := xdr.MarshalBase64(txBuilder.TX)
+				require.NoError(t, err)
 
 				authData := compliance.AuthData{
-					Sender:     "alice*stellar.org",
-					NeedInfo:   false,
-					Tx:         txB64,
-					Attachment: string(attachment.Marshal()),
+					Sender:         "alice*stellar.org",
+					NeedInfo:       false,
+					Tx:             txB64,
+					AttachmentJSON: string(attachmentJSON),
 				}
 
-				data := string(authData.Marshal())
-				sig := "YeMlOYWNysyGBfsAe40z9dGgpRsKSQrqFIGAEsyJQ8osnXlLPynvJ2WQDGcBq2n5AA96YZdABhQz5ymqvxfQDw=="
+				authDataJSON, err := authData.Marshal()
+				require.NoError(t, err)
+
+				authRequest := compliance.AuthRequest{
+					DataJSON:  string(authDataJSON),
+					Signature: "YeMlOYWNysyGBfsAe40z9dGgpRsKSQrqFIGAEsyJQ8osnXlLPynvJ2WQDGcBq2n5AA96YZdABhQz5ymqvxfQDw==",
+				}
 
 				authResponse := compliance.AuthResponse{
 					InfoStatus: compliance.AuthStatusOk,
 					TxStatus:   compliance.AuthStatusOk,
 				}
+
+				authResponseJSON, err := authResponse.Marshal()
+				require.NoError(t, err)
 
 				mockHTTPClient.On(
 					"PostForm",
@@ -189,17 +206,17 @@ func TestRequestHandlerSend(t *testing.T) {
 				mockHTTPClient.On(
 					"PostForm",
 					authServer,
-					url.Values{"data": {data}, "sig": {sig}},
+					authRequest.ToURLValues(),
 				).Return(
-					net.BuildHTTPResponse(200, string(authResponse.Marshal())),
+					net.BuildHTTPResponse(200, string(authResponseJSON)),
 					nil,
 				).Once()
 
 				mockSignerVerifier.On(
 					"Sign",
 					c.Keys.SigningSeed,
-					[]byte(data),
-				).Return(sig, nil).Once()
+					[]byte(authRequest.DataJSON),
+				).Return(authRequest.Signature, nil).Once()
 
 				statusCode, response := net.GetResponse(testServer, params)
 				responseString := strings.TrimSpace(string(response))
@@ -229,27 +246,33 @@ func TestRequestHandlerSend(t *testing.T) {
 				authServer := "https://acme.com/auth"
 
 				mockFederationResolver.On(
-					"Resolve",
+					"LookupByAddress",
 					"bob*stellar.org",
-				).Return(federation.Response{
+				).Return(&federation.Response{
 					AccountID: "GAMVF7G4GJC4A7JMFJWLUAEIBFQD5RT3DCB5DC5TJDEKQBBACQ4JZVEE",
 					MemoType:  "text",
 					Memo:      "bob",
-				}, stellartoml.StellarToml{
-					AuthServer: authServer,
 				}, nil).Once()
 
+				mockStellartomlResolver.On(
+					"GetStellarToml",
+					"stellar.org",
+				).Return(&stellartoml.Response{AuthServer: authServer}, nil).Once()
+
 				attachment := attachment.Attachment{
+					Nonce: "nonce",
 					Transaction: attachment.Transaction{
-						Nonce:      "nonce",
 						Route:      "bob",
 						Note:       "",
-						SenderInfo: attachment.SenderInfo{FirstName: "John", LastName: "Doe"},
+						SenderInfo: senderInfo.Map(),
 						Extra:      "hello world",
 					},
 				}
 
-				attachHash := sha256.Sum256(attachment.Marshal())
+				attachmentJSON, err := attachment.Marshal()
+				require.NoError(t, err)
+				attachHash, err := attachment.Hash()
+				require.NoError(t, err)
 
 				txBuilder := build.Transaction(
 					build.SourceAccount{"GAW77Z6GPWXSODJOMF5L5BMX6VMYGEJRKUNBC2CZ725JTQZORK74HQQD"},
@@ -272,19 +295,27 @@ func TestRequestHandlerSend(t *testing.T) {
 				txB64, _ := xdr.MarshalBase64(txBuilder.TX)
 
 				authData := compliance.AuthData{
-					Sender:     "alice*stellar.org",
-					NeedInfo:   false,
-					Tx:         txB64,
-					Attachment: string(attachment.Marshal()),
+					Sender:         "alice*stellar.org",
+					NeedInfo:       false,
+					Tx:             txB64,
+					AttachmentJSON: string(attachmentJSON),
 				}
 
-				data := string(authData.Marshal())
-				sig := "ACamNqa0dF8gf97URhFVKWSD7fmvZKc5At+8dCLM5ySR0HsHySF3G2WuwYP2nKjeqjKmu3U9Z3+u1P10w1KBCA=="
+				authDataJSON, err := authData.Marshal()
+				require.NoError(t, err)
+
+				authRequest := compliance.AuthRequest{
+					DataJSON:  string(authDataJSON),
+					Signature: "ACamNqa0dF8gf97URhFVKWSD7fmvZKc5At+8dCLM5ySR0HsHySF3G2WuwYP2nKjeqjKmu3U9Z3+u1P10w1KBCA==",
+				}
 
 				authResponse := compliance.AuthResponse{
 					InfoStatus: compliance.AuthStatusOk,
 					TxStatus:   compliance.AuthStatusOk,
 				}
+
+				authResponseJSON, err := authResponse.Marshal()
+				require.NoError(t, err)
 
 				mockHTTPClient.On(
 					"PostForm",
@@ -298,17 +329,17 @@ func TestRequestHandlerSend(t *testing.T) {
 				mockHTTPClient.On(
 					"PostForm",
 					authServer,
-					url.Values{"data": {data}, "sig": {sig}},
+					authRequest.ToURLValues(),
 				).Return(
-					net.BuildHTTPResponse(200, string(authResponse.Marshal())),
+					net.BuildHTTPResponse(200, string(authResponseJSON)),
 					nil,
 				).Once()
 
 				mockSignerVerifier.On(
 					"Sign",
 					c.Keys.SigningSeed,
-					[]byte(data),
-				).Return(sig, nil).Once()
+					[]byte(authRequest.DataJSON),
+				).Return(authRequest.Signature, nil).Once()
 
 				statusCode, response := net.GetResponse(testServer, params)
 				responseString := strings.TrimSpace(string(response))

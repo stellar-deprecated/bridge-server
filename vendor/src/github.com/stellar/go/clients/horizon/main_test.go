@@ -39,6 +39,9 @@ var _ = Describe("Horizon", func() {
 			Expect(err).To(BeNil())
 			Expect(account.ID).To(Equal("GBRPYHIL2CI3FNQ4BXLFMNDLFJUNPU2HY3ZMFSHONUCEOASW7QC7OX2H"))
 			Expect(account.PT).To(Equal("1"))
+			Expect(account.Signers[0].Key).To(Equal("XBT5HNPK6DAL6222MAWTLHNOZSDKPJ2AKNEQ5Q324CHHCNQFQ7EHBHZN"))
+			Expect(account.Signers[0].Type).To(Equal("sha256_hash"))
+			Expect(account.Data["test"]).To(Equal("R0NCVkwzU1FGRVZLUkxQNkFKNDdVS0tXWUVCWTQ1V0hBSkhDRVpLVldNVEdNQ1Q0SDROS1FZTEg="))
 			Expect(account.GetNativeBalance()).To(Equal("948522307.6146000"))
 		})
 
@@ -158,10 +161,21 @@ var accountResponse = `{
   ],
   "signers": [
     {
-      "public_key": "GBRPYHIL2CI3FNQ4BXLFMNDLFJUNPU2HY3ZMFSHONUCEOASW7QC7OX2H",
-      "weight": 1
+      "public_key": "XBT5HNPK6DAL6222MAWTLHNOZSDKPJ2AKNEQ5Q324CHHCNQFQ7EHBHZN",
+      "weight": 1,
+      "key": "XBT5HNPK6DAL6222MAWTLHNOZSDKPJ2AKNEQ5Q324CHHCNQFQ7EHBHZN",
+      "type": "sha256_hash"
+    },
+    {
+      "public_key": "GDQHKHMFW5ICTQYM3QWCXMSZ56BNHMQG6NH6SGV3ZNZ72KRHYV5XINCE",
+      "weight": 1,
+      "key": "GDQHKHMFW5ICTQYM3QWCXMSZ56BNHMQG6NH6SGV3ZNZ72KRHYV5XINCE",
+      "type": "ed25519_public_key"
     }
-  ]
+  ],
+  "data": {
+    "test": "R0NCVkwzU1FGRVZLUkxQNkFKNDdVS0tXWUVCWTQ1V0hBSkhDRVpLVldNVEdNQ1Q0SDROS1FZTEg="
+  }
 }`
 
 var notFoundResponse = `{

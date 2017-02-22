@@ -14,11 +14,12 @@ import (
 	"github.com/stellar/gateway/horizon"
 	"github.com/stellar/gateway/protocols"
 	"github.com/stellar/gateway/protocols/bridge"
-	"github.com/stellar/gateway/protocols/compliance"
+	callback "github.com/stellar/gateway/protocols/compliance"
 	"github.com/stellar/gateway/server"
 	"github.com/stellar/go/amount"
 	b "github.com/stellar/go/build"
 	"github.com/stellar/go/keypair"
+	"github.com/stellar/go/protocols/compliance"
 	"github.com/stellar/go/xdr"
 )
 
@@ -75,30 +76,30 @@ func (rh *RequestHandler) Payment(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		var complianceSendResponse compliance.SendResponse
-		err = json.Unmarshal(body, &complianceSendResponse)
+		var callbackSendResponse callback.SendResponse
+		err = json.Unmarshal(body, &callbackSendResponse)
 		if err != nil {
 			log.Error("Error unmarshalling from compliance server")
 			server.Write(w, protocols.InternalServerError)
 			return
 		}
 
-		if complianceSendResponse.AuthResponse.InfoStatus == compliance.AuthStatusPending ||
-			complianceSendResponse.AuthResponse.TxStatus == compliance.AuthStatusPending {
-			log.WithFields(log.Fields{"response": complianceSendResponse}).Info("Compliance response pending")
-			server.Write(w, bridge.NewPaymentPendingError(complianceSendResponse.AuthResponse.Pending))
+		if callbackSendResponse.AuthResponse.InfoStatus == compliance.AuthStatusPending ||
+			callbackSendResponse.AuthResponse.TxStatus == compliance.AuthStatusPending {
+			log.WithFields(log.Fields{"response": callbackSendResponse}).Info("Compliance response pending")
+			server.Write(w, bridge.NewPaymentPendingError(callbackSendResponse.AuthResponse.Pending))
 			return
 		}
 
-		if complianceSendResponse.AuthResponse.InfoStatus == compliance.AuthStatusDenied ||
-			complianceSendResponse.AuthResponse.TxStatus == compliance.AuthStatusDenied {
-			log.WithFields(log.Fields{"response": complianceSendResponse}).Info("Compliance response denied")
+		if callbackSendResponse.AuthResponse.InfoStatus == compliance.AuthStatusDenied ||
+			callbackSendResponse.AuthResponse.TxStatus == compliance.AuthStatusDenied {
+			log.WithFields(log.Fields{"response": callbackSendResponse}).Info("Compliance response denied")
 			server.Write(w, bridge.PaymentDenied)
 			return
 		}
 
 		var tx xdr.Transaction
-		err = xdr.SafeUnmarshalBase64(complianceSendResponse.TransactionXdr, &tx)
+		err = xdr.SafeUnmarshalBase64(callbackSendResponse.TransactionXdr, &tx)
 		if err != nil {
 			log.Error("Error unmarshalling transaction returned by compliance server")
 			server.Write(w, protocols.InternalServerError)
@@ -108,7 +109,7 @@ func (rh *RequestHandler) Payment(w http.ResponseWriter, r *http.Request) {
 		submitResponse, submitError = rh.TransactionSubmitter.SignAndSubmitRawTransaction(request.Source, &tx)
 	} else {
 		// Payment without compliance server
-		destinationObject, _, err := rh.FederationResolver.Resolve(request.Destination)
+		destinationObject, err := rh.FederationResolver.LookupByAddress(request.Destination)
 		if err != nil {
 			log.WithFields(log.Fields{"destination": request.Destination, "err": err}).Print("Cannot resolve address")
 			server.Write(w, bridge.PaymentCannotResolveDestination)

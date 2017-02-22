@@ -19,8 +19,9 @@ import (
 	"github.com/stellar/gateway/horizon"
 	"github.com/stellar/gateway/mocks"
 	"github.com/stellar/gateway/net"
-	"github.com/stellar/gateway/protocols/attachment"
-	"github.com/stellar/gateway/protocols/compliance"
+	callback "github.com/stellar/gateway/protocols/compliance"
+	"github.com/stellar/go/protocols/attachment"
+	"github.com/stellar/go/protocols/compliance"
 	"github.com/stellar/go/strkey"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -277,12 +278,12 @@ func TestPaymentListener(t *testing.T) {
 			attachmentString, _ := json.Marshal(attachment)
 
 			auth := compliance.AuthData{
-				Attachment: string(attachmentString),
+				AttachmentJSON: string(attachmentString),
 			}
 
 			authString, _ := json.Marshal(auth)
 
-			response := compliance.ReceiveResponse{
+			response := callback.ReceiveResponse{
 				Data: string(authString),
 			}
 

@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -17,14 +18,15 @@ import (
 	"github.com/stellar/gateway/db/entities"
 	"github.com/stellar/gateway/mocks"
 	"github.com/stellar/gateway/net"
-	"github.com/stellar/gateway/protocols/attachment"
-	"github.com/stellar/gateway/protocols/compliance"
-	"github.com/stellar/gateway/protocols/stellartoml"
 	"github.com/stellar/gateway/test"
 	"github.com/stellar/go/build"
+	"github.com/stellar/go/clients/stellartoml"
+	"github.com/stellar/go/protocols/attachment"
+	"github.com/stellar/go/protocols/compliance"
 	"github.com/stellar/go/xdr"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 	"github.com/zenazn/goji/web"
 )
 
@@ -80,12 +82,9 @@ func TestRequestHandlerAuth(t *testing.T) {
 			responseString := strings.TrimSpace(string(response))
 			assert.Equal(t, 400, statusCode)
 			expected := test.StringToJSONMap(`{
-  "code": "missing_parameter",
-  "message": "Required parameter is missing.",
-  "data": {
-    "name": "data"
-  }
-}`)
+					  "code": "invalid_parameter",
+					  "message": "Invalid parameter."
+					}`)
 			assert.Equal(t, expected, test.StringToJSONMap(responseString))
 		})
 
@@ -99,12 +98,9 @@ func TestRequestHandlerAuth(t *testing.T) {
 			responseString := strings.TrimSpace(string(response))
 			assert.Equal(t, 400, statusCode)
 			expected := test.StringToJSONMap(`{
-  "code": "invalid_parameter",
-  "message": "Invalid parameter.",
-  "data": {
-    "name": "data"
-  }
-}`)
+					  "code": "invalid_parameter",
+					  "message": "Invalid parameter."
+					}`)
 			assert.Equal(t, expected, test.StringToJSONMap(responseString))
 		})
 
@@ -112,23 +108,49 @@ func TestRequestHandlerAuth(t *testing.T) {
 			mockStellartomlResolver.On(
 				"GetStellarTomlByAddress",
 				"alice*stellar.org",
-			).Return(stellartoml.StellarToml{}, nil).Once()
+			).Return(&stellartoml.Response{}, nil).Once()
+
+			attachHash := sha256.Sum256([]byte("{}"))
+
+			txBuilder := build.Transaction(
+				build.SourceAccount{"GAW77Z6GPWXSODJOMF5L5BMX6VMYGEJRKUNBC2CZ725JTQZORK74HQQD"},
+				build.Sequence{0},
+				build.TestNetwork,
+				build.MemoHash{attachHash},
+				build.Payment(
+					build.Destination{"GAMVF7G4GJC4A7JMFJWLUAEIBFQD5RT3DCB5DC5TJDEKQBBACQ4JZVEE"},
+					build.CreditAmount{"USD", "GAMVF7G4GJC4A7JMFJWLUAEIBFQD5RT3DCB5DC5TJDEKQBBACQ4JZVEE", "20"},
+				),
+			)
+
+			txB64, err := xdr.MarshalBase64(txBuilder.TX)
+			require.NoError(t, err)
+
+			authData := compliance.AuthData{
+				Sender:         "alice*stellar.org",
+				NeedInfo:       false,
+				Tx:             txB64,
+				AttachmentJSON: "{}",
+			}
+
+			authDataJSON, err := authData.Marshal()
+			require.NoError(t, err)
 
 			params := url.Values{
-				"data": {"{\"sender\":\"alice*stellar.org\",\"need_info\":false,\"tx\":\"AAAAAC3/58Z9rycNLmF6voWX9VmDETFVGhFoWf66mcMuir/DAAAAZAAAAAAAAAAAAAAAAAAAAAO5TSe5k00+CKUuUtfafav6xITv43pTgO6QiPes4u/N6QAAAAEAAAAAAAAAAgAAAAFVU0QAAAAAAEbpO2riZmlZMkHuBxUBYAAas3hWyo9VL1IOdnfXAVFBAAAAADuaygAAAAAAGVL83DJFwH0sKmy6AIgJYD7GexiD0YuzSMioBCAUOJwAAAABVVNEAAAAAAAZUvzcMkXAfSwqbLoAiAlgPsZ7GIPRi7NIyKgEIBQ4nAAAAAAL68IAAAAAAgAAAAAAAAABRVVSAAAAAAALt4SwWfv1PIJvDRMenW0zu91YxZbphRFLA4O+gbAaigAAAAA=\",\"memo\":\"hello world\"}"},
-				"sig":  {"bad sig"},
+				"data": {string(authDataJSON)},
+				"sig":  {"ACamNqa0dF8gf97URhFVKWSD7fmvZKc5At+8dCLM5ySR0HsHySF3G2WuwYP2nKjeqjKmu3U9Z3+u1P10w1KBCA=="},
 			}
 
 			statusCode, response := net.GetResponse(testServer, params)
 			responseString := strings.TrimSpace(string(response))
 			assert.Equal(t, 400, statusCode)
 			expected := test.StringToJSONMap(`{
-  "code": "invalid_parameter",
-  "message": "Invalid parameter.",
-  "data": {
-    "name": "data.sender"
-  }
-}`)
+		  "code": "invalid_parameter",
+		  "message": "Invalid parameter.",
+		  "data": {
+		    "name": "data.sender"
+		  }
+		}`)
 			assert.Equal(t, expected, test.StringToJSONMap(responseString))
 		})
 
@@ -136,12 +158,42 @@ func TestRequestHandlerAuth(t *testing.T) {
 			mockStellartomlResolver.On(
 				"GetStellarTomlByAddress",
 				"alice*stellar.org",
-			).Return(stellartoml.StellarToml{
+			).Return(&stellartoml.Response{
 				SigningKey: "GBYJZW5XFAI6XV73H5SAIUYK6XZI4CGGVBUBO3ANA2SV7KKDAXTV6AEB",
 			}, nil).Once()
 
+			attachment := attachment.Attachment{}
+			attachHash, err := attachment.Hash()
+			require.NoError(t, err)
+			attachmentJSON, err := attachment.Marshal()
+			require.NoError(t, err)
+
+			txBuilder := build.Transaction(
+				build.SourceAccount{"GAW77Z6GPWXSODJOMF5L5BMX6VMYGEJRKUNBC2CZ725JTQZORK74HQQD"},
+				build.Sequence{0},
+				build.TestNetwork,
+				build.MemoHash{attachHash},
+				build.Payment(
+					build.Destination{"GAMVF7G4GJC4A7JMFJWLUAEIBFQD5RT3DCB5DC5TJDEKQBBACQ4JZVEE"},
+					build.CreditAmount{"USD", "GAMVF7G4GJC4A7JMFJWLUAEIBFQD5RT3DCB5DC5TJDEKQBBACQ4JZVEE", "20"},
+				),
+			)
+
+			txB64, err := xdr.MarshalBase64(txBuilder.TX)
+			require.NoError(t, err)
+
+			authData := compliance.AuthData{
+				Sender:         "alice*stellar.org",
+				NeedInfo:       false,
+				Tx:             txB64,
+				AttachmentJSON: string(attachmentJSON),
+			}
+
+			authDataJSON, err := authData.Marshal()
+			require.NoError(t, err)
+
 			params := url.Values{
-				"data": {"{\"sender\":\"alice*stellar.org\",\"need_info\":false,\"tx\":\"AAAAAC3/58Z9rycNLmF6voWX9VmDETFVGhFoWf66mcMuir/DAAAAZAAAAAAAAAAAAAAAAAAAAAO5TSe5k00+CKUuUtfafav6xITv43pTgO6QiPes4u/N6QAAAAEAAAAAAAAAAgAAAAFVU0QAAAAAAEbpO2riZmlZMkHuBxUBYAAas3hWyo9VL1IOdnfXAVFBAAAAADuaygAAAAAAGVL83DJFwH0sKmy6AIgJYD7GexiD0YuzSMioBCAUOJwAAAABVVNEAAAAAAAZUvzcMkXAfSwqbLoAiAlgPsZ7GIPRi7NIyKgEIBQ4nAAAAAAL68IAAAAAAgAAAAAAAAABRVVSAAAAAAALt4SwWfv1PIJvDRMenW0zu91YxZbphRFLA4O+gbAaigAAAAA=\",\"memo\":\"hello world\"}"},
+				"data": {string(authDataJSON)},
 				"sig":  {"ACamNqa0dF8gf97URhFVKWSD7fmvZKc5At+8dCLM5ySR0HsHySF3G2WuwYP2nKjeqjKmu3U9Z3+u1P10w1KBCA=="},
 			}
 
@@ -166,8 +218,12 @@ func TestRequestHandlerAuth(t *testing.T) {
 		})
 
 		Convey("When all params are valid", func() {
-			attachHash := sha256.Sum256([]byte("{}"))
+			attachment := attachment.Attachment{}
+			attachHash, err := attachment.Hash()
+			require.NoError(t, err)
 			attachHashB64 := base64.StdEncoding.EncodeToString(attachHash[:])
+			attachmentJSON, err := attachment.Marshal()
+			require.NoError(t, err)
 
 			txBuilder := build.Transaction(
 				build.SourceAccount{"GAW77Z6GPWXSODJOMF5L5BMX6VMYGEJRKUNBC2CZ725JTQZORK74HQQD"},
@@ -180,18 +236,30 @@ func TestRequestHandlerAuth(t *testing.T) {
 				),
 			)
 
-			txB64, _ := xdr.MarshalBase64(txBuilder.TX)
-			txHash, _ := txBuilder.HashHex()
+			txB64, err := xdr.MarshalBase64(txBuilder.TX)
+			require.NoError(t, err)
+			txHash, err := txBuilder.HashHex()
+			require.NoError(t, err)
+
+			authData := compliance.AuthData{
+				Sender:         "alice*stellar.org",
+				NeedInfo:       false,
+				Tx:             txB64,
+				AttachmentJSON: string(attachmentJSON),
+			}
+
+			authDataJSON, err := authData.Marshal()
+			require.NoError(t, err)
 
 			params := url.Values{
-				"data": {`{"sender":"alice*stellar.org","need_info":false,"tx":"` + txB64 + `","attachment":"{}"}`},
+				"data": {string(authDataJSON)},
 				"sig":  {"ACamNqa0dF8gf97URhFVKWSD7fmvZKc5At+8dCLM5ySR0HsHySF3G2WuwYP2nKjeqjKmu3U9Z3+u1P10w1KBCA=="},
 			}
 
 			mockStellartomlResolver.On(
 				"GetStellarTomlByAddress",
 				"alice*stellar.org",
-			).Return(stellartoml.StellarToml{
+			).Return(&stellartoml.Response{
 				SigningKey: "GBYJZW5XFAI6XV73H5SAIUYK6XZI4CGGVBUBO3ANA2SV7KKDAXTV6AEB",
 			}, nil).Once()
 
@@ -241,16 +309,19 @@ func TestRequestHandlerAuth(t *testing.T) {
 			FetchInfo: "http://fetch_info",
 		}
 
+		senderInfo := attachment.SenderInfo{FirstName: "John", LastName: "Doe"}
+
 		attachment := attachment.Attachment{
 			Transaction: attachment.Transaction{
 				Route:      "bob*acme.com",
 				Note:       "Happy birthday",
-				SenderInfo: attachment.SenderInfo{FirstName: "John", LastName: "Doe"},
+				SenderInfo: senderInfo.Map(),
 				Extra:      "extra",
 			},
 		}
 
-		attachHash := sha256.Sum256(attachment.Marshal())
+		attachHash, err := attachment.Hash()
+		require.NoError(t, err)
 		attachHashB64 := base64.StdEncoding.EncodeToString(attachHash[:])
 
 		txBuilder := build.Transaction(
@@ -267,23 +338,32 @@ func TestRequestHandlerAuth(t *testing.T) {
 		txB64, _ := xdr.MarshalBase64(txBuilder.TX)
 		txHash, _ := txBuilder.HashHex()
 
+		attachmentJSON, err := attachment.Marshal()
+		require.NoError(t, err)
+
+		senderInfoJSON, err := json.Marshal(attachment.Transaction.SenderInfo)
+		require.NoError(t, err)
+
 		Convey("When all params are valid (NeedInfo = `false`)", func() {
 			authData := compliance.AuthData{
-				Sender:     "alice*stellar.org",
-				NeedInfo:   false,
-				Tx:         txB64,
-				Attachment: string(attachment.Marshal()),
+				Sender:         "alice*stellar.org",
+				NeedInfo:       false,
+				Tx:             txB64,
+				AttachmentJSON: string(attachmentJSON),
 			}
 
+			authDataJSON, err := authData.Marshal()
+			require.NoError(t, err)
+
 			params := url.Values{
-				"data": {string(authData.Marshal())},
+				"data": {string(authDataJSON)},
 				"sig":  {"Q2cQVOn/A+aOxrLLeUPwHmBm3LMvlfXN8tDHo4Oi6SxWWueMTDfRkC4XvRX4emLij+Npo7/GfrZ82CnT5yB5Dg=="},
 			}
 
 			mockStellartomlResolver.On(
 				"GetStellarTomlByAddress",
 				"alice*stellar.org",
-			).Return(stellartoml.StellarToml{
+			).Return(&stellartoml.Response{
 				SigningKey: "GBYJZW5XFAI6XV73H5SAIUYK6XZI4CGGVBUBO3ANA2SV7KKDAXTV6AEB",
 			}, nil).Once()
 
@@ -298,7 +378,7 @@ func TestRequestHandlerAuth(t *testing.T) {
 				mockHTTPClient.On(
 					"PostForm",
 					"http://sanctions",
-					url.Values{"sender": {string(attachment.Transaction.SenderInfo.Marshal())}},
+					url.Values{"sender": {string(senderInfoJSON)}},
 				).Return(
 					net.BuildHTTPResponse(403, "forbidden"),
 					nil,
@@ -318,7 +398,7 @@ func TestRequestHandlerAuth(t *testing.T) {
 				mockHTTPClient.On(
 					"PostForm",
 					"http://sanctions",
-					url.Values{"sender": {string(attachment.Transaction.SenderInfo.Marshal())}},
+					url.Values{"sender": {string(senderInfoJSON)}},
 				).Return(
 					net.BuildHTTPResponse(202, "pending"),
 					nil,
@@ -339,7 +419,7 @@ func TestRequestHandlerAuth(t *testing.T) {
 				mockHTTPClient.On(
 					"PostForm",
 					"http://sanctions",
-					url.Values{"sender": {string(attachment.Transaction.SenderInfo.Marshal())}},
+					url.Values{"sender": {string(senderInfoJSON)}},
 				).Return(
 					net.BuildHTTPResponse(200, "ok"),
 					nil,
@@ -377,21 +457,24 @@ func TestRequestHandlerAuth(t *testing.T) {
 
 		Convey("When all params are valid (NeedInfo = `true`)", func() {
 			authData := compliance.AuthData{
-				Sender:     "alice*stellar.org",
-				NeedInfo:   true,
-				Tx:         txB64,
-				Attachment: string(attachment.Marshal()),
+				Sender:         "alice*stellar.org",
+				NeedInfo:       true,
+				Tx:             txB64,
+				AttachmentJSON: string(attachmentJSON),
 			}
 
+			authDataJSON, err := authData.Marshal()
+			require.NoError(t, err)
+
 			params := url.Values{
-				"data": {string(authData.Marshal())},
+				"data": {string(authDataJSON)},
 				"sig":  {"Q2cQVOn/A+aOxrLLeUPwHmBm3LMvlfXN8tDHo4Oi6SxWWueMTDfRkC4XvRX4emLij+Npo7/GfrZ82CnT5yB5Dg=="},
 			}
 
 			mockStellartomlResolver.On(
 				"GetStellarTomlByAddress",
 				"alice*stellar.org",
-			).Return(stellartoml.StellarToml{
+			).Return(&stellartoml.Response{
 				SigningKey: "GBYJZW5XFAI6XV73H5SAIUYK6XZI4CGGVBUBO3ANA2SV7KKDAXTV6AEB",
 			}, nil).Once()
 
@@ -407,7 +490,7 @@ func TestRequestHandlerAuth(t *testing.T) {
 				"PostForm",
 				"http://sanctions",
 				url.Values{
-					"sender": {string(attachment.Transaction.SenderInfo.Marshal())},
+					"sender": {string(senderInfoJSON)},
 				},
 			).Return(
 				net.BuildHTTPResponse(200, "ok"),
@@ -419,7 +502,7 @@ func TestRequestHandlerAuth(t *testing.T) {
 					"PostForm",
 					"http://ask_user",
 					url.Values{
-						"sender":       {string(attachment.Transaction.SenderInfo.Marshal())},
+						"sender":       {string(senderInfoJSON)},
 						"note":         {attachment.Transaction.Note},
 						"amount":       {"20.0000000"},
 						"asset_code":   {"USD"},
@@ -445,7 +528,7 @@ func TestRequestHandlerAuth(t *testing.T) {
 					"PostForm",
 					"http://ask_user",
 					url.Values{
-						"sender":       {string(attachment.Transaction.SenderInfo.Marshal())},
+						"sender":       {string(senderInfoJSON)},
 						"note":         {attachment.Transaction.Note},
 						"amount":       {"20.0000000"},
 						"asset_code":   {"USD"},
@@ -472,7 +555,7 @@ func TestRequestHandlerAuth(t *testing.T) {
 					"PostForm",
 					"http://ask_user",
 					url.Values{
-						"sender":       {string(attachment.Transaction.SenderInfo.Marshal())},
+						"sender":       {string(senderInfoJSON)},
 						"note":         {attachment.Transaction.Note},
 						"amount":       {"20.0000000"},
 						"asset_code":   {"USD"},
@@ -499,7 +582,7 @@ func TestRequestHandlerAuth(t *testing.T) {
 					"PostForm",
 					"http://ask_user",
 					url.Values{
-						"sender":       {string(attachment.Transaction.SenderInfo.Marshal())},
+						"sender":       {string(senderInfoJSON)},
 						"note":         {attachment.Transaction.Note},
 						"amount":       {"20.0000000"},
 						"asset_code":   {"USD"},

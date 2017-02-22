@@ -2,6 +2,7 @@ package federation
 
 import (
 	"net/http"
+	"net/url"
 	"testing"
 
 	"github.com/stellar/go/support/db/dbtest"
@@ -32,7 +33,7 @@ func TestHandler(t *testing.T) {
 	server := httptest.NewServer(t, handler)
 	defer server.Close()
 
-	// Good forward request
+	// Good name request
 	server.GET("/federation").
 		WithQuery("type", "name").
 		WithQuery("q", "scott*stellar.org").
@@ -137,7 +138,7 @@ func TestHandler(t *testing.T) {
 
 }
 
-func TestForwardOnlyHandler(t *testing.T) {
+func TestNameHandler(t *testing.T) {
 	db := dbtest.Postgres(t).Load(`
     CREATE TABLE people (id character varying, name character varying, domain character varying);
     INSERT INTO people (id, name, domain) VALUES 
@@ -158,7 +159,7 @@ func TestForwardOnlyHandler(t *testing.T) {
 	server := httptest.NewServer(t, handler)
 	defer server.Close()
 
-	// Good forward request
+	// Good name request
 	server.GET("/federation").
 		WithQuery("type", "name").
 		WithQuery("q", "scott*stellar.org").
@@ -177,4 +178,54 @@ func TestForwardOnlyHandler(t *testing.T) {
 		JSON().Object().
 		ContainsKey("code").
 		ValueEqual("code", "not_implemented")
+}
+
+type ForwardTestDriver struct{}
+
+func (fd ForwardTestDriver) LookupForwardingRecord(query url.Values) (*Record, error) {
+	if query.Get("acct") == "1234" {
+		return &Record{
+			AccountID: "GD2GJPL3UOK5LX7TWXOACK2ZPWPFSLBNKL3GTGH6BLBNISK4BGWMFBBG",
+			MemoType:  "id",
+			Memo:      "1",
+		}, nil
+	} else {
+		return nil, nil
+	}
+}
+
+func (fd ForwardTestDriver) LookupRecord(name string, domain string) (*Record, error) {
+	return nil, nil
+}
+
+func TestForwardHandler(t *testing.T) {
+	handler := &Handler{ForwardTestDriver{}}
+	server := httptest.NewServer(t, handler)
+	defer server.Close()
+
+	// Good forward request
+	server.GET("/federation").
+		WithQuery("type", "forward").
+		WithQuery("forward_type", "bank_account").
+		WithQuery("acct", "1234").
+		Expect().
+		Status(http.StatusOK).
+		JSON().Object().
+		ContainsKey("account_id").
+		ValueEqual("account_id", "GD2GJPL3UOK5LX7TWXOACK2ZPWPFSLBNKL3GTGH6BLBNISK4BGWMFBBG").
+		ContainsKey("memo_type").
+		ValueEqual("memo_type", "id").
+		ContainsKey("memo").
+		ValueEqual("memo", "1")
+
+	// Not Found forward request
+	server.GET("/federation").
+		WithQuery("type", "forward").
+		WithQuery("forward_type", "bank_account").
+		WithQuery("acct", "8888").
+		Expect().
+		Status(http.StatusNotFound).
+		JSON().Object().
+		ContainsKey("code").
+		ValueEqual("code", "not_found")
 }

@@ -4,9 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 
 	"github.com/pkg/errors"
 	"github.com/stellar/go/address"
+	proto "github.com/stellar/go/protocols/federation"
 	"github.com/stellar/go/support/log"
 )
 
@@ -14,7 +16,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	typ := r.URL.Query().Get("type")
 	q := r.URL.Query().Get("q")
 
-	if q == "" {
+	if typ != "forward" && q == "" {
 		h.writeJSON(w, ErrorResponse{
 			Code:    "invalid_request",
 			Message: "q parameter is blank",
@@ -27,6 +29,8 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		h.lookupByName(w, q)
 	case "id":
 		h.lookupByID(w, q)
+	case "forward":
+		h.lookupByForward(w, r.URL.Query())
 	case "txid":
 		h.failNotImplemented(w, "txid type queries are not supported")
 	default:
@@ -35,7 +39,6 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			Message: fmt.Sprintf("invalid type: '%s'", typ),
 		}, http.StatusBadRequest)
 	}
-
 }
 
 func (h *Handler) failNotFound(w http.ResponseWriter) {
@@ -73,7 +76,7 @@ func (h *Handler) lookupByID(w http.ResponseWriter, q string) {
 		return
 	}
 
-	h.writeJSON(w, SuccessResponse{
+	h.writeJSON(w, proto.Response{
 		StellarAddress: address.New(rec.Name, rec.Domain),
 		AccountID:      q,
 	}, http.StatusOK)
@@ -91,7 +94,7 @@ func (h *Handler) lookupByName(w http.ResponseWriter, q string) {
 
 	rec, err := h.Driver.LookupRecord(name, domain)
 	if err != nil {
-		h.writeError(w, errors.Wrap(err, "lookup record"))
+		h.writeError(w, errors.Wrap(err, "lookupByName"))
 		return
 	}
 	if rec == nil {
@@ -99,11 +102,36 @@ func (h *Handler) lookupByName(w http.ResponseWriter, q string) {
 		return
 	}
 
-	h.writeJSON(w, SuccessResponse{
+	h.writeJSON(w, proto.Response{
 		StellarAddress: q,
 		AccountID:      rec.AccountID,
 		Memo:           rec.Memo,
 		MemoType:       rec.MemoType,
+	}, http.StatusOK)
+}
+
+func (h *Handler) lookupByForward(w http.ResponseWriter, query url.Values) {
+	fd, ok := h.Driver.(ForwardDriver)
+
+	if !ok {
+		h.failNotImplemented(w, "forward type queries are not supported")
+		return
+	}
+
+	rec, err := fd.LookupForwardingRecord(query)
+	if err != nil {
+		h.writeError(w, errors.Wrap(err, "lookupByForward"))
+		return
+	}
+	if rec == nil {
+		h.failNotFound(w)
+		return
+	}
+
+	h.writeJSON(w, proto.Response{
+		AccountID: rec.AccountID,
+		Memo:      rec.Memo,
+		MemoType:  rec.MemoType,
 	}, http.StatusOK)
 }
 

@@ -83,3 +83,42 @@ func TestSeedValidator(t *testing.T) {
 	_, ok = fields["WrongType"]
 	assert.True(t, ok, "WrongType is not an invalid field")
 }
+
+func TestUndecoded(t *testing.T) {
+	var val struct {
+		Test string `toml:"test" valid:"optional"`
+		TLS  struct {
+			CertificateFile string `toml:"certificate-file" valid:"required"`
+			PrivateKeyFile  string `toml:"private-key-file" valid:"required"`
+		} `valid:"optional"`
+	}
+
+	// Notice _ in certificate_file
+	toml := `test="abc"
+[tls]
+certificate_file="hello"
+private-key-file="world"`
+
+	err := decode(toml, &val)
+	require.Error(t, err)
+	assert.Equal(t, "Unknown fields: [tls.certificate_file]", err.Error())
+}
+
+func TestCorrect(t *testing.T) {
+	var val struct {
+		Test string `toml:"test" valid:"optional"`
+		TLS  struct {
+			CertificateFile string `toml:"certificate-file" valid:"required"`
+			PrivateKeyFile  string `toml:"private-key-file" valid:"required"`
+		} `valid:"optional"`
+	}
+
+	// Notice _ in certificate_file
+	toml := `test="abc"
+[tls]
+certificate-file="hello"
+private-key-file="world"`
+
+	err := decode(toml, &val)
+	require.NoError(t, err)
+}

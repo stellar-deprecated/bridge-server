@@ -45,20 +45,6 @@ type HTTP interface {
 	Get(url string) (*http.Response, error)
 }
 
-// IDResponse represents the result of a federation request whose type is
-// "id", i.e.  A reverse federation request.
-type IDResponse struct {
-	Address string `json:"stellar_address"`
-}
-
-// NameResponse represents the result of a federation request whose type is
-// "name", i.e.  A forward federation request.
-type NameResponse struct {
-	AccountID string `json:"account_id"`
-	MemoType  string `json:"memo_type"`
-	Memo      string `json:"memo"`
-}
-
 // StellarTOML represents a client that can resolve a given domain name to
 // stellar.toml file.  The response is used to find the federation server that a
 // query should be made against.

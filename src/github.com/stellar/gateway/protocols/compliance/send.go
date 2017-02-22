@@ -8,6 +8,7 @@ import (
 
 	"github.com/stellar/gateway/protocols"
 	"github.com/stellar/go/keypair"
+	proto "github.com/stellar/go/protocols/compliance"
 )
 
 // SendRequest represents request sent to /send endpoint of compliance server
@@ -84,7 +85,7 @@ func validateStellarAddress(address string) bool {
 // SendResponse represents response returned by /send endpoint
 type SendResponse struct {
 	protocols.SuccessResponse
-	AuthResponse `json:"auth_response"`
+	proto.AuthResponse `json:"auth_response"`
 	// xdr.Transaction base64-encoded. Sequence number of this transaction will be equal 0.
 	TransactionXdr string `json:"transaction_xdr,omitempty"`
 }

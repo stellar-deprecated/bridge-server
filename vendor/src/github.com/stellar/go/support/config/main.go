@@ -3,6 +3,9 @@
 package config
 
 import (
+	"fmt"
+	"io/ioutil"
+
 	"github.com/BurntSushi/toml"
 	"github.com/asaskevich/govalidator"
 	"github.com/stellar/go/strkey"
@@ -18,9 +21,24 @@ type InvalidConfigError struct {
 // Read takes the TOML configuration file at `path`, parses it into `dest` and
 // then uses github.com/asaskevich/govalidator to validate the struct.
 func Read(path string, dest interface{}) error {
-	_, err := toml.DecodeFile(path, dest)
+	bs, err := ioutil.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	return decode(string(bs), dest)
+}
+
+func decode(content string, dest interface{}) error {
+	metadata, err := toml.Decode(content, dest)
 	if err != nil {
 		return errors.Wrap(err, "decode-file failed")
+	}
+
+	// Undecoded keys correspond to keys in the TOML document
+	// that do not have a concrete type in config struct.
+	undecoded := metadata.Undecoded()
+	if len(undecoded) > 0 {
+		return errors.New("Unknown fields: " + fmt.Sprintf("%+v", undecoded))
 	}
 
 	valid, err := govalidator.ValidateStruct(dest)

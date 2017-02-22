@@ -7,8 +7,8 @@ import (
 
 	"github.com/stellar/gateway/db/entities"
 	"github.com/stellar/gateway/horizon"
-	"github.com/stellar/gateway/protocols/federation"
-	"github.com/stellar/gateway/protocols/stellartoml"
+	"github.com/stellar/go/clients/stellartoml"
+	fproto "github.com/stellar/go/protocols/federation"
 	"github.com/stellar/go/xdr"
 	"github.com/stretchr/testify/mock"
 )
@@ -35,17 +35,23 @@ type MockFederationResolver struct {
 	mock.Mock
 }
 
-// Resolve is a mocking a method
-func (m *MockFederationResolver) Resolve(address string) (response federation.Response, stellarToml stellartoml.StellarToml, err error) {
-	a := m.Called(address)
-	return a.Get(0).(federation.Response), a.Get(1).(stellartoml.StellarToml), a.Error(2)
+// LookupByAddress is a mocking a method
+func (m *MockFederationResolver) LookupByAddress(addy string) (*fproto.Response, error) {
+	a := m.Called(addy)
+	return a.Get(0).(*fproto.Response), a.Error(1)
 }
 
-// GetDestination is a mocking a method
-func (m *MockFederationResolver) GetDestination(federationURL, address string) (response federation.Response, err error) {
-	a := m.Called(federationURL, address)
-	return a.Get(0).(federation.Response), a.Error(1)
+// LookupByAccountID is a mocking a method
+func (m *MockFederationResolver) LookupByAccountID(aid string) (*fproto.Response, error) {
+	a := m.Called(aid)
+	return a.Get(0).(*fproto.Response), a.Error(1)
 }
+
+// // GetDestination is a mocking a method
+// func (m *MockFederationResolver) GetDestination(federationURL, address string) (response federation.Response, err error) {
+// 	a := m.Called(federationURL, address)
+// 	return a.Get(0).(federation.Response), a.Error(1)
+// }
 
 // MockHTTPClient ...
 type MockHTTPClient struct {
@@ -163,15 +169,16 @@ type MockStellartomlResolver struct {
 }
 
 // GetStellarToml is a mocking a method
-func (m *MockStellartomlResolver) GetStellarToml(domain string) (stellarToml stellartoml.StellarToml, err error) {
+
+func (m *MockStellartomlResolver) GetStellarToml(domain string) (resp *stellartoml.Response, err error) {
 	a := m.Called(domain)
-	return a.Get(0).(stellartoml.StellarToml), a.Error(1)
+	return a.Get(0).(*stellartoml.Response), a.Error(1)
 }
 
 // GetStellarTomlByAddress is a mocking a method
-func (m *MockStellartomlResolver) GetStellarTomlByAddress(address string) (stellarToml stellartoml.StellarToml, err error) {
-	a := m.Called(address)
-	return a.Get(0).(stellartoml.StellarToml), a.Error(1)
+func (m *MockStellartomlResolver) GetStellarTomlByAddress(addy string) (*stellartoml.Response, error) {
+	a := m.Called(addy)
+	return a.Get(0).(*stellartoml.Response), a.Error(1)
 }
 
 // MockTransactionSubmitter ...
