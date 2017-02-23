@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestMap(t *testing.T) {
@@ -18,7 +19,8 @@ func TestMap(t *testing.T) {
 		DateOfBirth: "h",
 	}
 
-	m := senderInfo.Map()
+	m, err := senderInfo.Map()
+	require.NoError(t, err)
 	assert.Equal(t, "a", m["first_name"])
 	assert.Equal(t, "b", m["middle_name"])
 	assert.Equal(t, "c", m["last_name"])

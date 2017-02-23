@@ -310,12 +310,14 @@ func TestRequestHandlerAuth(t *testing.T) {
 		}
 
 		senderInfo := attachment.SenderInfo{FirstName: "John", LastName: "Doe"}
+		senderInfoMap, err := senderInfo.Map()
+		require.NoError(t, err)
 
 		attachment := attachment.Attachment{
 			Transaction: attachment.Transaction{
 				Route:      "bob*acme.com",
 				Note:       "Happy birthday",
-				SenderInfo: senderInfo.Map(),
+				SenderInfo: senderInfoMap,
 				Extra:      "extra",
 			},
 		}

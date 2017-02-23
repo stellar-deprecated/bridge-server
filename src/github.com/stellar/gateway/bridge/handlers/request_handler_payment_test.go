@@ -96,7 +96,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 				"LookupByAddress",
 				"GD3YBOYIUVLU",
 			).Return(
-				&federation.Response{AccountID: "GD3YBOYIUVLU"},
+				&federation.NameResponse{AccountID: "GD3YBOYIUVLU"},
 				nil,
 			).Once()
 
@@ -127,7 +127,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 					"LookupByAddress",
 					"bob*stellar.org",
 				).Return(
-					&federation.Response{},
+					&federation.NameResponse{},
 					errors.New("stellar.toml response status code indicates error"),
 				).Once()
 
@@ -155,7 +155,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 					"LookupByAddress",
 					"bob*stellar.org",
 				).Return(
-					&federation.Response{AccountID: "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632"},
+					&federation.NameResponse{AccountID: "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632"},
 					nil,
 				).Once()
 
@@ -214,7 +214,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 					"LookupByAddress",
 					"bob*stellar.org",
 				).Return(
-					&federation.Response{
+					&federation.NameResponse{
 						AccountID: "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632",
 						MemoType:  "text",
 						Memo:      "125",
@@ -279,7 +279,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 				"LookupByAddress",
 				"GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632",
 			).Return(
-				&federation.Response{AccountID: "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632"},
+				&federation.NameResponse{AccountID: "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632"},
 				nil,
 			).Once()
 
@@ -310,7 +310,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 				"LookupByAddress",
 				"GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632",
 			).Return(
-				&federation.Response{AccountID: "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632"},
+				&federation.NameResponse{AccountID: "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632"},
 				nil,
 			).Once()
 
@@ -360,7 +360,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 				"LookupByAddress",
 				"GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632",
 			).Return(
-				&federation.Response{AccountID: "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632"},
+				&federation.NameResponse{AccountID: "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632"},
 				nil,
 			).Once()
 
@@ -411,7 +411,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 				"LookupByAddress",
 				"GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632",
 			).Return(
-				&federation.Response{AccountID: "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632"},
+				&federation.NameResponse{AccountID: "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632"},
 				nil,
 			).Once()
 
@@ -466,7 +466,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 				"LookupByAddress",
 				"GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632",
 			).Return(
-				&federation.Response{AccountID: "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632"},
+				&federation.NameResponse{AccountID: "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632"},
 				nil,
 			).Once()
 
@@ -779,7 +779,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 				"LookupByAddress",
 				"GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632",
 			).Return(
-				&federation.Response{AccountID: "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632"},
+				&federation.NameResponse{AccountID: "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632"},
 				nil,
 			).Once()
 

@@ -4,7 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 
-	"github.com/stellar/go/address"
+	"github.com/asaskevich/govalidator"
 	"github.com/stellar/go/protocols/attachment"
 	"github.com/stellar/go/support/errors"
 	"github.com/stellar/go/xdr"
@@ -26,11 +26,13 @@ func (d AuthData) Attachment() (attachment attachment.Attachment, err error) {
 //  * `Tx` is valid and it's memo_hash equals sha256 hash of attachment preimage
 //  * `Attachment` is valid JSON
 func (d AuthData) Validate() error {
-	_, _, err := address.Split(d.Sender)
-	if err != nil {
-		return errors.New("Invalid Data.Sender value")
+	valid, err := govalidator.ValidateStruct(d)
+
+	if !valid {
+		return err
 	}
 
+	// Check if Tx is a valid transaction
 	var tx xdr.Transaction
 	err = xdr.SafeUnmarshalBase64(d.Tx, &tx)
 	if err != nil {
@@ -39,13 +41,6 @@ func (d AuthData) Validate() error {
 
 	if tx.Memo.Hash == nil {
 		return errors.New("Memo.Hash is nil")
-	}
-
-	// Check if d.AttachmentJSON is valid JSON
-	attachment := attachment.Attachment{}
-	err = json.Unmarshal([]byte(d.AttachmentJSON), &attachment)
-	if err != nil {
-		return errors.New("Attachment is not valid JSON")
 	}
 
 	// Check if Memo.Hash is sha256 hash of attachment preimage

@@ -458,7 +458,7 @@
 		{
 			"importpath": "github.com/stellar/go",
 			"repository": "https://github.com/stellar/go",
-			"revision": "f50ccb9ebdc4b40aa1d6ef43c3354452b357dbee",
+			"revision": "4fc169f24815d36ad0cd08a8f85f961f654e5305",
 			"branch": "auth-handlers"
 		},
 		{

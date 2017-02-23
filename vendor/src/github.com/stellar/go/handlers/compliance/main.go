@@ -66,3 +66,5 @@ type AuthHandler struct {
 	// memo preimage (attachment) can be fetched when a transaction is sent.
 	PersistTransaction func(data compliance.AuthData) error
 }
+
+var _ Strategy = &CallbackStrategy{}

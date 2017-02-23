@@ -36,15 +36,15 @@ type MockFederationResolver struct {
 }
 
 // LookupByAddress is a mocking a method
-func (m *MockFederationResolver) LookupByAddress(addy string) (*fproto.Response, error) {
+func (m *MockFederationResolver) LookupByAddress(addy string) (*fproto.NameResponse, error) {
 	a := m.Called(addy)
-	return a.Get(0).(*fproto.Response), a.Error(1)
+	return a.Get(0).(*fproto.NameResponse), a.Error(1)
 }
 
 // LookupByAccountID is a mocking a method
-func (m *MockFederationResolver) LookupByAccountID(aid string) (*fproto.Response, error) {
+func (m *MockFederationResolver) LookupByAccountID(aid string) (*fproto.IDResponse, error) {
 	a := m.Called(aid)
-	return a.Get(0).(*fproto.Response), a.Error(1)
+	return a.Get(0).(*fproto.IDResponse), a.Error(1)
 }
 
 // // GetDestination is a mocking a method

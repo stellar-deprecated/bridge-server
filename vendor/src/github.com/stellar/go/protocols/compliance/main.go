@@ -15,21 +15,21 @@ const (
 // AuthRequest represents auth request sent to compliance server
 type AuthRequest struct {
 	// Marshalled AuthData JSON object (because of the attached signature, json can be marshalled to infinite number of valid JSON strings)
-	DataJSON string `name:"data"`
+	DataJSON string `name:"data" valid:"required,json"`
 	// Signature of sending FI
-	Signature string `name:"sig"`
+	Signature string `name:"sig" valid:"required,base64"`
 }
 
 // AuthData represents how AuthRequest.Data field looks like.
 type AuthData struct {
 	// The stellar address of the customer that is initiating the send.
-	Sender string `json:"sender"`
+	Sender string `json:"sender" valid:"required,stellar_address"`
 	// If the caller needs the recipient's AML info in order to send the payment.
-	NeedInfo bool `json:"need_info"`
+	NeedInfo bool `json:"need_info" valid:"-"`
 	// The transaction that the sender would like to send in XDR format. This transaction is unsigned.
-	Tx string `json:"tx"`
+	Tx string `json:"tx" valid:"required,base64"`
 	// The full text of the attachment the hash of this attachment is included in the transaction.
-	AttachmentJSON string `json:"attachment"`
+	AttachmentJSON string `json:"attachment" valid:"required,json"`
 }
 
 // AuthResponse represents response sent by auth server

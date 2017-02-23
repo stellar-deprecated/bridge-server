@@ -12,6 +12,6 @@ type StellarTomlClientInterface interface {
 }
 
 type FederationClientInterface interface {
-	LookupByAddress(addy string) (*fproto.Response, error)
-	LookupByAccountID(aid string) (*fproto.Response, error)
+	LookupByAddress(addy string) (*fproto.NameResponse, error)
+	LookupByAccountID(aid string) (*fproto.IDResponse, error)
 }

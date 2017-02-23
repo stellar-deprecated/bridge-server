@@ -124,6 +124,8 @@ func TestRequestHandlerSend(t *testing.T) {
 			}
 
 			senderInfo := attachment.SenderInfo{FirstName: "John", LastName: "Doe"}
+			senderInfoMap, err := senderInfo.Map()
+			require.NoError(t, err)
 
 			Convey("it returns SendResponse when success (payment)", func() {
 				authServer := "https://acme.com/auth"
@@ -131,7 +133,7 @@ func TestRequestHandlerSend(t *testing.T) {
 				mockFederationResolver.On(
 					"LookupByAddress",
 					"bob*stellar.org",
-				).Return(&federation.Response{
+				).Return(&federation.NameResponse{
 					AccountID: "GAMVF7G4GJC4A7JMFJWLUAEIBFQD5RT3DCB5DC5TJDEKQBBACQ4JZVEE",
 					MemoType:  "text",
 					Memo:      "bob",
@@ -147,7 +149,7 @@ func TestRequestHandlerSend(t *testing.T) {
 					Transaction: attachment.Transaction{
 						Route:      "bob",
 						Note:       "",
-						SenderInfo: senderInfo.Map(),
+						SenderInfo: senderInfoMap,
 						Extra:      "hello world",
 					},
 				}
@@ -248,7 +250,7 @@ func TestRequestHandlerSend(t *testing.T) {
 				mockFederationResolver.On(
 					"LookupByAddress",
 					"bob*stellar.org",
-				).Return(&federation.Response{
+				).Return(&federation.NameResponse{
 					AccountID: "GAMVF7G4GJC4A7JMFJWLUAEIBFQD5RT3DCB5DC5TJDEKQBBACQ4JZVEE",
 					MemoType:  "text",
 					Memo:      "bob",
@@ -264,7 +266,7 @@ func TestRequestHandlerSend(t *testing.T) {
 					Transaction: attachment.Transaction{
 						Route:      "bob",
 						Note:       "",
-						SenderInfo: senderInfo.Map(),
+						SenderInfo: senderInfoMap,
 						Extra:      "hello world",
 					},
 				}

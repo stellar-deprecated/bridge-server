@@ -76,9 +76,8 @@ func (h *Handler) lookupByID(w http.ResponseWriter, q string) {
 		return
 	}
 
-	h.writeJSON(w, proto.Response{
-		StellarAddress: address.New(rec.Name, rec.Domain),
-		AccountID:      q,
+	h.writeJSON(w, proto.IDResponse{
+		Address: address.New(rec.Name, rec.Domain),
 	}, http.StatusOK)
 }
 
@@ -102,11 +101,10 @@ func (h *Handler) lookupByName(w http.ResponseWriter, q string) {
 		return
 	}
 
-	h.writeJSON(w, proto.Response{
-		StellarAddress: q,
-		AccountID:      rec.AccountID,
-		Memo:           rec.Memo,
-		MemoType:       rec.MemoType,
+	h.writeJSON(w, proto.NameResponse{
+		AccountID: rec.AccountID,
+		Memo:      rec.Memo,
+		MemoType:  rec.MemoType,
 	}, http.StatusOK)
 }
 
@@ -128,7 +126,7 @@ func (h *Handler) lookupByForward(w http.ResponseWriter, query url.Values) {
 		return
 	}
 
-	h.writeJSON(w, proto.Response{
+	h.writeJSON(w, proto.NameResponse{
 		AccountID: rec.AccountID,
 		Memo:      rec.Memo,
 		MemoType:  rec.MemoType,
