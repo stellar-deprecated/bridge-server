@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/stellar/go/build"
-	"github.com/stellar/go/protocols/attachment"
 	"github.com/stellar/go/xdr"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -42,8 +41,8 @@ func TestToURLValues(t *testing.T) {
 }
 
 func TestValidateSuccess(t *testing.T) {
-	attachment := attachment.Attachment{
-		Transaction: attachment.Transaction{
+	attachment := Attachment{
+		Transaction: Transaction{
 			SenderInfo: map[string]string{
 				"first_name": "Bartek",
 			},

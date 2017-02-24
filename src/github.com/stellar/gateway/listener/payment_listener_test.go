@@ -20,7 +20,6 @@ import (
 	"github.com/stellar/gateway/mocks"
 	"github.com/stellar/gateway/net"
 	callback "github.com/stellar/gateway/protocols/compliance"
-	"github.com/stellar/go/protocols/attachment"
 	"github.com/stellar/go/protocols/compliance"
 	"github.com/stellar/go/strkey"
 	"github.com/stretchr/testify/assert"
@@ -269,8 +268,8 @@ func TestPaymentListener(t *testing.T) {
 			mockHorizon.On("LoadMemo", &operation).Return(nil).Once()
 			mockEntityManager.On("Persist", &dbPayment).Return(nil).Once()
 
-			attachment := attachment.Attachment{
-				Transaction: attachment.Transaction{
+			attachment := compliance.Attachment{
+				Transaction: compliance.Transaction{
 					Route: "jed*stellar.org",
 				},
 			}

@@ -15,7 +15,6 @@ import (
 	"github.com/stellar/gateway/test"
 	"github.com/stellar/go/build"
 	"github.com/stellar/go/clients/stellartoml"
-	"github.com/stellar/go/protocols/attachment"
 	"github.com/stellar/go/protocols/compliance"
 	"github.com/stellar/go/protocols/federation"
 	"github.com/stellar/go/xdr"
@@ -123,7 +122,7 @@ func TestRequestHandlerSend(t *testing.T) {
 				"extra_memo":   {"hello world"},
 			}
 
-			senderInfo := attachment.SenderInfo{FirstName: "John", LastName: "Doe"}
+			senderInfo := compliance.SenderInfo{FirstName: "John", LastName: "Doe"}
 			senderInfoMap, err := senderInfo.Map()
 			require.NoError(t, err)
 
@@ -144,9 +143,9 @@ func TestRequestHandlerSend(t *testing.T) {
 					"stellar.org",
 				).Return(&stellartoml.Response{AuthServer: authServer}, nil).Once()
 
-				attachment := attachment.Attachment{
+				attachment := compliance.Attachment{
 					Nonce: "nonce",
-					Transaction: attachment.Transaction{
+					Transaction: compliance.Transaction{
 						Route:      "bob",
 						Note:       "",
 						SenderInfo: senderInfoMap,
@@ -261,9 +260,9 @@ func TestRequestHandlerSend(t *testing.T) {
 					"stellar.org",
 				).Return(&stellartoml.Response{AuthServer: authServer}, nil).Once()
 
-				attachment := attachment.Attachment{
+				attachment := compliance.Attachment{
 					Nonce: "nonce",
-					Transaction: attachment.Transaction{
+					Transaction: compliance.Transaction{
 						Route:      "bob",
 						Note:       "",
 						SenderInfo: senderInfoMap,

@@ -1,4 +1,4 @@
-package attachment
+package compliance
 
 import (
 	"testing"

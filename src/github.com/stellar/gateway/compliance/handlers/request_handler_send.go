@@ -12,7 +12,6 @@ import (
 	"github.com/stellar/gateway/submitter"
 	"github.com/stellar/go/address"
 	b "github.com/stellar/go/build"
-	"github.com/stellar/go/protocols/attachment"
 	"github.com/stellar/go/protocols/compliance"
 	"github.com/stellar/go/xdr"
 	"github.com/zenazn/goji/web"
@@ -167,9 +166,9 @@ func (rh *RequestHandler) HandlerSend(c web.C, w http.ResponseWriter, r *http.Re
 		}
 	}
 
-	attachment := &attachment.Attachment{
+	attachment := &compliance.Attachment{
 		Nonce: rh.NonceGenerator.Generate(),
-		Transaction: attachment.Transaction{
+		Transaction: compliance.Transaction{
 			SenderInfo: senderInfo,
 			Route:      destinationObject.Memo,
 			Extra:      request.ExtraMemo,

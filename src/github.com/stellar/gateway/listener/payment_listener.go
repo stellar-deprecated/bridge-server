@@ -19,7 +19,6 @@ import (
 	"github.com/stellar/gateway/db/entities"
 	"github.com/stellar/gateway/horizon"
 	callback "github.com/stellar/gateway/protocols/compliance"
-	"github.com/stellar/go/protocols/attachment"
 	"github.com/stellar/go/protocols/compliance"
 	"github.com/stellar/go/strkey"
 	"github.com/stellar/go/support/errors"
@@ -211,7 +210,7 @@ func (pl *PaymentListener) onPayment(payment horizon.PaymentResponse) (err error
 			return err
 		}
 
-		var attachment attachment.Attachment
+		var attachment compliance.Attachment
 		err = json.Unmarshal([]byte(authData.AttachmentJSON), &attachment)
 		if err != nil {
 			pl.log.WithFields(logrus.Fields{"err": err}).Error("Cannot unmarshal memo")

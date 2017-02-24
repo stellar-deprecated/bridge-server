@@ -21,7 +21,6 @@ import (
 	"github.com/stellar/gateway/test"
 	"github.com/stellar/go/build"
 	"github.com/stellar/go/clients/stellartoml"
-	"github.com/stellar/go/protocols/attachment"
 	"github.com/stellar/go/protocols/compliance"
 	"github.com/stellar/go/xdr"
 	"github.com/stretchr/testify/assert"
@@ -162,7 +161,7 @@ func TestRequestHandlerAuth(t *testing.T) {
 				SigningKey: "GBYJZW5XFAI6XV73H5SAIUYK6XZI4CGGVBUBO3ANA2SV7KKDAXTV6AEB",
 			}, nil).Once()
 
-			attachment := attachment.Attachment{}
+			attachment := compliance.Attachment{}
 			attachHash, err := attachment.Hash()
 			require.NoError(t, err)
 			attachmentJSON, err := attachment.Marshal()
@@ -218,7 +217,7 @@ func TestRequestHandlerAuth(t *testing.T) {
 		})
 
 		Convey("When all params are valid", func() {
-			attachment := attachment.Attachment{}
+			attachment := compliance.Attachment{}
 			attachHash, err := attachment.Hash()
 			require.NoError(t, err)
 			attachHashB64 := base64.StdEncoding.EncodeToString(attachHash[:])
@@ -309,12 +308,12 @@ func TestRequestHandlerAuth(t *testing.T) {
 			FetchInfo: "http://fetch_info",
 		}
 
-		senderInfo := attachment.SenderInfo{FirstName: "John", LastName: "Doe"}
+		senderInfo := compliance.SenderInfo{FirstName: "John", LastName: "Doe"}
 		senderInfoMap, err := senderInfo.Map()
 		require.NoError(t, err)
 
-		attachment := attachment.Attachment{
-			Transaction: attachment.Transaction{
+		attachment := compliance.Attachment{
+			Transaction: compliance.Transaction{
 				Route:      "bob*acme.com",
 				Note:       "Happy birthday",
 				SenderInfo: senderInfoMap,

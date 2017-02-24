@@ -458,8 +458,8 @@
 		{
 			"importpath": "github.com/stellar/go",
 			"repository": "https://github.com/stellar/go",
-			"revision": "4fc169f24815d36ad0cd08a8f85f961f654e5305",
-			"branch": "auth-handlers"
+			"revision": "2f5094023dd16538a61a0ad2820d9a2a3ba9afba",
+			"branch": "master"
 		},
 		{
 			"importpath": "github.com/stretchr/objx",

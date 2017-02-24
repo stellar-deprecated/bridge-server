@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 
 	"github.com/asaskevich/govalidator"
-	"github.com/stellar/go/protocols/attachment"
 	"github.com/stellar/go/support/errors"
 	"github.com/stellar/go/xdr"
 )
@@ -16,7 +15,7 @@ func (d *AuthData) Marshal() ([]byte, error) {
 }
 
 // Attachment returns attachment from the the object.
-func (d AuthData) Attachment() (attachment attachment.Attachment, err error) {
+func (d AuthData) Attachment() (attachment Attachment, err error) {
 	err = json.Unmarshal([]byte(d.AttachmentJSON), &attachment)
 	return
 }
@@ -44,7 +43,7 @@ func (d AuthData) Validate() error {
 	}
 
 	// Check if Memo.Hash is sha256 hash of attachment preimage
-	attachmentPreimageHashBytes := d.attachmentPreimageHash()
+	attachmentPreimageHashBytes := d.AttachmentPreimageHash()
 	memoBytes := [32]byte(*tx.Memo.Hash)
 	if attachmentPreimageHashBytes != memoBytes {
 		return errors.New("Attachment preimage hash does not equal Memo.Hash in Tx")
@@ -53,7 +52,7 @@ func (d AuthData) Validate() error {
 	return nil
 }
 
-// attachmentPreimageHash returns sha-256 hash of memo preimage.
-func (d AuthData) attachmentPreimageHash() [32]byte {
+// AttachmentPreimageHash returns sha-256 hash of memo preimage.
+func (d AuthData) AttachmentPreimageHash() [32]byte {
 	return sha256.Sum256([]byte(d.AttachmentJSON))
 }
