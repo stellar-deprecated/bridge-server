@@ -8,7 +8,7 @@ import (
 )
 
 func TestMysql(t *testing.T) {
-	db := Mysql()
+	db := Mysql(t)
 	t.Log("tempdb url", db.DSN)
 
 	conn, err := sqlx.Open("mysql", db.DSN)

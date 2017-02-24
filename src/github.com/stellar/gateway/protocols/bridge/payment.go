@@ -6,8 +6,8 @@ import (
 	"strings"
 
 	"github.com/stellar/gateway/protocols"
-	"github.com/stellar/gateway/protocols/compliance"
-	"github.com/stellar/go-stellar-base/keypair"
+	callback "github.com/stellar/gateway/protocols/compliance"
+	"github.com/stellar/go/keypair"
 )
 
 var (
@@ -99,10 +99,10 @@ func (request *PaymentRequest) ToValues() url.Values {
 	return request.FormRequest.ToValues(request)
 }
 
-// ToComplianceSendRequest transforms PaymentRequest to compliance.SendRequest
-func (request *PaymentRequest) ToComplianceSendRequest() compliance.SendRequest {
+// ToComplianceSendRequest transforms PaymentRequest to callback.SendRequest
+func (request *PaymentRequest) ToComplianceSendRequest() callback.SendRequest {
 	sourceKeypair, _ := keypair.Parse(request.Source)
-	return compliance.SendRequest{
+	return callback.SendRequest{
 		// Compliance does not sign transaction, it just needs public key
 		Source:          sourceKeypair.Address(),
 		Sender:          request.Sender,

@@ -5,14 +5,14 @@ import (
 	"net/http"
 
 	"github.com/stellar/gateway/protocols"
-	"github.com/stellar/gateway/protocols/compliance"
+	callback "github.com/stellar/gateway/protocols/compliance"
 	"github.com/stellar/gateway/server"
 	"github.com/zenazn/goji/web"
 )
 
 // HandlerReceive implements /receive endpoint
 func (rh *RequestHandler) HandlerReceive(c web.C, w http.ResponseWriter, r *http.Request) {
-	request := &compliance.ReceiveRequest{}
+	request := &callback.ReceiveRequest{}
 	request.FromRequest(r)
 
 	err := request.Validate()
@@ -32,10 +32,10 @@ func (rh *RequestHandler) HandlerReceive(c web.C, w http.ResponseWriter, r *http
 
 	if authorizedTransaction == nil {
 		log.WithFields(log.Fields{"memo": request.Memo}).Warn("authorizedTransaction not found")
-		server.Write(w, compliance.TransactionNotFoundError)
+		server.Write(w, callback.TransactionNotFoundError)
 		return
 	}
 
-	response := compliance.ReceiveResponse{Data: authorizedTransaction.Data}
+	response := callback.ReceiveResponse{Data: authorizedTransaction.Data}
 	server.Write(w, &response)
 }

@@ -12,6 +12,7 @@ package federation
 
 import (
 	"database/sql"
+	"net/url"
 	"sync"
 
 	"github.com/stellar/go/support/db"
@@ -20,7 +21,7 @@ import (
 // Driver represents a data source against which federation queries can be
 // executed.
 type Driver interface {
-	// LookupRecord is called when a handler receives a so-called "forward"
+	// LookupRecord is called when a handler receives a so-called "name"
 	// federation request to lookup a `Record` using the provided stellar address.
 	// An implementation should return a nil `*Record` value if the lookup
 	// successfully executed but no result was found.
@@ -59,6 +60,17 @@ type ReverseDriver interface {
 	// encoded accountID. An implementation should return a nil `*ReverseRecord`
 	// value if the lookup successfully executed but no result was found.
 	LookupReverseRecord(accountID string) (*ReverseRecord, error)
+}
+
+// ForwardDriver represents a data source against which forward queries can
+// be executed.
+type ForwardDriver interface {
+	// Forward is called when a handler receives a so-called "forward"
+	// federation request to lookup a `Record` using the provided data (ex. bank
+	// account number).
+	// An implementation should return a nil `*Record` value if the lookup
+	// successfully executed but no result was found.
+	LookupForwardingRecord(query url.Values) (*Record, error)
 }
 
 // ReverseRecord represents the result from performing a "Reverse federation"
@@ -102,13 +114,4 @@ type SQLDriver struct {
 
 	init sync.Once
 	db   *db.Repo
-}
-
-// SuccessResponse represents the successful JSON response that will be
-// delivered to a client.
-type SuccessResponse struct {
-	StellarAddress string `json:"stellar_address"`
-	AccountID      string `json:"account_id"`
-	MemoType       string `json:"memo_type,omitempty"`
-	Memo           string `json:"memo,omitempty"`
 }

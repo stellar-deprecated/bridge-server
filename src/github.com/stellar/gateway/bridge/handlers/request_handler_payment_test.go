@@ -15,11 +15,10 @@ import (
 	"github.com/stellar/gateway/horizon"
 	"github.com/stellar/gateway/mocks"
 	"github.com/stellar/gateway/net"
-	"github.com/stellar/gateway/protocols/compliance"
-	"github.com/stellar/gateway/protocols/federation"
-	"github.com/stellar/gateway/protocols/stellartoml"
+	callback "github.com/stellar/gateway/protocols/compliance"
 	"github.com/stellar/gateway/test"
-	"github.com/stellar/go-stellar-base/xdr"
+	"github.com/stellar/go/protocols/federation"
+	"github.com/stellar/go/xdr"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -94,11 +93,10 @@ func TestRequestHandlerPayment(t *testing.T) {
 			}
 
 			mockFederationResolver.On(
-				"Resolve",
+				"LookupByAddress",
 				"GD3YBOYIUVLU",
 			).Return(
-				federation.Response{AccountID: "GD3YBOYIUVLU"},
-				stellartoml.StellarToml{},
+				&federation.NameResponse{AccountID: "GD3YBOYIUVLU"},
 				nil,
 			).Once()
 
@@ -126,11 +124,10 @@ func TestRequestHandlerPayment(t *testing.T) {
 
 			Convey("When FederationResolver returns error", func() {
 				mockFederationResolver.On(
-					"Resolve",
+					"LookupByAddress",
 					"bob*stellar.org",
 				).Return(
-					federation.Response{},
-					stellartoml.StellarToml{},
+					&federation.NameResponse{},
 					errors.New("stellar.toml response status code indicates error"),
 				).Once()
 
@@ -155,11 +152,10 @@ func TestRequestHandlerPayment(t *testing.T) {
 				}
 
 				mockFederationResolver.On(
-					"Resolve",
+					"LookupByAddress",
 					"bob*stellar.org",
 				).Return(
-					federation.Response{AccountID: "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632"},
-					stellartoml.StellarToml{},
+					&federation.NameResponse{AccountID: "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632"},
 					nil,
 				).Once()
 
@@ -215,15 +211,14 @@ func TestRequestHandlerPayment(t *testing.T) {
 				}
 
 				mockFederationResolver.On(
-					"Resolve",
+					"LookupByAddress",
 					"bob*stellar.org",
 				).Return(
-					federation.Response{
+					&federation.NameResponse{
 						AccountID: "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632",
 						MemoType:  "text",
 						Memo:      "125",
 					},
-					stellartoml.StellarToml{},
 					nil,
 				).Once()
 
@@ -281,11 +276,10 @@ func TestRequestHandlerPayment(t *testing.T) {
 			}
 
 			mockFederationResolver.On(
-				"Resolve",
+				"LookupByAddress",
 				"GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632",
 			).Return(
-				federation.Response{AccountID: "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632"},
-				stellartoml.StellarToml{},
+				&federation.NameResponse{AccountID: "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632"},
 				nil,
 			).Once()
 
@@ -313,11 +307,10 @@ func TestRequestHandlerPayment(t *testing.T) {
 			assetIssuer := "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632"
 
 			mockFederationResolver.On(
-				"Resolve",
+				"LookupByAddress",
 				"GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632",
 			).Return(
-				federation.Response{AccountID: "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632"},
-				stellartoml.StellarToml{},
+				&federation.NameResponse{AccountID: "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632"},
 				nil,
 			).Once()
 
@@ -364,11 +357,10 @@ func TestRequestHandlerPayment(t *testing.T) {
 			assetIssuer := "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632"
 
 			mockFederationResolver.On(
-				"Resolve",
+				"LookupByAddress",
 				"GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632",
 			).Return(
-				federation.Response{AccountID: "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632"},
-				stellartoml.StellarToml{},
+				&federation.NameResponse{AccountID: "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632"},
 				nil,
 			).Once()
 
@@ -416,11 +408,10 @@ func TestRequestHandlerPayment(t *testing.T) {
 
 			// Federation response
 			mockFederationResolver.On(
-				"Resolve",
+				"LookupByAddress",
 				"GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632",
 			).Return(
-				federation.Response{AccountID: "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632"},
-				stellartoml.StellarToml{},
+				&federation.NameResponse{AccountID: "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632"},
 				nil,
 			).Once()
 
@@ -472,11 +463,10 @@ func TestRequestHandlerPayment(t *testing.T) {
 			}
 
 			mockFederationResolver.On(
-				"Resolve",
+				"LookupByAddress",
 				"GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632",
 			).Return(
-				federation.Response{AccountID: "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632"},
-				stellartoml.StellarToml{},
+				&federation.NameResponse{AccountID: "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632"},
 				nil,
 			).Once()
 
@@ -786,11 +776,10 @@ func TestRequestHandlerPayment(t *testing.T) {
 
 			// Destination
 			mockFederationResolver.On(
-				"Resolve",
+				"LookupByAddress",
 				"GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632",
 			).Return(
-				federation.Response{AccountID: "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632"},
-				stellartoml.StellarToml{},
+				&federation.NameResponse{AccountID: "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632"},
 				nil,
 			).Once()
 
@@ -1021,7 +1010,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 
 				expectedTx := &xdr.Transaction{
 					SourceAccount: xdr.AccountId{
-						Type:    xdr.CryptoKeyTypeKeyTypeEd25519,
+						Type:    xdr.PublicKeyTypePublicKeyTypeEd25519,
 						Ed25519: &sourceXdr,
 					},
 					Fee:    100,
@@ -1033,7 +1022,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 								Type: xdr.OperationTypePayment,
 								PaymentOp: &xdr.PaymentOp{
 									Destination: xdr.AccountId{
-										Type:    xdr.CryptoKeyTypeKeyTypeEd25519,
+										Type:    xdr.PublicKeyTypePublicKeyTypeEd25519,
 										Ed25519: &destinationXdr,
 									},
 									Amount: 200000000,
@@ -1042,7 +1031,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 										AlphaNum4: &xdr.AssetAlphaNum4{
 											AssetCode: [4]byte{'U', 'S', 'D', 0},
 											Issuer: xdr.AccountId{
-												Type:    xdr.CryptoKeyTypeKeyTypeEd25519,
+												Type:    xdr.PublicKeyTypePublicKeyTypeEd25519,
 												Ed25519: &issuerXdr,
 											},
 										},
@@ -1053,7 +1042,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 					},
 				}
 
-				complianceResponse := compliance.SendResponse{
+				complianceResponse := callback.SendResponse{
 					TransactionXdr: "AAAAAC3/58Z9rycNLmF6voWX9VmDETFVGhFoWf66mcMuir/DAAAAZAAAAAAAAAAAAAAAAAAAAAO5TSe5k00+CKUuUtfafav6xITv43pTgO6QiPes4u/N6QAAAAEAAAAAAAAAAQAAAAAZUvzcMkXAfSwqbLoAiAlgPsZ7GIPRi7NIyKgEIBQ4nAAAAAFVU0QAAAAAABlS/NwyRcB9LCpsugCICWA+xnsYg9GLs0jIqAQgFDicAAAAAAvrwgAAAAAA",
 				}
 
@@ -1100,7 +1089,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 			})
 
 			Convey("it should return error when transaction submitter fails", func() {
-				complianceResponse := compliance.SendResponse{
+				complianceResponse := callback.SendResponse{
 					TransactionXdr: "AAAAAC3/58Z9rycNLmF6voWX9VmDETFVGhFoWf66mcMuir/DAAAAZAAAAAAAAAAAAAAAAAAAAAO5TSe5k00+CKUuUtfafav6xITv43pTgO6QiPes4u/N6QAAAAEAAAAAAAAAAQAAAAAZUvzcMkXAfSwqbLoAiAlgPsZ7GIPRi7NIyKgEIBQ4nAAAAAFVU0QAAAAAABlS/NwyRcB9LCpsugCICWA+xnsYg9GLs0jIqAQgFDicAAAAAAvrwgAAAAAA",
 				}
 

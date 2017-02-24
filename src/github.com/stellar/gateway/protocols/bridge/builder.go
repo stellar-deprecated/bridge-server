@@ -5,7 +5,7 @@ import (
 	"strconv"
 
 	"github.com/stellar/gateway/protocols"
-	b "github.com/stellar/go-stellar-base/build"
+	b "github.com/stellar/go/build"
 )
 
 // OperationType is the type of operation

@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/stellar/go-stellar-base/xdr"
+	"github.com/stellar/go/xdr"
 )
 
 // PaymentHandler is a function that is called when a new payment is received

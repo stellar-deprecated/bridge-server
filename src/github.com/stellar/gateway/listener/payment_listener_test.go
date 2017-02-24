@@ -19,8 +19,8 @@ import (
 	"github.com/stellar/gateway/horizon"
 	"github.com/stellar/gateway/mocks"
 	"github.com/stellar/gateway/net"
-	"github.com/stellar/gateway/protocols/compliance"
-	"github.com/stellar/gateway/protocols/memo"
+	callback "github.com/stellar/gateway/protocols/compliance"
+	"github.com/stellar/go/protocols/compliance"
 	"github.com/stellar/go/strkey"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -268,21 +268,21 @@ func TestPaymentListener(t *testing.T) {
 			mockHorizon.On("LoadMemo", &operation).Return(nil).Once()
 			mockEntityManager.On("Persist", &dbPayment).Return(nil).Once()
 
-			memo := memo.Memo{
-				Transaction: memo.Transaction{
+			attachment := compliance.Attachment{
+				Transaction: compliance.Transaction{
 					Route: "jed*stellar.org",
 				},
 			}
 
-			memoString, _ := json.Marshal(memo)
+			attachmentString, _ := json.Marshal(attachment)
 
 			auth := compliance.AuthData{
-				Memo: string(memoString),
+				AttachmentJSON: string(attachmentString),
 			}
 
 			authString, _ := json.Marshal(auth)
 
-			response := compliance.ReceiveResponse{
+			response := callback.ReceiveResponse{
 				Data: string(authString),
 			}
 

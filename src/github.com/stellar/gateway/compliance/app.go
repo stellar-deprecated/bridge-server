@@ -13,9 +13,9 @@ import (
 	"github.com/stellar/gateway/db"
 	"github.com/stellar/gateway/db/drivers/mysql"
 	"github.com/stellar/gateway/db/drivers/postgres"
-	"github.com/stellar/gateway/protocols/federation"
-	"github.com/stellar/gateway/protocols/stellartoml"
 	"github.com/stellar/gateway/server"
+	"github.com/stellar/go/clients/federation"
+	"github.com/stellar/go/clients/stellartoml"
 	"github.com/zenazn/goji/graceful"
 	"github.com/zenazn/goji/web"
 )
@@ -62,15 +62,21 @@ func NewApp(config config.Config, migrateFlag bool) (app *App, err error) {
 
 	requestHandler := handlers.RequestHandler{}
 
+	federationClient := &federation.Client{
+		HTTP:        http.DefaultClient,
+		StellarTOML: stellartoml.DefaultClient,
+	}
+
 	err = g.Provide(
 		&inject.Object{Value: &requestHandler},
 		&inject.Object{Value: &config},
 		&inject.Object{Value: &entityManager},
 		&inject.Object{Value: &repository},
 		&inject.Object{Value: &crypto.SignerVerifier{}},
-		&inject.Object{Value: &stellartoml.Resolver{}},
-		&inject.Object{Value: &federation.Resolver{}},
+		&inject.Object{Value: stellartoml.DefaultClient},
+		&inject.Object{Value: federationClient},
 		&inject.Object{Value: &http.Client{}},
+		&inject.Object{Value: &handlers.NonceGenerator{}},
 	)
 
 	if err != nil {

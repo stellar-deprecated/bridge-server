@@ -7,7 +7,7 @@ import (
 
 	"github.com/stellar/gateway/horizon"
 	"github.com/stellar/gateway/protocols"
-	"github.com/stellar/go-stellar-base/xdr"
+	"github.com/stellar/go/xdr"
 )
 
 var (

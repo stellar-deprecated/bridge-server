@@ -13,7 +13,7 @@ import (
 	"github.com/stellar/gateway/db/entities"
 	"github.com/stellar/gateway/mocks"
 	"github.com/stellar/gateway/net"
-	"github.com/stellar/gateway/protocols/compliance"
+	callback "github.com/stellar/gateway/protocols/compliance"
 	"github.com/stretchr/testify/assert"
 	"github.com/zenazn/goji/web"
 )
@@ -47,6 +47,7 @@ func TestRequestHandlerReceive(t *testing.T) {
 		&inject.Object{Value: mockFederationResolver},
 		&inject.Object{Value: mockSignerVerifier},
 		&inject.Object{Value: mockStellartomlResolver},
+		&inject.Object{Value: &TestNonceGenerator{}},
 	)
 	if err != nil {
 		panic(err)
@@ -73,7 +74,7 @@ func TestRequestHandlerReceive(t *testing.T) {
 			statusCode, response := net.GetResponse(testServer, params)
 			responseString := strings.TrimSpace(string(response))
 			assert.Equal(t, 404, statusCode)
-			assert.Equal(t, compliance.TransactionNotFoundError.Marshal(), []byte(responseString))
+			assert.Equal(t, callback.TransactionNotFoundError.Marshal(), []byte(responseString))
 		})
 
 		Convey("it returns preimage when memo has been found", func() {

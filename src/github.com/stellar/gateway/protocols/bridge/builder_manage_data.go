@@ -4,7 +4,7 @@ import (
 	"encoding/base64"
 
 	"github.com/stellar/gateway/protocols"
-	b "github.com/stellar/go-stellar-base/build"
+	b "github.com/stellar/go/build"
 )
 
 // ManageDataOperationBody represents manage_data operation

@@ -10,8 +10,15 @@
 		{
 			"importpath": "github.com/Sirupsen/logrus",
 			"repository": "https://github.com/Sirupsen/logrus",
-			"revision": "446d1c146faa8ed3f4218f056fcd165f6bcfda81",
+			"revision": "61e43dc76f7ee59a82bdf3d71033dc12bea4c77d",
 			"branch": "master"
+		},
+		{
+			"importpath": "github.com/Sirupsen/logrus/hooks/test",
+			"repository": "https://github.com/Sirupsen/logrus",
+			"revision": "61e43dc76f7ee59a82bdf3d71033dc12bea4c77d",
+			"branch": "master",
+			"path": "/hooks/test"
 		},
 		{
 			"importpath": "github.com/agl/ed25519",
@@ -188,6 +195,12 @@
 			"importpath": "github.com/inconshreveable/mousetrap",
 			"repository": "https://github.com/inconshreveable/mousetrap",
 			"revision": "76626ae9c91c4f2a10f34cad8ce83ea42c93bb75",
+			"branch": "master"
+		},
+		{
+			"importpath": "github.com/jarcoal/httpmock",
+			"repository": "https://github.com/jarcoal/httpmock",
+			"revision": "4442edb3db31196622da56482fd8d0fa375fba4d",
 			"branch": "master"
 		},
 		{
@@ -445,13 +458,7 @@
 		{
 			"importpath": "github.com/stellar/go",
 			"repository": "https://github.com/stellar/go",
-			"revision": "269ce378a39bccec92c050c03f0fe5d16a21ec1a",
-			"branch": "master"
-		},
-		{
-			"importpath": "github.com/stellar/go-stellar-base",
-			"repository": "https://github.com/stellar/go-stellar-base",
-			"revision": "3b1ac79285380d07ed8ed6e7d3f87d8eb21b999e",
+			"revision": "2f5094023dd16538a61a0ad2820d9a2a3ba9afba",
 			"branch": "master"
 		},
 		{

@@ -3,9 +3,12 @@ package federation
 import (
 	"encoding/json"
 	"fmt"
+	"io"
+	"net/url"
 	"strings"
 
 	"github.com/stellar/go/address"
+	proto "github.com/stellar/go/protocols/federation"
 	"github.com/stellar/go/support/errors"
 )
 
@@ -14,7 +17,7 @@ import (
 // used to resolve what server the request should be made against.  NOTE: the
 // "name" type is a legacy holdover from the legacy stellar network's federation
 // protocol. It is unfortunate.
-func (c *Client) LookupByAddress(addy string) (*NameResponse, error) {
+func (c *Client) LookupByAddress(addy string) (*proto.NameResponse, error) {
 	_, domain, err := address.Split(addy)
 	if err != nil {
 		return nil, errors.Wrap(err, "parse address failed")
@@ -27,7 +30,7 @@ func (c *Client) LookupByAddress(addy string) (*NameResponse, error) {
 
 	url := c.url(fserv, "name", addy)
 
-	var resp NameResponse
+	var resp proto.NameResponse
 	err = c.getJSON(url, &resp)
 	if err != nil {
 		return nil, errors.Wrap(err, "get federation failed")
@@ -43,7 +46,7 @@ func (c *Client) LookupByAddress(addy string) (*NameResponse, error) {
 // LookupByAccountID performs a federated lookup following to the stellar
 // federation protocol using the "id" type request.  The provided strkey-encoded
 // account id is used to resolve what server the request should be made against.
-func (c *Client) LookupByAccountID(aid string) (*IDResponse, error) {
+func (c *Client) LookupByAccountID(aid string) (*proto.IDResponse, error) {
 
 	domain, err := c.Horizon.HomeDomainForAccount(aid)
 	if err != nil {
@@ -61,7 +64,7 @@ func (c *Client) LookupByAccountID(aid string) (*IDResponse, error) {
 
 	url := c.url(fserv, "id", aid)
 
-	var resp IDResponse
+	var resp proto.IDResponse
 	err = c.getJSON(url, &resp)
 	if err != nil {
 		return nil, errors.Wrap(err, "get federation failed")
@@ -101,7 +104,13 @@ func (c *Client) getJSON(url string, dest interface{}) error {
 		return errors.Errorf("http get failed with (%d) status code", hresp.StatusCode)
 	}
 
-	err = json.NewDecoder(hresp.Body).Decode(dest)
+	limitReader := io.LimitReader(hresp.Body, FederationResponseMaxSize)
+
+	err = json.NewDecoder(limitReader).Decode(dest)
+	if err == io.ErrUnexpectedEOF && limitReader.(*io.LimitedReader).N == 0 {
+		return errors.Errorf("federation response exceeds %d bytes limit", FederationResponseMaxSize)
+	}
+
 	if err != nil {
 		return errors.Wrap(err, "json decode errored")
 	}
@@ -110,5 +119,9 @@ func (c *Client) getJSON(url string, dest interface{}) error {
 }
 
 func (c *Client) url(endpoint string, typ string, q string) string {
-	return fmt.Sprintf("%s?type=%s&q=%s", endpoint, typ, q)
+	qstr := url.Values{}
+	qstr.Add("type", typ)
+	qstr.Add("q", q)
+
+	return fmt.Sprintf("%s?%s", endpoint, qstr.Encode())
 }

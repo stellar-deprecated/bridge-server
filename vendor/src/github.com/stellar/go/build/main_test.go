@@ -22,6 +22,7 @@ func ExampleTransactionBuilder() {
 	tx := Transaction(
 		SourceAccount{seed},
 		Sequence{1},
+		TestNetwork,
 		Payment(
 			Destination{"GAWSI2JO2CF36Z43UGMUJCDQ2IMR5B3P5TMS7XM7NUTU3JHG3YJUDQXA"},
 			NativeAmount{"50"},
@@ -42,6 +43,7 @@ func ExamplePathPayment() {
 	tx := Transaction(
 		SourceAccount{seed},
 		Sequence{1},
+		TestNetwork,
 		Payment(
 			Destination{"GBDT3K42LOPSHNAEHEJ6AVPADIJ4MAR64QEKKW2LQPBSKLYD22KUEH4P"},
 			CreditAmount{"USD", "GAWSI2JO2CF36Z43UGMUJCDQ2IMR5B3P5TMS7XM7NUTU3JHG3YJUDQXA", "50"},
@@ -65,6 +67,7 @@ func ExampleSetOptions() {
 	tx := Transaction(
 		SourceAccount{seed},
 		Sequence{1},
+		TestNetwork,
 		SetOptions(
 			InflationDest("GCT7S5BA6ZC7SV7GGEMEYJTWOBYTBOA7SC4JEYP7IAEDG7HQNIWKRJ4G"),
 			SetAuthRequired(),
@@ -94,6 +97,7 @@ func ExampleSetOptionsOperations() {
 	tx := Transaction(
 		SourceAccount{seed},
 		Sequence{1},
+		TestNetwork,
 		InflationDest("GCT7S5BA6ZC7SV7GGEMEYJTWOBYTBOA7SC4JEYP7IAEDG7HQNIWKRJ4G"),
 		SetAuthRequired(),
 		SetAuthRevocable(),
@@ -121,6 +125,7 @@ func ExampleChangeTrust() {
 	tx := Transaction(
 		SourceAccount{seed},
 		Sequence{1},
+		TestNetwork,
 		Trust("USD", "GAWSI2JO2CF36Z43UGMUJCDQ2IMR5B3P5TMS7XM7NUTU3JHG3YJUDQXA", Limit("100.25")),
 	)
 
@@ -138,6 +143,7 @@ func ExampleChangeTrustMaxLimit() {
 	tx := Transaction(
 		SourceAccount{seed},
 		Sequence{1},
+		TestNetwork,
 		Trust("USD", "GAWSI2JO2CF36Z43UGMUJCDQ2IMR5B3P5TMS7XM7NUTU3JHG3YJUDQXA"),
 	)
 
@@ -156,6 +162,7 @@ func ExampleRemoveTrust() {
 	tx := Transaction(
 		SourceAccount{seed},
 		Sequence{1},
+		TestNetwork,
 		RemoveTrust(
 			"USD",
 			"GAWSI2JO2CF36Z43UGMUJCDQ2IMR5B3P5TMS7XM7NUTU3JHG3YJUDQXA",
@@ -183,6 +190,7 @@ func ExampleManageOffer() {
 	tx := Transaction(
 		SourceAccount{seed},
 		Sequence{1},
+		TestNetwork,
 		CreateOffer(rate, "20"),
 		UpdateOffer(rate, "40", OfferID(2)),
 		DeleteOffer(rate, OfferID(1)),
@@ -208,6 +216,7 @@ func ExampleCreatePassiveOffer() {
 	tx := Transaction(
 		SourceAccount{seed},
 		Sequence{1},
+		TestNetwork,
 		CreatePassiveOffer(rate, "20"),
 	)
 
@@ -225,6 +234,7 @@ func ExampleAccountMerge() {
 	tx := Transaction(
 		SourceAccount{seed},
 		Sequence{1},
+		TestNetwork,
 		AccountMerge(
 			Destination{"GBDT3K42LOPSHNAEHEJ6AVPADIJ4MAR64QEKKW2LQPBSKLYD22KUEH4P"},
 		),
@@ -244,6 +254,7 @@ func ExampleInflation() {
 	tx := Transaction(
 		SourceAccount{seed},
 		Sequence{1},
+		TestNetwork,
 		Inflation(),
 	)
 

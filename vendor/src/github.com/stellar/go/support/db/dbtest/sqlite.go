@@ -5,37 +5,31 @@ package dbtest
 import (
 	"io/ioutil"
 	"os"
+	"testing"
 
 	_ "github.com/mattn/go-sqlite3"
-	"github.com/pkg/errors"
+	"github.com/stretchr/testify/require"
 )
 
-// Sqlite provisions a new, blank database sqlite database.  It panics on the event of a failure.
-func Sqlite() *DB {
+// Sqlite provisions a new, blank database sqlite database.  It panics on the
+// event of a failure.
+func Sqlite(t *testing.T) *DB {
 	var result DB
 
 	tmpfile, err := ioutil.TempFile("", "test.sqlite")
-	if err != nil {
-		err = errors.Wrap(err, "create temp file failed")
-		panic(err)
-	}
+	require.NoError(t, err)
 
 	tmpfile.Close()
 	err = os.Remove(tmpfile.Name())
-
-	if err != nil {
-		err = errors.Wrap(err, "remove first temp file failed")
-		panic(err)
-	}
+	require.NoError(t, err)
 
 	result.Dialect = "sqlite3"
 	result.DSN = tmpfile.Name()
+	result.t = t
+
 	result.closer = func() {
 		err := os.Remove(tmpfile.Name())
-		if err != nil {
-			err = errors.Wrap(err, "remove db file failed")
-			panic(err)
-		}
+		require.NoError(t, err)
 	}
 
 	return &result

@@ -2,6 +2,9 @@ package stellartoml
 
 import "net/http"
 
+// StellarTomlMaxSize is the maximum size of stellar.toml file
+const StellarTomlMaxSize = 5 * 1024
+
 // WellKnownPath represents the url path at which the stellar.toml file should
 // exist to conform to the federation protocol.
 const WellKnownPath = "/.well-known/stellar.toml"

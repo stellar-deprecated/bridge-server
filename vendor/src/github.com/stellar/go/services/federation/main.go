@@ -23,15 +23,15 @@ type Config struct {
 	Port     int `valid:"required"`
 	Database struct {
 		Type string `valid:"matches(^mysql|sqlite3|postgres$)"`
-		URL  string `valid:"required"`
+		DSN  string `valid:"required"`
 	} `valid:"required"`
 	Queries struct {
 		Federation        string `valid:"required"`
 		ReverseFederation string `toml:"reverse-federation" valid:"optional"`
 	} `valid:"required"`
 	TLS struct {
-		CertificateFile string `toml:"certificate-file"`
-		PrivateKeyFile  string `toml:"private-key-file"`
+		CertificateFile string `toml:"certificate-file" valid:"required"`
+		PrivateKeyFile  string `toml:"private-key-file" valid:"required"`
 	} `valid:"optional"`
 }
 
@@ -82,6 +82,8 @@ func run(cmd *cobra.Command, args []string) {
 	http.Run(http.Config{
 		ListenAddr: addr,
 		Handler:    mux,
+		TLSCert:    cfg.TLS.CertificateFile,
+		TLSKey:     cfg.TLS.PrivateKeyFile,
 		OnStarting: func() {
 			log.Infof("starting federation server - %s", app.Version())
 			log.Infof("listening on %s", addr)
@@ -103,13 +105,14 @@ func initDriver(cfg Config) (federation.Driver, error) {
 		return nil, errors.Errorf("Invalid db type: %s", cfg.Database.Type)
 	}
 
-	repo, err := db.Open(dialect, cfg.Database.URL)
+	repo, err := db.Open(dialect, cfg.Database.DSN)
 	if err != nil {
 		return nil, errors.Wrap(err, "db open failed")
 	}
 
 	sqld := federation.SQLDriver{
 		DB:                repo.DB.DB, // unwrap the repo to the bare *sql.DB instance,
+		Dialect:           dialect,
 		LookupRecordQuery: cfg.Queries.Federation,
 	}
 
@@ -134,6 +137,7 @@ func initMux(driver federation.Driver) *goji.Mux {
 		AllowedMethods: []string{"GET"},
 	})
 	mux.Use(c.Handler)
+	mux.Use(log.HTTPMiddleware)
 
 	fed := &federation.Handler{driver}
 

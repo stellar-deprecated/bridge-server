@@ -15,7 +15,7 @@ func (aid *AccountId) Address() string {
 	}
 
 	switch aid.Type {
-	case CryptoKeyTypeKeyTypeEd25519:
+	case PublicKeyTypePublicKeyTypeEd25519:
 		ed := aid.MustEd25519()
 		raw := make([]byte, 32)
 		copy(raw, ed[:])
@@ -32,7 +32,7 @@ func (aid *AccountId) Equals(other AccountId) bool {
 	}
 
 	switch aid.Type {
-	case CryptoKeyTypeKeyTypeEd25519:
+	case PublicKeyTypePublicKeyTypeEd25519:
 		l := aid.MustEd25519()
 		r := other.MustEd25519()
 		return l == r
@@ -70,7 +70,7 @@ func (aid *AccountId) SetAddress(address string) error {
 	var ui Uint256
 	copy(ui[:], raw)
 
-	*aid, err = NewAccountId(CryptoKeyTypeKeyTypeEd25519, ui)
+	*aid, err = NewAccountId(PublicKeyTypePublicKeyTypeEd25519, ui)
 
 	return err
 }

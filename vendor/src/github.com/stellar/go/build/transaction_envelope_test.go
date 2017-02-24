@@ -1,9 +1,9 @@
 package build
 
 import (
-	"errors"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/stellar/go/support/errors"
 )
 
 var _ = Describe("TransactionEnvelope Mutators:", func() {
@@ -26,7 +26,10 @@ var _ = Describe("TransactionEnvelope Mutators:", func() {
 		Context("with an error set on it", func() {
 			err := errors.New("busted!")
 			BeforeEach(func() { mut = &TransactionBuilder{Err: err} })
-			It("propagates the error upwards", func() { Expect(subject.Err).To(Equal(err)) })
+			It("propagates the error upwards", func() {
+				Expect(subject.Err).To(HaveOccurred())
+				Expect(subject.Err.Error()).To(ContainSubstring("busted!"))
+			})
 		})
 
 	})
@@ -34,7 +37,7 @@ var _ = Describe("TransactionEnvelope Mutators:", func() {
 	Describe("Sign", func() {
 		Context("with a valid key", func() {
 			BeforeEach(func() {
-				subject.MutateTX(SourceAccount{"SDOTALIMPAM2IV65IOZA7KZL7XWZI5BODFXTRVLIHLQZQCKK57PH5F3H"})
+				subject.MutateTX(SourceAccount{"SDOTALIMPAM2IV65IOZA7KZL7XWZI5BODFXTRVLIHLQZQCKK57PH5F3H"}, TestNetwork)
 				mut = Sign{"SDOTALIMPAM2IV65IOZA7KZL7XWZI5BODFXTRVLIHLQZQCKK57PH5F3H"}
 			})
 
@@ -46,6 +49,7 @@ var _ = Describe("TransactionEnvelope Mutators:", func() {
 
 		Context("with an invalid key", func() {
 			BeforeEach(func() { mut = Sign{""} })
+
 			It("fails", func() {
 				Expect(subject.Err).To(HaveOccurred())
 			})

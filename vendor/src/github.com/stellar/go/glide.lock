@@ -1,5 +1,5 @@
-hash: 16fe0b731a9a76e736f87e7f34179ad3ccd2dc577a95067f5c39f035ee350e79
-updated: 2016-08-30T14:06:41.303176771-07:00
+hash: 805bc7accf5266e737482b8bff09ee04c554d404e3daecb1d84e7086277dbe70
+updated: 2016-11-10T15:52:55.78656724-08:00
 imports:
 - name: github.com/agl/ed25519
   version: 278e1ec8e8a6e017cd07577924d6766039146ced
@@ -8,7 +8,8 @@ imports:
 - name: github.com/ajg/form
   version: cc2954064ec9ea8d93917f0f87456e11d7b881ad
 - name: github.com/asaskevich/govalidator
-  version: 593d64559f7600f29581a3ee42177f5dbded27a9
+  version: f0666aa80d7dcf75bd564ae8717b952d74a29d6a
+  repo: https://github.com/stellar/govalidator.git
 - name: github.com/aws/aws-sdk-go
   version: 35c21ff262580265c1d77095d6f712605fd0c3f4
   subpackages:
@@ -46,7 +47,7 @@ imports:
 - name: github.com/fatih/structs
   version: dc3312cb1a4513a366c4c9e622ad55c32df12ed3
 - name: github.com/gavv/gojsondiff
-  version: 36046c6e558e7f854ebd3fd97d1e9812ebe8709b
+  version: 4e533b0f28d6258fa9153191e70acb312e497243
   subpackages:
   - formatter
 - name: github.com/gavv/monotime
@@ -170,7 +171,7 @@ imports:
 - name: github.com/valyala/bytebufferpool
   version: 8ebd0474e5a2f0a5c7a74ad2bf421a1d1a90264f
 - name: github.com/valyala/fasthttp
-  version: 45697fe30a130ec6a54426a069c82f3abe76b63d
+  version: 0a7f0a797cd66b89588d0a7fdd670b706579a621
   subpackages:
   - fasthttputil
 - name: github.com/visionmedia/go-debug
@@ -183,6 +184,8 @@ imports:
   version: 4f624f6197547606054e042e7903db103585e151
 - name: github.com/yalp/jsonpath
   version: 31a79c7593bb93eb10b163650d4a3e6ca190e4dc
+- name: github.com/yudai/gojsondiff
+  version: 7b1b7adf999dab73a6eb02669c3d82dbb27a3dd6
 - name: github.com/yudai/golcs
   version: d1c525dea8ce39ea9a783d33cf08932305373f2c
 - name: goji.io
@@ -208,7 +211,7 @@ imports:
   subpackages:
   - unix
 - name: gopkg.in/gavv/httpexpect.v1
-  version: 2493e01c9e420f0119fefd521c46b1168f33bbf3
+  version: 40724cf1e4a08b670b14a02deff693a91f3aa9a0
 - name: gopkg.in/tylerb/graceful.v1
   version: c838c13b2beeea4f4f54496da96a3a6ae567c37a
 testImports:

@@ -20,8 +20,17 @@ type VersionByte byte
 const (
 	//VersionByteAccountID is the version byte used for encoded stellar addresses
 	VersionByteAccountID VersionByte = 6 << 3 // Base32-encodes to 'G...'
+
 	//VersionByteSeed is the version byte used for encoded stellar seed
 	VersionByteSeed = 18 << 3 // Base32-encodes to 'S...'
+
+	//VersionByteHashTx is the version byte used for encoded stellar hashTx
+	//signer keys.
+	VersionByteHashTx = 19 << 3 // Base32-encodes to 'T...'
+
+	//VersionByteHashX is the version byte used for encoded stellar hashX
+	//signer keys.
+	VersionByteHashX = 23 << 3 // Base32-encodes to 'X...'
 )
 
 // Decode decodes the provided StrKey into a raw value, checking the checksum
@@ -32,13 +41,9 @@ func Decode(expected VersionByte, src string) ([]byte, error) {
 		return nil, err
 	}
 
-	raw, err := base32.StdEncoding.DecodeString(src)
+	raw, err := decodeString(src)
 	if err != nil {
 		return nil, err
-	}
-
-	if len(raw) < 3 {
-		return nil, errors.Errorf("encoded value is %d bytes; minimum valid length is 3", len(raw))
 	}
 
 	// decode into components
@@ -108,15 +113,51 @@ func MustEncode(version VersionByte, src []byte) string {
 	return e
 }
 
+// Version extracts and returns the version byte from the provided source
+// string.
+func Version(src string) (VersionByte, error) {
+	raw, err := decodeString(src)
+	if err != nil {
+		return VersionByte(0), err
+	}
+
+	return VersionByte(raw[0]), nil
+}
+
 // checkValidVersionByte returns an error if the provided value
 // is not one of the defined valid version byte constants.
 func checkValidVersionByte(version VersionByte) error {
 	if version == VersionByteAccountID {
 		return nil
 	}
+
 	if version == VersionByteSeed {
 		return nil
 	}
 
+	if version == VersionByteHashTx {
+		return nil
+	}
+
+	if version == VersionByteHashX {
+		return nil
+	}
+
 	return ErrInvalidVersionByte
+}
+
+// decodeString decodes a base32 string into the raw bytes, and ensures it could
+// potentially be strkey encoded (i.e. it has both a version byte and a
+// checksum, neither of which are explicitly checked by this func)
+func decodeString(src string) ([]byte, error) {
+	raw, err := base32.StdEncoding.DecodeString(src)
+	if err != nil {
+		return nil, errors.Wrap(err, "base32 decode failed")
+	}
+
+	if len(raw) < 3 {
+		return nil, errors.Errorf("encoded value is %d bytes; minimum valid length is 3", len(raw))
+	}
+
+	return raw, nil
 }

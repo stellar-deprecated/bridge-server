@@ -7,7 +7,7 @@ import (
 
 	"github.com/stellar/gateway/protocols"
 	"github.com/stellar/gateway/server"
-	"github.com/stellar/go-stellar-base/keypair"
+	"github.com/stellar/go/keypair"
 )
 
 // KeyPair struct contains key pair public and private key

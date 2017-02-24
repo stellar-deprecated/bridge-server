@@ -1,8 +1,7 @@
 package build
 
 import (
-	"errors"
-
+	"github.com/stellar/go/support/errors"
 	"github.com/stellar/go/xdr"
 )
 
@@ -87,22 +86,27 @@ func (m MasterWeight) MutateTransaction(t *TransactionBuilder) error {
 }
 
 // AddSigner creates Signer mutator that sets account's signer
-func AddSigner(publicKey string, weight uint32) Signer {
-	return Signer{publicKey, weight}
+func AddSigner(address string, weight uint32) Signer {
+	return Signer{address, weight}
 }
 
 // RemoveSigner creates Signer mutator that removes account's signer
-func RemoveSigner(publicKey string) Signer {
-	return Signer{publicKey, 0}
+func RemoveSigner(address string) Signer {
+	return Signer{address, 0}
 }
 
 // MutateSetOptions for Signer sets the SetOptionsOp's signer field
-func (m Signer) MutateSetOptions(o *xdr.SetOptionsOp) (err error) {
+func (m Signer) MutateSetOptions(o *xdr.SetOptionsOp) error {
+
 	var signer xdr.Signer
 	signer.Weight = xdr.Uint32(m.Weight)
-	err = setAccountId(m.PublicKey, &signer.PubKey)
+	err := signer.Key.SetAddress(m.Address)
+	if err != nil {
+		return errors.Wrap(err, "failed to set address")
+	}
+
 	o.Signer = &signer
-	return
+	return nil
 }
 
 // MutateTransaction for Signer allows creating an operation using a single mutator

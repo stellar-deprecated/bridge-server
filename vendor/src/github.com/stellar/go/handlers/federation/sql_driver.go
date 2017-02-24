@@ -24,6 +24,10 @@ var _ Driver = &SQLDriver{}
 
 func (drv *SQLDriver) initDB() {
 	drv.init.Do(func() {
+		if drv.Dialect == "" {
+			panic("no dialect specified")
+		}
+
 		drv.db = db.Wrap(drv.DB, drv.Dialect)
 	})
 }

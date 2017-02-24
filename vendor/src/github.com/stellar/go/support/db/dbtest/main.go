@@ -7,6 +7,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
+	"testing"
 
 	"github.com/stellar/go/support/errors"
 )
@@ -16,6 +17,7 @@ import (
 type DB struct {
 	Dialect string
 	DSN     string
+	t       *testing.T
 	closer  func()
 	closed  bool
 }

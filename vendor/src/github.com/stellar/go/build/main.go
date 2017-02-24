@@ -1,18 +1,19 @@
-// Package build provides a builder system for constructing various xdr
-// structures used by the stellar network.
+// Package build implements a builder system for constructing various xdr
+// structures used by the stellar network, most importanly transactions.
 //
 // At the core of this package is the *Builder and *Mutator types.  A Builder
 // object (ex. PaymentBuilder, TransactionBuilder) contain an underlying xdr
 // struct that is being iteratively built by having zero or more Mutator structs
 // applied to it. See ExampleTransactionBuilder in main_test.go for an example.
+//
 package build
 
 import (
-	"errors"
 	"math"
 
 	"github.com/stellar/go/amount"
 	"github.com/stellar/go/network"
+	"github.com/stellar/go/support/errors"
 	"github.com/stellar/go/xdr"
 )
 
@@ -31,11 +32,14 @@ var (
 	// to the test stellar network (often called testnet).
 	TestNetwork = Network{network.TestNetworkPassphrase}
 
-	// DefaultNetwork is a mutator that configures the transaction for submission
-	// to the default stellar network.  Integrators may change this value to
-	// another `Network` mutator if they would like to effect the default in a
-	// process-global manner.
-	DefaultNetwork = TestNetwork
+	// DefaultNetwork is a mutator that configures the
+	// transaction for submission to the default stellar
+	// network.  Integrators may change this value to
+	// another `Network` mutator if they would like to
+	// effect the default in a process-global manner.
+	// Replace or set your own custom passphrase on this
+	// var to set the default network for the process.
+	DefaultNetwork = Network{}
 )
 
 // Amount is a mutator capable of setting the amount
@@ -66,13 +70,13 @@ func (a Asset) ToXdrObject() (xdr.Asset, error) {
 		var codeArray [4]byte
 		byteArray := []byte(a.Code)
 		copy(codeArray[:], byteArray[0:length])
-		asset := xdr.AssetAlphaNum4{codeArray, issuer}
+		asset := xdr.AssetAlphaNum4{AssetCode: codeArray, Issuer: issuer}
 		return xdr.NewAsset(xdr.AssetTypeAssetTypeCreditAlphanum4, asset)
 	case length >= 5 && length <= 12:
 		var codeArray [12]byte
 		byteArray := []byte(a.Code)
 		copy(codeArray[:], byteArray[0:length])
-		asset := xdr.AssetAlphaNum12{codeArray, issuer}
+		asset := xdr.AssetAlphaNum12{AssetCode: codeArray, Issuer: issuer}
 		return xdr.NewAsset(xdr.AssetTypeAssetTypeCreditAlphanum12, asset)
 	default:
 		return xdr.Asset{}, errors.New("Asset code length is invalid")
@@ -225,10 +229,11 @@ type SetFlag int32
 // ClearFlag is a mutator capable of clearing account flags
 type ClearFlag int32
 
-// Signer is a mutator capable of adding, updating and deleting account signer
+// Signer is a mutator capable of adding, updating and deleting an account
+// signer
 type Signer struct {
-	PublicKey string
-	Weight    uint32
+	Address string
+	Weight  uint32
 }
 
 // SourceAccount is a mutator capable of setting the source account on

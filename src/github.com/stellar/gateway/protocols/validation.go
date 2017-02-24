@@ -1,8 +1,8 @@
 package protocols
 
 import (
-	"github.com/stellar/go-stellar-base/amount"
-	"github.com/stellar/go-stellar-base/keypair"
+	"github.com/stellar/go/amount"
+	"github.com/stellar/go/keypair"
 )
 
 // IsValidAccountID returns true if account ID is valid

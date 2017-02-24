@@ -16,34 +16,35 @@ import (
 
 	"github.com/stellar/gateway/db/entities"
 	"github.com/stellar/gateway/protocols"
-	"github.com/stellar/gateway/protocols/compliance"
-	"github.com/stellar/gateway/protocols/memo"
+	callback "github.com/stellar/gateway/protocols/compliance"
 	"github.com/stellar/gateway/server"
 	"github.com/stellar/gateway/submitter"
-	baseAmount "github.com/stellar/go-stellar-base/amount"
-	"github.com/stellar/go-stellar-base/xdr"
+	baseAmount "github.com/stellar/go/amount"
+	"github.com/stellar/go/protocols/compliance"
+	"github.com/stellar/go/xdr"
 	"github.com/zenazn/goji/web"
 )
 
 // HandlerAuth implements authorize endpoint
 func (rh *RequestHandler) HandlerAuth(c web.C, w http.ResponseWriter, r *http.Request) {
-	authreq := &compliance.AuthRequest{}
-	authreq.FromRequest(r)
+	authreq := &compliance.AuthRequest{
+		DataJSON:  r.PostFormValue("data"),
+		Signature: r.PostFormValue("sig"),
+	}
+
+	log.WithFields(log.Fields{"data": authreq.DataJSON, "sig": authreq.Signature}).Info("HandlerAuth")
 
 	err := authreq.Validate()
 	if err != nil {
-		errorResponse := err.(*protocols.ErrorResponse)
-		log.WithFields(errorResponse.LogData).Error(errorResponse.Error())
-		server.Write(w, errorResponse)
+		log.WithFields(log.Fields{"err": err}).Info(err.Error())
+		server.Write(w, protocols.InvalidParameterError)
 		return
 	}
 
-	var authData compliance.AuthData
-	err = json.Unmarshal([]byte(authreq.Data), &authData)
+	authData, err := authreq.Data()
 	if err != nil {
-		errorResponse := protocols.NewInvalidParameterError("data", authreq.Data)
-		log.WithFields(errorResponse.LogData).Warn(errorResponse.Error())
-		server.Write(w, errorResponse)
+		log.WithFields(log.Fields{"err": err}).Error(err.Error())
+		server.Write(w, protocols.InternalServerError)
 		return
 	}
 
@@ -69,7 +70,7 @@ func (rh *RequestHandler) HandlerAuth(c web.C, w http.ResponseWriter, r *http.Re
 		server.Write(w, errorResponse)
 		return
 	}
-	err = rh.SignatureSignerVerifier.Verify(senderStellarToml.SigningKey, []byte(authreq.Data), signatureBytes)
+	err = rh.SignatureSignerVerifier.Verify(senderStellarToml.SigningKey, []byte(authreq.DataJSON), signatureBytes)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"signing_key": senderStellarToml.SigningKey,
@@ -102,7 +103,7 @@ func (rh *RequestHandler) HandlerAuth(c web.C, w http.ResponseWriter, r *http.Re
 	}
 
 	// Validate memo preimage hash
-	memoPreimageHashBytes := sha256.Sum256([]byte(authData.Memo))
+	memoPreimageHashBytes := sha256.Sum256([]byte(authData.AttachmentJSON))
 	memoBytes := [32]byte(*tx.Memo.Hash)
 
 	if memoPreimageHashBytes != memoBytes {
@@ -126,15 +127,11 @@ func (rh *RequestHandler) HandlerAuth(c web.C, w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	var memoPreimage memo.Memo
-	err = json.Unmarshal([]byte(authData.Memo), &memoPreimage)
+	attachment, err := authData.Attachment()
 	if err != nil {
-		errorResponse := protocols.NewInvalidParameterError("data.memo", authData.Memo)
-		log.WithFields(log.Fields{
-			"err":  err,
-			"memo": authData.Memo,
-		}).Warn("Cannot unmarshal memo preimage")
-		server.Write(w, errorResponse)
+		log.WithFields(log.Fields{"err": err}).Error(err.Error())
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(err.Error()))
 		return
 	}
 
@@ -151,9 +148,16 @@ func (rh *RequestHandler) HandlerAuth(c web.C, w http.ResponseWriter, r *http.Re
 	if rh.Config.Callbacks.Sanctions == "" {
 		response.TxStatus = compliance.AuthStatusOk
 	} else {
+		senderInfo, err := json.Marshal(attachment.Transaction.SenderInfo)
+		if err != nil {
+			log.WithFields(log.Fields{"err": err}).Error(err.Error())
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte(err.Error()))
+		}
+
 		resp, err := rh.Client.PostForm(
 			rh.Config.Callbacks.Sanctions,
-			url.Values{"sender": {memoPreimage.Transaction.SenderInfo}},
+			url.Values{"sender": {string(senderInfo)}},
 		)
 		if err != nil {
 			log.WithFields(log.Fields{
@@ -178,7 +182,9 @@ func (rh *RequestHandler) HandlerAuth(c web.C, w http.ResponseWriter, r *http.Re
 		case http.StatusAccepted: // AuthStatusPending
 			response.TxStatus = compliance.AuthStatusPending
 
-			var pendingResponse compliance.PendingResponse
+			pendingResponse := struct {
+				Pending int `json:"pending"`
+			}{}
 			err := json.Unmarshal(body, &pendingResponse)
 			if err != nil {
 				// Set default value
@@ -250,14 +256,21 @@ func (rh *RequestHandler) HandlerAuth(c web.C, w http.ResponseWriter, r *http.Re
 				}
 			}
 
+			senderInfo, err := json.Marshal(attachment.Transaction.SenderInfo)
+			if err != nil {
+				log.WithFields(log.Fields{"err": err}).Error(err.Error())
+				w.WriteHeader(http.StatusInternalServerError)
+				w.Write([]byte(err.Error()))
+			}
+
 			resp, err := rh.Client.PostForm(
 				rh.Config.Callbacks.AskUser,
 				url.Values{
 					"amount":       {amount},
 					"asset_code":   {assetCode},
 					"asset_issuer": {assetIssuer},
-					"sender":       {memoPreimage.Transaction.SenderInfo},
-					"note":         {memoPreimage.Transaction.Note},
+					"sender":       {string(senderInfo)},
+					"note":         {attachment.Transaction.Note},
 				},
 			)
 			if err != nil {
@@ -283,7 +296,9 @@ func (rh *RequestHandler) HandlerAuth(c web.C, w http.ResponseWriter, r *http.Re
 			case http.StatusAccepted: // AuthStatusPending
 				response.InfoStatus = compliance.AuthStatusPending
 
-				var pendingResponse compliance.PendingResponse
+				pendingResponse := struct {
+					Pending int `json:"pending"`
+				}{}
 				err := json.Unmarshal(body, &pendingResponse)
 				if err != nil {
 					// Set default value
@@ -305,7 +320,7 @@ func (rh *RequestHandler) HandlerAuth(c web.C, w http.ResponseWriter, r *http.Re
 
 		if response.InfoStatus == compliance.AuthStatusOk {
 			// Fetch Info
-			fetchInfoRequest := compliance.FetchInfoRequest{Address: memoPreimage.Transaction.Route}
+			fetchInfoRequest := callback.FetchInfoRequest{Address: attachment.Transaction.Route}
 			resp, err := rh.Client.PostForm(
 				rh.Config.Callbacks.FetchInfo,
 				fetchInfoRequest.ToValues(),
@@ -352,7 +367,7 @@ func (rh *RequestHandler) HandlerAuth(c web.C, w http.ResponseWriter, r *http.Re
 			Memo:           base64.StdEncoding.EncodeToString(memoBytes[:]),
 			TransactionXdr: authData.Tx,
 			AuthorizedAt:   time.Now(),
-			Data:           authreq.Data,
+			Data:           authreq.DataJSON,
 		}
 		err = rh.EntityManager.Persist(authorizedTransaction)
 		if err != nil {
@@ -362,5 +377,12 @@ func (rh *RequestHandler) HandlerAuth(c web.C, w http.ResponseWriter, r *http.Re
 		}
 	}
 
-	server.Write(w, &response)
+	responseBody, err := response.Marshal()
+	if err != nil {
+		log.WithFields(log.Fields{"err": err}).Error(err.Error())
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(err.Error()))
+		return
+	}
+	w.Write(responseBody)
 }

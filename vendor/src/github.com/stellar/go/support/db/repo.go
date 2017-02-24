@@ -52,6 +52,11 @@ func (r *Repo) Commit() error {
 	return err
 }
 
+// Dialect returns the SQL dialect that this repo is configured to use
+func (r *Repo) Dialect() string {
+	return r.DB.DriverName()
+}
+
 func (r *Repo) DeleteRange(
 	start, end int64,
 	table string,
@@ -79,9 +84,13 @@ func (r *Repo) Get(dest interface{}, query sq.Sqlizer) error {
 // GetRaw runs `query` with `args`, setting the first result found on
 // `dest`, if any.
 func (r *Repo) GetRaw(dest interface{}, query string, args ...interface{}) error {
-	query = r.conn().Rebind(query)
+	query, err := r.ReplacePlaceholders(query)
+	if err != nil {
+		return errors.Wrap(err, "replace placeholders failed")
+	}
+
 	start := time.Now()
-	err := r.conn().Get(dest, query, args...)
+	err = r.conn().Get(dest, query, args...)
 	r.log("get", start, query, args)
 
 	if err == nil {
@@ -126,7 +135,11 @@ func (r *Repo) ExecAll(script string) error {
 
 // ExecRaw runs `query` with `args`
 func (r *Repo) ExecRaw(query string, args ...interface{}) (sql.Result, error) {
-	query = r.conn().Rebind(query)
+	query, err := r.ReplacePlaceholders(query)
+	if err != nil {
+		return nil, errors.Wrap(err, "replace placeholders failed")
+	}
+
 	start := time.Now()
 	result, err := r.conn().Exec(query, args...)
 	r.log("exec", start, query, args)
@@ -159,7 +172,11 @@ func (r *Repo) Query(query sq.Sqlizer) (*sqlx.Rows, error) {
 
 // QueryRaw runs `query` with `args`
 func (r *Repo) QueryRaw(query string, args ...interface{}) (*sqlx.Rows, error) {
-	query = r.conn().Rebind(query)
+	query, err := r.ReplacePlaceholders(query)
+	if err != nil {
+		return nil, errors.Wrap(err, "replace placeholders failed")
+	}
+
 	start := time.Now()
 	result, err := r.conn().Queryx(query, args...)
 	r.log("query", start, query, args)
@@ -173,6 +190,18 @@ func (r *Repo) QueryRaw(query string, args ...interface{}) (*sqlx.Rows, error) {
 	}
 
 	return nil, errors.Wrap(err, "query failed")
+}
+
+// ReplacePlaceholders replaces the '?' parameter placeholders in the provided
+// sql query with a sql dialect appropriate version. Use '??' to escape a
+// placeholder.
+func (r *Repo) ReplacePlaceholders(query string) (string, error) {
+	var format sq.PlaceholderFormat = sq.Question
+
+	if r.DB.DriverName() == "postgres" {
+		format = sq.Dollar
+	}
+	return format.ReplacePlaceholders(query)
 }
 
 // Rollback rolls back the current transaction
@@ -203,9 +232,13 @@ func (r *Repo) SelectRaw(
 	args ...interface{},
 ) error {
 	r.clearSliceIfPossible(dest)
-	query = r.conn().Rebind(query)
+	query, err := r.ReplacePlaceholders(query)
+	if err != nil {
+		return errors.Wrap(err, "replace placeholders failed")
+	}
+
 	start := time.Now()
-	err := r.conn().Select(dest, query, args...)
+	err = r.conn().Select(dest, query, args...)
 	r.log("select", start, query, args)
 
 	if err == nil {

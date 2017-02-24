@@ -18,8 +18,8 @@ import (
 	"github.com/stellar/gateway/db"
 	"github.com/stellar/gateway/db/entities"
 	"github.com/stellar/gateway/horizon"
-	"github.com/stellar/gateway/protocols/compliance"
-	"github.com/stellar/gateway/protocols/memo"
+	callback "github.com/stellar/gateway/protocols/compliance"
+	"github.com/stellar/go/protocols/compliance"
 	"github.com/stellar/go/strkey"
 	"github.com/stellar/go/support/errors"
 )
@@ -168,7 +168,7 @@ func (pl *PaymentListener) onPayment(payment horizon.PaymentResponse) (err error
 		return err
 	}
 
-	var receiveResponse compliance.ReceiveResponse
+	var receiveResponse callback.ReceiveResponse
 	var route string
 
 	// Request extra_memo from compliance server
@@ -210,15 +210,15 @@ func (pl *PaymentListener) onPayment(payment horizon.PaymentResponse) (err error
 			return err
 		}
 
-		var memo memo.Memo
-		err = json.Unmarshal([]byte(authData.Memo), &memo)
+		var attachment compliance.Attachment
+		err = json.Unmarshal([]byte(authData.AttachmentJSON), &attachment)
 		if err != nil {
 			pl.log.WithFields(logrus.Fields{"err": err}).Error("Cannot unmarshal memo")
 			return err
 		}
 
-		route = memo.Transaction.Route
-	} else {
+		route = attachment.Transaction.Route
+	} else if payment.Memo.Type != "hash" {
 		route = payment.Memo.Value
 	}
 

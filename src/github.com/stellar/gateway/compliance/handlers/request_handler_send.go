@@ -1,27 +1,25 @@
 package handlers
 
 import (
-	"bytes"
-	"crypto/sha256"
-	"encoding/base64"
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/stellar/gateway/protocols"
-	"github.com/stellar/gateway/protocols/compliance"
-	"github.com/stellar/gateway/protocols/memo"
+	callback "github.com/stellar/gateway/protocols/compliance"
 	"github.com/stellar/gateway/server"
 	"github.com/stellar/gateway/submitter"
-	b "github.com/stellar/go-stellar-base/build"
-	"github.com/stellar/go-stellar-base/xdr"
+	"github.com/stellar/go/address"
+	b "github.com/stellar/go/build"
+	"github.com/stellar/go/protocols/compliance"
+	"github.com/stellar/go/xdr"
 	"github.com/zenazn/goji/web"
 )
 
 // HandlerSend implements /send endpoint
 func (rh *RequestHandler) HandlerSend(c web.C, w http.ResponseWriter, r *http.Request) {
-	request := &compliance.SendRequest{}
+	request := &callback.SendRequest{}
 	request.FromRequest(r)
 
 	err := request.Validate()
@@ -32,19 +30,39 @@ func (rh *RequestHandler) HandlerSend(c web.C, w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	destinationObject, stellarToml, err := rh.FederationResolver.Resolve(request.Destination)
+	destinationObject, err := rh.FederationResolver.LookupByAddress(request.Destination)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"destination": request.Destination,
 			"err":         err,
 		}).Print("Cannot resolve address")
-		server.Write(w, compliance.CannotResolveDestination)
+		server.Write(w, callback.CannotResolveDestination)
+		return
+	}
+
+	_, domain, err := address.Split(request.Destination)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"destination": request.Destination,
+			"err":         err,
+		}).Print("Cannot resolve address")
+		server.Write(w, callback.CannotResolveDestination)
+		return
+	}
+
+	stellarToml, err := rh.StellarTomlResolver.GetStellarToml(domain)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"destination": request.Destination,
+			"err":         err,
+		}).Print("Cannot resolve address")
+		server.Write(w, callback.CannotResolveDestination)
 		return
 	}
 
 	if stellarToml.AuthServer == "" {
 		log.Print("No AUTH_SERVER in stellar.toml")
-		server.Write(w, compliance.AuthServerNotDefined)
+		server.Write(w, callback.AuthServerNotDefined)
 		return
 	}
 
@@ -99,10 +117,10 @@ func (rh *RequestHandler) HandlerSend(c web.C, w http.ResponseWriter, r *http.Re
 	}
 
 	// Fetch Sender Info
-	senderInfo := ""
+	senderInfo := make(map[string]string)
 
 	if rh.Config.Callbacks.FetchInfo != "" {
-		fetchInfoRequest := compliance.FetchInfoRequest{Address: request.Sender}
+		fetchInfoRequest := callback.FetchInfoRequest{Address: request.Sender}
 		resp, err := rh.Client.PostForm(
 			rh.Config.Callbacks.FetchInfo,
 			fetchInfoRequest.ToValues(),
@@ -137,20 +155,39 @@ func (rh *RequestHandler) HandlerSend(c web.C, w http.ResponseWriter, r *http.Re
 			return
 		}
 
-		senderInfo = string(body)
+		err = json.Unmarshal(body, &senderInfo)
+		if err != nil {
+			log.WithFields(log.Fields{
+				"fetch_info": rh.Config.Callbacks.FetchInfo,
+				"err":        err,
+			}).Error("Error unmarshalling sender_info server response")
+			server.Write(w, protocols.InternalServerError)
+			return
+		}
 	}
 
-	memoPreimage := &memo.Memo{
-		Transaction: memo.Transaction{
+	attachment := &compliance.Attachment{
+		Nonce: rh.NonceGenerator.Generate(),
+		Transaction: compliance.Transaction{
 			SenderInfo: senderInfo,
 			Route:      destinationObject.Memo,
 			Extra:      request.ExtraMemo,
 		},
 	}
 
-	memoJSON := memoPreimage.Marshal()
-	memoHashBytes := sha256.Sum256(memoJSON)
-	memoMutator := &b.MemoHash{xdr.Hash(memoHashBytes)}
+	attachmentJSON, err := attachment.Marshal()
+	if err != nil {
+		log.WithFields(log.Fields{"err": err}).Error("Error marshalling attachment")
+		server.Write(w, protocols.InternalServerError)
+		return
+	}
+	attachmentHashBytes, err := attachment.Hash()
+	if err != nil {
+		log.WithFields(log.Fields{"err": err}).Error("Error hashing attachment")
+		server.Write(w, protocols.InternalServerError)
+		return
+	}
+	memoMutator := &b.MemoHash{xdr.Hash(attachmentHashBytes)}
 
 	transaction, err := submitter.BuildTransaction(
 		request.Source,
@@ -159,24 +196,21 @@ func (rh *RequestHandler) HandlerSend(c web.C, w http.ResponseWriter, r *http.Re
 		memoMutator,
 	)
 
-	var txBytes bytes.Buffer
-	_, err = xdr.Marshal(&txBytes, transaction)
+	txBase64, err := xdr.MarshalBase64(transaction)
 	if err != nil {
-		log.Error("Error mashaling transaction")
+		log.WithFields(log.Fields{"err": err}).Error("Error mashaling transaction")
 		server.Write(w, protocols.InternalServerError)
 		return
 	}
 
-	txBase64 := base64.StdEncoding.EncodeToString(txBytes.Bytes())
-
 	authData := compliance.AuthData{
-		Sender:   request.Sender,
-		NeedInfo: rh.Config.NeedsAuth,
-		Tx:       txBase64,
-		Memo:     string(memoJSON),
+		Sender:         request.Sender,
+		NeedInfo:       rh.Config.NeedsAuth,
+		Tx:             txBase64,
+		AttachmentJSON: string(attachmentJSON),
 	}
 
-	data, err := json.Marshal(authData)
+	data, err := authData.Marshal()
 	if err != nil {
 		log.Error("Error mashaling authData")
 		server.Write(w, protocols.InternalServerError)
@@ -190,12 +224,12 @@ func (rh *RequestHandler) HandlerSend(c web.C, w http.ResponseWriter, r *http.Re
 	}
 
 	authRequest := compliance.AuthRequest{
-		Data:      string(data),
+		DataJSON:  string(data),
 		Signature: sig,
 	}
 	resp, err := rh.Client.PostForm(
 		stellarToml.AuthServer,
-		authRequest.ToValues(),
+		authRequest.ToURLValues(),
 	)
 	if err != nil {
 		log.WithFields(log.Fields{
@@ -234,7 +268,7 @@ func (rh *RequestHandler) HandlerSend(c web.C, w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	response := compliance.SendResponse{
+	response := callback.SendResponse{
 		AuthResponse:   authResponse,
 		TransactionXdr: txBase64,
 	}

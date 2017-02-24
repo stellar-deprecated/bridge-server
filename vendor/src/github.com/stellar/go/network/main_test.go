@@ -26,4 +26,10 @@ func TestHashTransaction(t *testing.T) {
 	if assert.NoError(t, err) {
 		assert.Equal(t, expected, actual)
 	}
+
+	// sadpath: empty passphrase
+	_, err = HashTransaction(&txe.Tx, "")
+	if assert.Error(t, err) {
+		assert.Contains(t, err.Error(), "empty network passphrase")
+	}
 }

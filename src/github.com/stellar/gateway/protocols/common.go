@@ -7,7 +7,7 @@ import (
 	"reflect"
 
 	"github.com/facebookgo/structtag"
-	"github.com/stellar/go-stellar-base/build"
+	"github.com/stellar/go/build"
 )
 
 // Asset represents native or credit asset

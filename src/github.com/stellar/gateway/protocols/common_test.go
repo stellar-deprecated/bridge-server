@@ -7,14 +7,14 @@ import (
 
 	. "github.com/smartystreets/goconvey/convey"
 	"github.com/stellar/gateway/protocols"
-	"github.com/stellar/gateway/protocols/compliance"
+	callback "github.com/stellar/gateway/protocols/compliance"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestProtocols(t *testing.T) {
 	Convey("FormRequest", t, func() {
 		Convey(".ToValues", func() {
-			request := &compliance.SendRequest{
+			request := &callback.SendRequest{
 				Source:          "Source",
 				Sender:          "Sender",
 				Destination:     "Destination",
@@ -36,7 +36,7 @@ func TestProtocols(t *testing.T) {
 			httpRequest := &http.Request{PostForm: values}
 			request.FormRequest.HTTPRequest = httpRequest
 
-			request2 := &compliance.SendRequest{}
+			request2 := &callback.SendRequest{}
 			request2.FromRequest(httpRequest)
 
 			assert.True(t, reflect.DeepEqual(request, request2))

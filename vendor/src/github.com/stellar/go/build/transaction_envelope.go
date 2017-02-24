@@ -3,8 +3,10 @@ package build
 import (
 	"bytes"
 	"encoding/base64"
+	"fmt"
 
 	"github.com/stellar/go/keypair"
+	"github.com/stellar/go/support/errors"
 	"github.com/stellar/go/xdr"
 )
 
@@ -38,10 +40,10 @@ func (b *TransactionEnvelopeBuilder) Init() {
 func (b *TransactionEnvelopeBuilder) Mutate(muts ...TransactionEnvelopeMutator) {
 	b.Init()
 
-	for _, m := range muts {
+	for i, m := range muts {
 		err := m.MutateTransactionEnvelope(b)
 		if err != nil {
-			b.Err = err
+			b.Err = errors.Wrap(err, fmt.Sprintf("mutator:%d failed", i))
 			return
 		}
 	}
@@ -69,7 +71,7 @@ func (b *TransactionEnvelopeBuilder) Bytes() ([]byte, error) {
 	var txBytes bytes.Buffer
 	_, err := xdr.Marshal(&txBytes, b.E)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "marshal xdr failed")
 	}
 
 	return txBytes.Bytes(), nil
@@ -79,7 +81,11 @@ func (b *TransactionEnvelopeBuilder) Bytes() ([]byte, error) {
 // of the builder's underlying transaction envelope
 func (b *TransactionEnvelopeBuilder) Base64() (string, error) {
 	bs, err := b.Bytes()
-	return base64.StdEncoding.EncodeToString(bs), err
+	if err != nil {
+		return "", errors.Wrap(err, "get raw bytes failed")
+	}
+
+	return base64.StdEncoding.EncodeToString(bs), nil
 }
 
 // ------------------------------------------------------------
@@ -91,19 +97,18 @@ func (b *TransactionEnvelopeBuilder) Base64() (string, error) {
 // MutateTransactionEnvelope adds a signature to the provided envelope
 func (m Sign) MutateTransactionEnvelope(txe *TransactionEnvelopeBuilder) error {
 	hash, err := txe.child.Hash()
-
 	if err != nil {
-		return err
+		return errors.Wrap(err, "hash tx failed")
 	}
 
 	kp, err := keypair.Parse(m.Seed)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "parse failed")
 	}
 
 	sig, err := kp.SignDecorated(hash[:])
 	if err != nil {
-		return err
+		return errors.Wrap(err, "sign tx failed")
 	}
 
 	txe.E.Signatures = append(txe.E.Signatures, sig)

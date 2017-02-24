@@ -7,7 +7,7 @@ import (
 	"github.com/stellar/gateway/protocols"
 	"github.com/stellar/gateway/protocols/bridge"
 	"github.com/stellar/gateway/server"
-	b "github.com/stellar/go-stellar-base/build"
+	b "github.com/stellar/go/build"
 )
 
 // Authorize implements /authorize endpoint

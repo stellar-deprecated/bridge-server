@@ -34,7 +34,7 @@ func decodeResponse(resp *http.Response, object interface{}) (err error) {
 	return
 }
 
-func loadMemo(p *PaymentResponse) error {
+func loadMemo(p *Payment) error {
 	res, err := http.Get(p.Links.Transaction.Href)
 	if err != nil {
 		return err

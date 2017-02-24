@@ -1,10 +1,62 @@
 package build
 
 import (
+	"testing"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/stellar/go/xdr"
+	"github.com/stretchr/testify/assert"
 )
+
+func TestSetOptions_Signer(t *testing.T) {
+	cases := []struct {
+		Name    string
+		Address string
+		Weight  uint32
+		Error   string
+	}{
+		{
+			Name:    "AccountID",
+			Address: "GAXEMCEXBERNSRXOEKD4JAIKVECIXQCENHEBRVSPX2TTYZPMNEDSQCNQ",
+			Weight:  1,
+		},
+		{
+			Name:    "hash(x)",
+			Address: "XBU2RRGLXH3E5CQHTD3ODLDF2BWDCYUSSBLLZ5GNW7JXHDIYKXZWGTOG",
+			Weight:  2,
+		},
+		{
+			Name:    "hash(tx)",
+			Address: "TBU2RRGLXH3E5CQHTD3ODLDF2BWDCYUSSBLLZ5GNW7JXHDIYKXZWHXL7",
+			Weight:  3,
+		},
+		{
+			Name:    "Bad",
+			Address: "foo",
+			Weight:  1,
+			Error:   "base32 decode failed",
+		},
+	}
+
+	for _, kase := range cases {
+		var m SetOptionsBuilder
+		m.Mutate(Signer{
+			Address: kase.Address,
+			Weight:  kase.Weight,
+		})
+
+		if kase.Error == "" {
+			if assert.NoError(t, m.Err, "Unexpected error on case %s", kase.Name) {
+				assert.Equal(t, kase.Address, m.SO.Signer.Key.Address())
+				assert.Equal(t, kase.Weight, uint32(m.SO.Signer.Weight))
+			}
+		} else {
+			assert.Contains(t, m.Err.Error(), kase.Error,
+				"Expected an error on case %s", kase.Name)
+		}
+	}
+}
 
 var _ = Describe("SetOptionsBuilder Mutators", func() {
 
@@ -38,28 +90,6 @@ var _ = Describe("SetOptionsBuilder Mutators", func() {
 
 		Context("using an invalid value", func() {
 			BeforeEach(func() { mut = InflationDest(bad) })
-			It("failed", func() { Expect(subject.Err).To(HaveOccurred()) })
-		})
-	})
-
-	Describe("Signer", func() {
-		Context("using a valid stellar address", func() {
-			BeforeEach(func() { mut = Signer{address, 5} })
-
-			It("succeeds", func() {
-				Expect(subject.Err).NotTo(HaveOccurred())
-			})
-
-			It("sets the values", func() {
-				var aid xdr.AccountId
-				aid.SetAddress(address)
-				Expect(subject.SO.Signer.PubKey.MustEd25519()).To(Equal(aid.MustEd25519()))
-				Expect(subject.SO.Signer.Weight).To(Equal(xdr.Uint32(5)))
-			})
-		})
-
-		Context("using an invalid PubKey", func() {
-			BeforeEach(func() { mut = Signer{bad, 5} })
 			It("failed", func() { Expect(subject.Err).To(HaveOccurred()) })
 		})
 	})
