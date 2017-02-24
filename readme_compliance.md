@@ -14,7 +14,7 @@ Alternatively, you can [build](#building) the binary yourself.
 
 ## Config
 
-The `config_compliance.toml` file must be present in a working directory. Config file should contain following values:
+The `compliance.cfg` file must be present in a working directory (you can load another file by using `-c` parameter). Here is an [example configuration file](https://github.com/stellar/bridge-server/blob/master/compliance_example.cfg). Config file should contain following values:
 
 * `external_port` - external server listening port (should be accessible from public)
 * `internal_port` - internal server listening port (should be accessible from your internal network only!)
@@ -39,11 +39,11 @@ The `config_compliance.toml` file must be present in a working directory. Config
   * `private_key_file` - a file containing a matching private key
 * `log_format` - set to `json` for JSON logs
 
-Check [`config_compliance_example.toml`](./config_compliance_example.toml).
+Check [`compliance_example.cfg`](./compliance_example.cfg).
 
 ## Getting started
 
-After creating `config_compliance.toml` file, you need to run DB migrations:
+After creating `compliance.cfg` file, you need to run DB migrations:
 ```
 ./compliance --migrate-db
 ```

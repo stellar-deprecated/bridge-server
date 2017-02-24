@@ -23,7 +23,7 @@ Alternatively, you can [build](#building) the binary yourself.
 
 ## Config
 
-The `config_bridge.toml` file must be present in a working directory. Here is an [example configuration file](https://github.com/stellar/bridge-server/blob/master/config_bridge_example.toml). Config file should contain following values:
+The `bridge.cfg` file must be present in a working directory (you can load another file by using `-c` parameter). Here is an [example configuration file](https://github.com/stellar/bridge-server/blob/master/bridge_example.cfg). Config file should contain following values:
 
 * `port` - server listening port
 * `api_key` - when set, all requests to bridge server must contain `api_key` parameter with a correct value, otherwise the server will respond with `503 Forbidden`
@@ -49,7 +49,7 @@ The `config_bridge.toml` file must be present in a working directory. Here is an
 * `log_format` - set to `json` for JSON logs
 * `mac_key` - a stellar secret key used to add MAC headers to a payment notification.
 
-Check [`config_bridge_example.toml`](./config_bridge_example.toml).
+Check [`bridge_example.cfg`](./bridge_example.cfg).
 
 The minimal set of config values contains:
 * `port`
@@ -60,7 +60,7 @@ It will start a server with a single endpoint: `/payment`.
 
 ## Getting started
 
-After creating `config_bridge.toml` file, you need to run DB migrations:
+After creating `bridge.cfg` file, you need to run DB migrations:
 ```
 ./bridge --migrate-db
 ```
