@@ -28,8 +28,7 @@ type Config struct {
 
 // Keys contains values of `keys` config group
 type Keys struct {
-	SigningSeed   string `mapstructure:"signing_seed"`
-	EncryptionKey string `mapstructure:"encryption_key"`
+	SigningSeed string `mapstructure:"signing_seed"`
 }
 
 // Callbacks contains values of `callbacks` config group
@@ -56,7 +55,7 @@ func (c *Config) Validate() (err error) {
 		return
 	}
 
-	if c.Keys.SigningSeed == "" || c.Keys.EncryptionKey == "" {
+	if c.Keys.SigningSeed == "" {
 		err = errors.New("keys.signing_seed and keys.encryption_key params are required")
 		return
 	}
@@ -65,14 +64,6 @@ func (c *Config) Validate() (err error) {
 		_, err = keypair.Parse(c.Keys.SigningSeed)
 		if err != nil {
 			err = errors.New("keys.signing_seed is invalid")
-			return
-		}
-	}
-
-	if c.Keys.EncryptionKey != "" {
-		_, err = keypair.Parse(c.Keys.EncryptionKey)
-		if err != nil {
-			err = errors.New("keys.encryption_key is invalid")
 			return
 		}
 	}
