@@ -13,6 +13,7 @@ import (
 var app *compliance.App
 var rootCmd *cobra.Command
 var migrateFlag bool
+var configFile string
 
 func main() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
@@ -20,10 +21,6 @@ func main() {
 }
 
 func init() {
-	viper.SetConfigName("config_compliance")
-	viper.SetConfigType("toml")
-	viper.AddConfigPath(".")
-
 	rootCmd = &cobra.Command{
 		Use:   "compliance",
 		Short: "stellar compliance server",
@@ -32,12 +29,15 @@ func init() {
 	}
 
 	rootCmd.Flags().BoolVarP(&migrateFlag, "migrate-db", "", false, "migrate DB to the newest schema version")
+	rootCmd.Flags().StringVarP(&configFile, "config", "c", "compliance.cfg", "path to config file")
 }
 
 func run(cmd *cobra.Command, args []string) {
+	viper.SetConfigFile(configFile)
+	viper.SetConfigType("toml")
 	err := viper.ReadInConfig()
 	if err != nil {
-		log.Fatal("Error reading config_compliance.toml file: ", err)
+		log.Fatal("Error reading "+configFile+" file: ", err)
 	}
 
 	var config config.Config
