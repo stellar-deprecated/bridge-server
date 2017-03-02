@@ -34,7 +34,7 @@ type SendRequest struct {
 	// path[n][asset_code] path[n][asset_issuer]
 	Path []protocols.Asset `name:"path"`
 	// Extra memo
-	ExtraMemo string `name:"extra_memo" required:""`
+	ExtraMemo string `name:"extra_memo"`
 
 	protocols.FormRequest
 }
