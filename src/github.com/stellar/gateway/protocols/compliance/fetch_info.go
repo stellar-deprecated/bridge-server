@@ -14,8 +14,8 @@ type FetchInfoRequest struct {
 }
 
 // FromRequest will populate request fields using http.Request.
-func (request *FetchInfoRequest) FromRequest(r *http.Request) {
-	request.formRequest.FromRequest(r, request)
+func (request *FetchInfoRequest) FromRequest(r *http.Request) error {
+	return request.formRequest.FromRequest(r, request)
 }
 
 // ToValues will create url.Values from request.

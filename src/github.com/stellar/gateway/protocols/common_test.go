@@ -7,14 +7,15 @@ import (
 
 	. "github.com/smartystreets/goconvey/convey"
 	"github.com/stellar/gateway/protocols"
-	callback "github.com/stellar/gateway/protocols/compliance"
+	callback "github.com/stellar/gateway/protocols/bridge"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestProtocols(t *testing.T) {
 	Convey("FormRequest", t, func() {
 		Convey(".ToValues", func() {
-			request := &callback.SendRequest{
+			request := &callback.PaymentRequest{
 				Source:          "Source",
 				Sender:          "Sender",
 				Destination:     "Destination",
@@ -24,6 +25,7 @@ func TestProtocols(t *testing.T) {
 				SendMax:         "SendMax",
 				SendAssetCode:   "SendAssetCode",
 				SendAssetIssuer: "SendAssetIssuer",
+				UseCompliance:   true,
 				ExtraMemo:       "ExtraMemo",
 				Path: []protocols.Asset{
 					{Code: "USD", Issuer: "BLAH"},
@@ -36,9 +38,9 @@ func TestProtocols(t *testing.T) {
 			httpRequest := &http.Request{PostForm: values}
 			request.FormRequest.HTTPRequest = httpRequest
 
-			request2 := &callback.SendRequest{}
-			request2.FromRequest(httpRequest)
-
+			request2 := &callback.PaymentRequest{}
+			err := request2.FromRequest(httpRequest)
+			require.NoError(t, err)
 			assert.True(t, reflect.DeepEqual(request, request2))
 		})
 	})

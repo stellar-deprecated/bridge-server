@@ -20,9 +20,14 @@ import (
 // HandlerSend implements /send endpoint
 func (rh *RequestHandler) HandlerSend(c web.C, w http.ResponseWriter, r *http.Request) {
 	request := &callback.SendRequest{}
-	request.FromRequest(r)
+	err := request.FromRequest(r)
+	if err != nil {
+		log.Error(err.Error())
+		server.Write(w, protocols.InvalidParameterError)
+		return
+	}
 
-	err := request.Validate()
+	err = request.Validate()
 	if err != nil {
 		errorResponse := err.(*protocols.ErrorResponse)
 		log.WithFields(errorResponse.LogData).Error(errorResponse.Error())

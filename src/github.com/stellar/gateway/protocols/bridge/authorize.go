@@ -29,8 +29,8 @@ type AuthorizeRequest struct {
 }
 
 // FromRequest will populate request fields using http.Request.
-func (request *AuthorizeRequest) FromRequest(r *http.Request) {
-	request.FormRequest.FromRequest(r, request)
+func (request *AuthorizeRequest) FromRequest(r *http.Request) error {
+	return request.FormRequest.FromRequest(r, request)
 }
 
 // ToValues will create url.Values from request.

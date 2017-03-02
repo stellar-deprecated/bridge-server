@@ -26,9 +26,14 @@ import (
 // Payment implements /payment endpoint
 func (rh *RequestHandler) Payment(w http.ResponseWriter, r *http.Request) {
 	request := &bridge.PaymentRequest{}
-	request.FromRequest(r)
+	err := request.FromRequest(r)
+	if err != nil {
+		log.Error(err.Error())
+		server.Write(w, protocols.InvalidParameterError)
+		return
+	}
 
-	err := request.Validate()
+	err = request.Validate()
 	if err != nil {
 		errorResponse := err.(*protocols.ErrorResponse)
 		log.WithFields(errorResponse.LogData).Error(errorResponse.Error())
@@ -45,7 +50,11 @@ func (rh *RequestHandler) Payment(w http.ResponseWriter, r *http.Request) {
 	var submitResponse horizon.SubmitTransactionResponse
 	var submitError error
 
-	if request.ExtraMemo != "" && rh.Config.Compliance != "" {
+	// Will use compliance if compliance server is connected and:
+	// * User passed extra memo OR
+	// * User explicitly wants to use compliance protocol
+	if rh.Config.Compliance != "" &&
+		(request.ExtraMemo != "" || (request.ExtraMemo == "" && request.UseCompliance)) {
 		// Compliance server part
 		sendRequest := request.ToComplianceSendRequest()
 

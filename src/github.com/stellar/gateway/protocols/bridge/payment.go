@@ -83,15 +83,17 @@ type PaymentRequest struct {
 	SendAssetIssuer string `name:"send_asset_issuer"`
 	// path[n][asset_code] path[n][asset_issuer]
 	Path []protocols.Asset `name:"path"`
-	// Extra memo
+	// Determined whether to use compliance protocol or to send a simple payment.
+	UseCompliance bool `name:"use_compliance"`
+	// Extra memo. If set, UseCompliance value will be ignored and it will use compliance.
 	ExtraMemo string `name:"extra_memo"`
 
 	protocols.FormRequest
 }
 
 // FromRequest will populate request fields using http.Request.
-func (request *PaymentRequest) FromRequest(r *http.Request) {
-	request.FormRequest.FromRequest(r, request)
+func (request *PaymentRequest) FromRequest(r *http.Request) error {
+	return request.FormRequest.FromRequest(r, request)
 }
 
 // ToValues will create url.Values from request.

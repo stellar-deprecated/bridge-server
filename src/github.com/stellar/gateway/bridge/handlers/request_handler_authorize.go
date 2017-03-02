@@ -13,9 +13,14 @@ import (
 // Authorize implements /authorize endpoint
 func (rh *RequestHandler) Authorize(w http.ResponseWriter, r *http.Request) {
 	request := &bridge.AuthorizeRequest{}
-	request.FromRequest(r)
+	err := request.FromRequest(r)
+	if err != nil {
+		log.Error(err.Error())
+		server.Write(w, protocols.InvalidParameterError)
+		return
+	}
 
-	err := request.Validate(rh.Config.Assets, rh.Config.Accounts.IssuingAccountID)
+	err = request.Validate(rh.Config.Assets, rh.Config.Accounts.IssuingAccountID)
 	if err != nil {
 		errorResponse := err.(*protocols.ErrorResponse)
 		log.WithFields(errorResponse.LogData).Error(errorResponse.Error())

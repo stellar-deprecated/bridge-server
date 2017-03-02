@@ -5,9 +5,11 @@ import (
 	"net/http"
 	"net/url"
 	"reflect"
+	"strconv"
 
 	"github.com/facebookgo/structtag"
 	"github.com/stellar/go/build"
+	"github.com/stellar/go/support/errors"
 )
 
 // Asset represents native or credit asset
@@ -53,7 +55,7 @@ const (
 )
 
 // FromRequest transforms http.Request to request struct object
-func (request *FormRequest) FromRequest(r *http.Request, destination interface{}) {
+func (request *FormRequest) FromRequest(r *http.Request, destination interface{}) error {
 	request.HTTPRequest = r
 
 	rvalue := reflect.ValueOf(destination).Elem()
@@ -89,10 +91,25 @@ func (request *FormRequest) FromRequest(r *http.Request, destination interface{}
 			*ptr = path
 		default:
 			value := r.PostFormValue(tag)
-			rvalue.Field(i).SetString(value)
+			if value == "" {
+				continue
+			}
+
+			switch rvalue.Field(i).Kind() {
+			case reflect.Bool:
+				b, err := strconv.ParseBool(value)
+				if err != nil {
+					return err
+				}
+				rvalue.Field(i).SetBool(b)
+			case reflect.String:
+				rvalue.Field(i).SetString(value)
+			default:
+				return errors.New("Invalid value: " + value + " type for type: " + tag)
+			}
 		}
 	}
-	return
+	return nil
 }
 
 // CheckRequired checks whether all fields marked as required have value
@@ -131,6 +148,9 @@ func (request *FormRequest) ToValues(object interface{}) (values url.Values) {
 			continue
 		}
 		switch field.Interface().(type) {
+		case bool:
+			value := rvalue.Field(i).Bool()
+			values.Set(tag, strconv.FormatBool(value))
 		case string:
 			value := rvalue.Field(i).String()
 			if value == "" {
