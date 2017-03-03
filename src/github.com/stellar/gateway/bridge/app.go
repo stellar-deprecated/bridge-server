@@ -21,7 +21,8 @@ import (
 	"github.com/stellar/gateway/submitter"
 	"github.com/stellar/go/clients/federation"
 	"github.com/stellar/go/clients/stellartoml"
-	"github.com/zenazn/goji"
+	"github.com/zenazn/goji/graceful"
+	"github.com/zenazn/goji/web"
 	"github.com/zenazn/goji/web/middleware"
 )
 
@@ -174,23 +175,28 @@ func (a *App) Serve() {
 	portString := fmt.Sprintf(":%d", *a.config.Port)
 	flag.Set("bind", portString)
 
-	goji.Abandon(middleware.Logger)
-	goji.Use(server.StripTrailingSlashMiddleware())
-	goji.Use(server.HeadersMiddleware())
+	bridge := web.New()
+
+	bridge.Abandon(middleware.Logger)
+	bridge.Use(server.StripTrailingSlashMiddleware())
+	bridge.Use(server.HeadersMiddleware())
 	if a.config.APIKey != "" {
-		goji.Use(server.APIKeyMiddleware(a.config.APIKey))
+		bridge.Use(server.APIKeyMiddleware(a.config.APIKey))
 	}
 
 	if a.config.Accounts.AuthorizingSeed != "" {
-		goji.Post("/authorize", a.requestHandler.Authorize)
+		bridge.Post("/authorize", a.requestHandler.Authorize)
 	} else {
 		log.Warning("accounts.authorizing_seed not provided. /authorize endpoint will not be available.")
 	}
 
-	goji.Post("/create-keypair", a.requestHandler.CreateKeypair)
-	goji.Post("/builder", a.requestHandler.Builder)
-	goji.Post("/payment", a.requestHandler.Payment)
-	goji.Get("/payment", a.requestHandler.Payment)
+	bridge.Post("/create-keypair", a.requestHandler.CreateKeypair)
+	bridge.Post("/builder", a.requestHandler.Builder)
+	bridge.Post("/payment", a.requestHandler.Payment)
+	bridge.Get("/payment", a.requestHandler.Payment)
 
-	goji.Serve()
+	err := graceful.ListenAndServe(portString, bridge)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
