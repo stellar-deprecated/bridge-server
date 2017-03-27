@@ -16,10 +16,12 @@ import (
 	"github.com/stellar/gateway/protocols/bridge"
 	callback "github.com/stellar/gateway/protocols/compliance"
 	"github.com/stellar/gateway/server"
+	"github.com/stellar/go/address"
 	"github.com/stellar/go/amount"
 	b "github.com/stellar/go/build"
 	"github.com/stellar/go/keypair"
 	"github.com/stellar/go/protocols/compliance"
+	"github.com/stellar/go/protocols/federation"
 	"github.com/stellar/go/xdr"
 )
 
@@ -118,11 +120,18 @@ func (rh *RequestHandler) Payment(w http.ResponseWriter, r *http.Request) {
 		submitResponse, submitError = rh.TransactionSubmitter.SignAndSubmitRawTransaction(request.Source, &tx)
 	} else {
 		// Payment without compliance server
-		destinationObject, err := rh.FederationResolver.LookupByAddress(request.Destination)
+		destinationObject := &federation.NameResponse{}
+
+		_, _, err := address.Split(request.Destination)
 		if err != nil {
-			log.WithFields(log.Fields{"destination": request.Destination, "err": err}).Print("Cannot resolve address")
-			server.Write(w, bridge.PaymentCannotResolveDestination)
-			return
+			destinationObject.AccountID = request.Destination
+		} else {
+			destinationObject, err = rh.FederationResolver.LookupByAddress(request.Destination)
+			if err != nil {
+				log.WithFields(log.Fields{"destination": request.Destination, "err": err}).Print("Cannot resolve address")
+				server.Write(w, bridge.PaymentCannotResolveDestination)
+				return
+			}
 		}
 
 		_, err = keypair.Parse(destinationObject.AccountID)

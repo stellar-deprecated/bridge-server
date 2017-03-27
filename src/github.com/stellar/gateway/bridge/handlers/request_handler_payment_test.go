@@ -115,6 +115,57 @@ func TestRequestHandlerPayment(t *testing.T) {
 			})
 		})
 
+		Convey("When destination is a public key", func() {
+			validParams := url.Values{
+				// GBKGH7QZVCZ2ZA5OUGZSTHFNXTBHL3MPCKSCBJUAQODGPMWP7OMMRKDW
+				"source":      {"SDRAS7XIQNX25UDCCX725R4EYGBFYGJE4HJ2A3DFCWJIHMRSMS7CXX42"},
+				"destination": {"GAPCT362RATBUJ37RN2MOKQIZLHSJMO33MMCSRUXTTHIGVDYWOFG5HDS"},
+				"amount":      {"20.0"},
+			}
+
+			// Loading sequence number
+			mockHorizon.On(
+				"LoadAccount",
+				"GBKGH7QZVCZ2ZA5OUGZSTHFNXTBHL3MPCKSCBJUAQODGPMWP7OMMRKDW",
+			).Return(
+				horizon.AccountResponse{
+					SequenceNumber: "100",
+				},
+				nil,
+			).Once()
+
+			// Checking if destination account exists
+			mockHorizon.On(
+				"LoadAccount",
+				"GAPCT362RATBUJ37RN2MOKQIZLHSJMO33MMCSRUXTTHIGVDYWOFG5HDS",
+			).Return(horizon.AccountResponse{}, nil).Once()
+
+			var ledger uint64
+			ledger = 1988728
+			horizonResponse := horizon.SubmitTransactionResponse{
+				Hash:   "6a0049b44e0d0341bd52f131c74383e6ccd2b74b92c829c990994d24bbfcfa7a",
+				Ledger: &ledger,
+				Extras: nil,
+			}
+
+			mockHorizon.On(
+				"SubmitTransaction",
+				"AAAAAFRj/hmos6yDrqGzKZytvMJ17Y8SpCCmgIOGZ7LP+5jIAAAAZAAAAAAAAABlAAAAAAAAAAAAAAABAAAAAAAAAAEAAAAAHinv2ogmGid/i3THKgjKzySx29sYKUaXnM6DVHizim4AAAAAAAAAAAvrwgAAAAAAAAAAAc/7mMgAAABAh6unGAOSOD3+9vbZXHwhDq4xdp/hl4MqZu0VVdLwldKPVy9MpXstDDxnNBBBzU48Hto+jH3qL73bbu+7zVXvCQ==",
+			).Return(horizonResponse, nil).Once()
+
+			Convey("it should return success", func() {
+				statusCode, response := net.GetResponse(testServer, validParams)
+				responseString := strings.TrimSpace(string(response))
+
+				assert.Equal(t, 200, statusCode)
+				expected := test.StringToJSONMap(`{
+					  "hash": "6a0049b44e0d0341bd52f131c74383e6ccd2b74b92c829c990994d24bbfcfa7a",
+					  "ledger": 1988728
+					}`)
+				assert.Equal(t, expected, test.StringToJSONMap(responseString))
+			})
+		})
+
 		Convey("When destination is a Stellar address", func() {
 			params := url.Values{
 				"source":      {"SDRAS7XIQNX25UDCCX725R4EYGBFYGJE4HJ2A3DFCWJIHMRSMS7CXX42"},
