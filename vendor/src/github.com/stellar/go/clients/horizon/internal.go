@@ -8,6 +8,7 @@ import (
 	"regexp"
 
 	"github.com/manucorporat/sse"
+	"github.com/stellar/go/support/errors"
 )
 
 var endEvent = regexp.MustCompile("(\r\n|\r|\n){2}")
@@ -22,7 +23,7 @@ func decodeResponse(resp *http.Response, object interface{}) (err error) {
 		}
 		decodeError := decoder.Decode(&horizonError.Problem)
 		if decodeError != nil {
-			return decodeError
+			return errors.Wrap(decodeError, "error decoding horizon.Problem")
 		}
 		return horizonError
 	}

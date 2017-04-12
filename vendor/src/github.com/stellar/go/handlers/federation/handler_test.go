@@ -189,6 +189,12 @@ func (fd ForwardTestDriver) LookupForwardingRecord(query url.Values) (*Record, e
 			MemoType:  "id",
 			Memo:      "1",
 		}, nil
+	} else if query.Get("acct") == "4321" {
+		return &Record{
+			AccountID: "GD2GJPL3UOK5LX7TWXOACK2ZPWPFSLBNKL3GTGH6BLBNISK4BGWMFBBG",
+			MemoType:  "text",
+			Memo:      "test",
+		}, nil
 	} else {
 		return nil, nil
 	}
@@ -216,7 +222,22 @@ func TestForwardHandler(t *testing.T) {
 		ContainsKey("memo_type").
 		ValueEqual("memo_type", "id").
 		ContainsKey("memo").
-		ValueEqual("memo", "1")
+		ValueEqual("memo", 1)
+
+		// Good forward request
+	server.GET("/federation").
+		WithQuery("type", "forward").
+		WithQuery("forward_type", "bank_account").
+		WithQuery("acct", "4321").
+		Expect().
+		Status(http.StatusOK).
+		JSON().Object().
+		ContainsKey("account_id").
+		ValueEqual("account_id", "GD2GJPL3UOK5LX7TWXOACK2ZPWPFSLBNKL3GTGH6BLBNISK4BGWMFBBG").
+		ContainsKey("memo_type").
+		ValueEqual("memo_type", "text").
+		ContainsKey("memo").
+		ValueEqual("memo", "test")
 
 	// Not Found forward request
 	server.GET("/federation").

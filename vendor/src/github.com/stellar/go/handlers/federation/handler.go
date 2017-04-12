@@ -103,7 +103,7 @@ func (h *Handler) lookupByName(w http.ResponseWriter, q string) {
 
 	h.writeJSON(w, proto.NameResponse{
 		AccountID: rec.AccountID,
-		Memo:      rec.Memo,
+		Memo:      proto.Memo{rec.Memo},
 		MemoType:  rec.MemoType,
 	}, http.StatusOK)
 }
@@ -128,7 +128,7 @@ func (h *Handler) lookupByForward(w http.ResponseWriter, query url.Values) {
 
 	h.writeJSON(w, proto.NameResponse{
 		AccountID: rec.AccountID,
-		Memo:      rec.Memo,
+		Memo:      proto.Memo{rec.Memo},
 		MemoType:  rec.MemoType,
 	}, http.StatusOK)
 }

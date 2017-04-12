@@ -12,6 +12,7 @@ import (
 
 	"github.com/stellar/go/build"
 	"github.com/stellar/go/support/errors"
+	"golang.org/x/net/context"
 )
 
 // DefaultTestNetClient is a default client to connect to test network
@@ -25,6 +26,24 @@ var DefaultPublicNetClient = &Client{
 	URL:  "https://horizon.stellar.org",
 	HTTP: http.DefaultClient,
 }
+
+// At is a paging parameter that can be used to override the URL loaded in a
+// remote method call to horizon.
+type At string
+
+// Cursor represents `cursor` param in queries
+type Cursor string
+
+// Limit represents `limit` param in queries
+type Limit uint
+
+// Order represents `order` param in queries
+type Order string
+
+const (
+	OrderAsc  Order = "asc"
+	OrderDesc Order = "desc"
+)
 
 var (
 	// ErrTransactionNotFailed is the error returned from a call to ResultCodes()
@@ -51,6 +70,17 @@ type Client struct {
 	HTTP HTTP
 }
 
+type ClientInterface interface {
+	LoadAccount(accountID string) (Account, error)
+	LoadAccountOffers(accountID string, params ...interface{}) (offers OffersPage, err error)
+	LoadMemo(p *Payment) error
+	LoadOrderBook(selling Asset, buying Asset) (orderBook OrderBookSummary, err error)
+	StreamLedgers(ctx context.Context, cursor *Cursor, handler LedgerHandler) error
+	StreamPayments(ctx context.Context, accountID string, cursor *Cursor, handler PaymentHandler) error
+	StreamTransactions(ctx context.Context, accountID string, cursor *Cursor, handler TransactionHandler) error
+	SubmitTransaction(txeBase64 string) (TransactionSuccess, error)
+}
+
 // Error struct contains the problem returned by Horizon
 type Error struct {
 	Response *http.Response
@@ -64,6 +94,9 @@ type HTTP interface {
 	PostForm(url string, data url.Values) (resp *http.Response, err error)
 }
 
+// LedgerHandler is a function that is called when a new ledger is received
+type LedgerHandler func(Ledger)
+
 // PaymentHandler is a function that is called when a new payment is received
 type PaymentHandler func(Payment)
 
@@ -72,3 +105,6 @@ type TransactionHandler func(Transaction)
 
 // ensure that the horizon client can be used as a SequenceProvider
 var _ build.SequenceProvider = &Client{}
+
+// ensure that the horizon client implements ClientInterface
+var _ ClientInterface = &Client{}

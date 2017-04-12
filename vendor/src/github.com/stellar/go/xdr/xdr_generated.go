@@ -35,11 +35,21 @@ func Marshal(w io.Writer, v interface{}) (int, error) {
 //
 type Hash [32]byte
 
+// XDRMaxSize implements the Sized interface for Hash
+func (e Hash) XDRMaxSize() int {
+	return 32
+}
+
 // Uint256 is an XDR Typedef defines as:
 //
 //   typedef opaque uint256[32];
 //
 type Uint256 [32]byte
+
+// XDRMaxSize implements the Sized interface for Uint256
+func (e Uint256) XDRMaxSize() int {
+	return 32
+}
 
 // Uint32 is an XDR Typedef defines as:
 //
@@ -387,11 +397,21 @@ func (u SignerKey) GetHashX() (result Uint256, ok bool) {
 //
 type Signature []byte
 
+// XDRMaxSize implements the Sized interface for Signature
+func (e Signature) XDRMaxSize() int {
+	return 64
+}
+
 // SignatureHint is an XDR Typedef defines as:
 //
 //   typedef opaque SignatureHint[4];
 //
 type SignatureHint [4]byte
+
+// XDRMaxSize implements the Sized interface for SignatureHint
+func (e SignatureHint) XDRMaxSize() int {
+	return 4
+}
 
 // NodeId is an XDR Typedef defines as:
 //
@@ -438,7 +458,7 @@ func (u NodeId) GetEd25519() (result Uint256, ok bool) {
 //    };
 //
 type Curve25519Secret struct {
-	Key [32]byte
+	Key [32]byte `xdrmaxsize:"32"`
 }
 
 // Curve25519Public is an XDR Struct defines as:
@@ -449,7 +469,7 @@ type Curve25519Secret struct {
 //    };
 //
 type Curve25519Public struct {
-	Key [32]byte
+	Key [32]byte `xdrmaxsize:"32"`
 }
 
 // HmacSha256Key is an XDR Struct defines as:
@@ -460,7 +480,7 @@ type Curve25519Public struct {
 //    };
 //
 type HmacSha256Key struct {
-	Key [32]byte
+	Key [32]byte `xdrmaxsize:"32"`
 }
 
 // HmacSha256Mac is an XDR Struct defines as:
@@ -471,7 +491,7 @@ type HmacSha256Key struct {
 //    };
 //
 type HmacSha256Mac struct {
-	Mac [32]byte
+	Mac [32]byte `xdrmaxsize:"32"`
 }
 
 // AccountId is an XDR Typedef defines as:
@@ -517,6 +537,11 @@ func (u AccountId) GetEd25519() (result Uint256, ok bool) {
 //
 type Thresholds [4]byte
 
+// XDRMaxSize implements the Sized interface for Thresholds
+func (e Thresholds) XDRMaxSize() int {
+	return 4
+}
+
 // String32 is an XDR Typedef defines as:
 //
 //   typedef string string32<32>;
@@ -550,6 +575,11 @@ type SequenceNumber Uint64
 //   typedef opaque DataValue<64>;
 //
 type DataValue []byte
+
+// XDRMaxSize implements the Sized interface for DataValue
+func (e DataValue) XDRMaxSize() int {
+	return 64
+}
 
 // AssetType is an XDR Enum defines as:
 //
@@ -596,7 +626,7 @@ func (e AssetType) String() string {
 //        }
 //
 type AssetAlphaNum4 struct {
-	AssetCode [4]byte
+	AssetCode [4]byte `xdrmaxsize:"4"`
 	Issuer    AccountId
 }
 
@@ -609,7 +639,7 @@ type AssetAlphaNum4 struct {
 //        }
 //
 type AssetAlphaNum12 struct {
-	AssetCode [12]byte
+	AssetCode [12]byte `xdrmaxsize:"12"`
 	Issuer    AccountId
 }
 
@@ -1749,8 +1779,8 @@ type ChangeTrustOp struct {
 //
 type AllowTrustOpAsset struct {
 	Type        AssetType
-	AssetCode4  *[4]byte
-	AssetCode12 *[12]byte
+	AssetCode4  *[4]byte  `xdrmaxsize:"4"`
+	AssetCode12 *[12]byte `xdrmaxsize:"12"`
 }
 
 // SwitchFieldName returns the field name in which this union's
@@ -2393,7 +2423,7 @@ func (e MemoType) String() string {
 //
 type Memo struct {
 	Type    MemoType
-	Text    *string
+	Text    *string `xdrmaxsize:"28"`
 	Id      *Uint64
 	Hash    *Hash
 	RetHash *Hash
@@ -4884,6 +4914,11 @@ type TransactionResult struct {
 //
 type UpgradeType []byte
 
+// XDRMaxSize implements the Sized interface for UpgradeType
+func (e UpgradeType) XDRMaxSize() int {
+	return 128
+}
+
 // StellarValueExt is an XDR NestedUnion defines as:
 //
 //   union switch (int v)
@@ -6387,8 +6422,8 @@ func (e IpAddrType) String() string {
 //
 type PeerAddressIp struct {
 	Type IpAddrType
-	Ipv4 *[4]byte
-	Ipv6 *[16]byte
+	Ipv4 *[4]byte  `xdrmaxsize:"4"`
+	Ipv6 *[16]byte `xdrmaxsize:"16"`
 }
 
 // SwitchFieldName returns the field name in which this union's

@@ -13,7 +13,6 @@ import:
   - http2
 - package: github.com/stretchr/testify
 - package: github.com/jmoiron/sqlx
-- package: github.com/lann/squirrel
 - package: github.com/lib/pq
 - package: github.com/go-sql-driver/mysql
 - package: github.com/mattn/go-sqlite3
@@ -34,3 +33,6 @@ import:
   - aws
 - package: github.com/jarcoal/httpmock
 - package: github.com/manucorporat/sse
+- package: github.com/y0ssar1an/q
+  version: ^1.0.0
+- package: github.com/Masterminds/squirrel

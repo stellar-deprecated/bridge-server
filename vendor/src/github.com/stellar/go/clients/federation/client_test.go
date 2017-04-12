@@ -16,7 +16,7 @@ func TestLookupByAddress(t *testing.T) {
 	tomlmock := &stellartoml.MockClient{}
 	c := &Client{StellarTOML: tomlmock, HTTP: hmock}
 
-	// happy path
+	// happy path - string integer
 	tomlmock.On("GetStellarToml", "stellar.org").Return(&stellartoml.Response{
 		FederationServer: "https://stellar.org/federation",
 	}, nil)
@@ -32,7 +32,45 @@ func TestLookupByAddress(t *testing.T) {
 	if assert.NoError(t, err) {
 		assert.Equal(t, "GASTNVNLHVR3NFO3QACMHCJT3JUSIV4NBXDHDO4VTPDTNN65W3B2766C", resp.AccountID)
 		assert.Equal(t, "id", resp.MemoType)
-		assert.Equal(t, "123", resp.Memo)
+		assert.Equal(t, "123", resp.Memo.String())
+	}
+
+	// happy path - integer
+	tomlmock.On("GetStellarToml", "stellar.org").Return(&stellartoml.Response{
+		FederationServer: "https://stellar.org/federation",
+	}, nil)
+	hmock.On("GET", "https://stellar.org/federation").
+		ReturnJSON(http.StatusOK, map[string]interface{}{
+			"stellar_address": "scott*stellar.org",
+			"account_id":      "GASTNVNLHVR3NFO3QACMHCJT3JUSIV4NBXDHDO4VTPDTNN65W3B2766C",
+			"memo_type":       "id",
+			"memo":            123,
+		})
+	resp, err = c.LookupByAddress("scott*stellar.org")
+
+	if assert.NoError(t, err) {
+		assert.Equal(t, "GASTNVNLHVR3NFO3QACMHCJT3JUSIV4NBXDHDO4VTPDTNN65W3B2766C", resp.AccountID)
+		assert.Equal(t, "id", resp.MemoType)
+		assert.Equal(t, "123", resp.Memo.String())
+	}
+
+	// happy path - string
+	tomlmock.On("GetStellarToml", "stellar.org").Return(&stellartoml.Response{
+		FederationServer: "https://stellar.org/federation",
+	}, nil)
+	hmock.On("GET", "https://stellar.org/federation").
+		ReturnJSON(http.StatusOK, map[string]interface{}{
+			"stellar_address": "scott*stellar.org",
+			"account_id":      "GASTNVNLHVR3NFO3QACMHCJT3JUSIV4NBXDHDO4VTPDTNN65W3B2766C",
+			"memo_type":       "text",
+			"memo":            "testing",
+		})
+	resp, err = c.LookupByAddress("scott*stellar.org")
+
+	if assert.NoError(t, err) {
+		assert.Equal(t, "GASTNVNLHVR3NFO3QACMHCJT3JUSIV4NBXDHDO4VTPDTNN65W3B2766C", resp.AccountID)
+		assert.Equal(t, "text", resp.MemoType)
+		assert.Equal(t, "testing", resp.Memo.String())
 	}
 
 	// response exceeds limit

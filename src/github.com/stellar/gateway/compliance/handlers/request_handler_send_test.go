@@ -135,7 +135,7 @@ func TestRequestHandlerSend(t *testing.T) {
 				).Return(&federation.NameResponse{
 					AccountID: "GAMVF7G4GJC4A7JMFJWLUAEIBFQD5RT3DCB5DC5TJDEKQBBACQ4JZVEE",
 					MemoType:  "text",
-					Memo:      "bob",
+					Memo:      federation.Memo{"bob"},
 				}, nil).Once()
 
 				mockStellartomlResolver.On(
@@ -252,7 +252,7 @@ func TestRequestHandlerSend(t *testing.T) {
 				).Return(&federation.NameResponse{
 					AccountID: "GAMVF7G4GJC4A7JMFJWLUAEIBFQD5RT3DCB5DC5TJDEKQBBACQ4JZVEE",
 					MemoType:  "text",
-					Memo:      "bob",
+					Memo:      federation.Memo{"bob"},
 				}, nil).Once()
 
 				mockStellartomlResolver.On(

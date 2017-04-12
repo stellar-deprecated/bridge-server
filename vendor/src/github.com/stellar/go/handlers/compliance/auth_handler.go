@@ -36,7 +36,7 @@ func (h *AuthHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		h.writeJSON(w, ErrorResponse{
 			Code:    "invalid_signature",
-			Message: "Signature attached to auth request is invalid",
+			Message: err.Error(),
 		}, http.StatusBadRequest)
 		return
 	}

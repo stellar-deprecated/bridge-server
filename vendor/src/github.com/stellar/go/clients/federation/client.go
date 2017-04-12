@@ -36,7 +36,7 @@ func (c *Client) LookupByAddress(addy string) (*proto.NameResponse, error) {
 		return nil, errors.Wrap(err, "get federation failed")
 	}
 
-	if resp.MemoType != "" && resp.Memo == "" {
+	if resp.MemoType != "" && resp.Memo.String() == "" {
 		return nil, errors.New("Invalid federation response (memo)")
 	}
 

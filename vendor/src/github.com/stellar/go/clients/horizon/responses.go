@@ -93,9 +93,56 @@ type HistoryAccount struct {
 	AccountID string `json:"account_id"`
 }
 
+type Ledger struct {
+	Links struct {
+		Self         Link `json:"self"`
+		Transactions Link `json:"transactions"`
+		Operations   Link `json:"operations"`
+		Payments     Link `json:"payments"`
+		Effects      Link `json:"effects"`
+	} `json:"_links"`
+	ID               string    `json:"id"`
+	PT               string    `json:"paging_token"`
+	Hash             string    `json:"hash"`
+	PrevHash         string    `json:"prev_hash,omitempty"`
+	Sequence         int32     `json:"sequence"`
+	TransactionCount int32     `json:"transaction_count"`
+	OperationCount   int32     `json:"operation_count"`
+	ClosedAt         time.Time `json:"closed_at"`
+	TotalCoins       string    `json:"total_coins"`
+	FeePool          string    `json:"fee_pool"`
+	BaseFee          int32     `json:"base_fee"`
+	BaseReserve      string    `json:"base_reserve"`
+	MaxTxSetSize     int32     `json:"max_tx_set_size"`
+	ProtocolVersion  int32     `json:"protocol_version"`
+}
+
 type Link struct {
 	Href      string `json:"href"`
 	Templated bool   `json:"templated,omitempty"`
+}
+
+type Offer struct {
+	Links struct {
+		Self       Link `json:"self"`
+		OfferMaker Link `json:"offer_maker"`
+	} `json:"_links"`
+
+	ID      int64  `json:"id"`
+	PT      string `json:"paging_token"`
+	Seller  string `json:"seller"`
+	Selling Asset  `json:"selling"`
+	Buying  Asset  `json:"buying"`
+	Amount  string `json:"amount"`
+	PriceR  Price  `json:"price_r"`
+	Price   string `json:"price"`
+}
+
+type OrderBookSummary struct {
+	Bids    []PriceLevel `json:"bids"`
+	Asks    []PriceLevel `json:"asks"`
+	Selling Asset        `json:"base"`
+	Buying  Asset        `json:"counter"`
 }
 
 type TransactionSuccess struct {
@@ -123,6 +170,17 @@ type Signer struct {
 	Type      string `json:"type"`
 }
 
+type OffersPage struct {
+	Links struct {
+		Self Link `json:"self"`
+		Next Link `json:"next"`
+		Prev Link `json:"prev"`
+	} `json:"_links"`
+	Embedded struct {
+		Records []Offer `json:"records"`
+	} `json:"_embedded"`
+}
+
 type Payment struct {
 	ID          string `json:"id"`
 	Type        string `json:"type"`
@@ -147,6 +205,17 @@ type Payment struct {
 		Type  string `json:"memo_type"`
 		Value string `json:"memo"`
 	}
+}
+
+type Price struct {
+	N int32 `json:"n"`
+	D int32 `json:"d"`
+}
+
+type PriceLevel struct {
+	PriceR Price  `json:"price_r"`
+	Price  string `json:"price"`
+	Amount string `json:"amount"`
 }
 
 type Transaction struct {

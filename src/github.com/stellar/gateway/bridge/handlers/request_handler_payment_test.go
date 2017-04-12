@@ -268,7 +268,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 					&federation.NameResponse{
 						AccountID: "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632",
 						MemoType:  "text",
-						Memo:      "125",
+						Memo:      federation.Memo{"125"},
 					},
 					nil,
 				).Once()

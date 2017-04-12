@@ -17,13 +17,13 @@ type RepositoryInterface interface {
 
 // Repository helps getting data from DB
 type Repository struct {
-	repo *db.Repo
+	repo *db.Session
 	log  *logrus.Entry
 }
 
 // NewRepository creates a new Repository using driver
 func NewRepository(driver Driver) (r Repository) {
-	r.repo = &db.Repo{DB: driver.DB()}
+	r.repo = &db.Session{DB: driver.DB()}
 	r.log = logrus.WithFields(logrus.Fields{
 		"service": "Repository",
 	})

@@ -38,7 +38,7 @@ func (r *AuthRequest) Validate() error {
 	// Validate DataJSON
 	err = authData.Validate()
 	if err != nil {
-		return errors.Wrap(err, "Invalid Data")
+		return errors.New("Invalid Data: " + err.Error())
 	}
 
 	return nil
@@ -54,7 +54,7 @@ func (r *AuthRequest) VerifySignature(sender string) error {
 
 	senderStellarToml, err := stellartoml.GetStellarTomlByAddress(sender)
 	if err != nil {
-		return errors.Wrap(err, "Cannot get stellar.toml of sender")
+		return errors.Wrap(err, "Cannot get stellar.toml of sender domain")
 	}
 
 	if senderStellarToml.SigningKey == "" {
@@ -77,6 +77,9 @@ func (r *AuthRequest) VerifySignature(sender string) error {
 // Data returns AuthData from the request.
 func (r *AuthRequest) Data() (data AuthData, err error) {
 	err = json.Unmarshal([]byte(r.DataJSON), &data)
+	if err != nil {
+		err = errors.Wrap(err, "Error unmarshalling JSON data")
+	}
 	return
 }
 

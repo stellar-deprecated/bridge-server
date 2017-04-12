@@ -220,7 +220,7 @@ func (rh *RequestHandler) Payment(w http.ResponseWriter, r *http.Request) {
 			}
 
 			memoType = destinationObject.MemoType
-			memo = destinationObject.Memo
+			memo = destinationObject.Memo.Value
 		}
 
 		var memoMutator interface{}

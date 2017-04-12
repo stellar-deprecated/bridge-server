@@ -9,8 +9,9 @@ import (
 	"net/url"
 	"strconv"
 
-	"github.com/pkg/errors"
+	"github.com/stellar/go/support/errors"
 	"github.com/stellar/go/xdr"
+	"golang.org/x/net/context"
 )
 
 // HomeDomainForAccount returns the home domain for the provided strkey-encoded
@@ -35,11 +36,60 @@ func (c *Client) LoadAccount(accountID string) (account Account, err error) {
 	return
 }
 
+// LoadAccountOffers loads the account offers from horizon. err can be either
+// error object or horizon.Error object.
+func (c *Client) LoadAccountOffers(accountID string, params ...interface{}) (offers OffersPage, err error) {
+
+	endpoint := ""
+	query := url.Values{}
+
+	for _, param := range params {
+		switch param := param.(type) {
+		case At:
+			endpoint = string(param)
+		case Limit:
+			query.Add("limit", strconv.Itoa(int(param)))
+		case Order:
+			query.Add("order", string(param))
+		case Cursor:
+			query.Add("cursor", string(param))
+		default:
+			err = fmt.Errorf("Undefined parameter: %+v", param)
+			return
+		}
+	}
+
+	if endpoint == "" {
+		endpoint = fmt.Sprintf(
+			"%s/accounts/%s/offers?%s",
+			c.URL,
+			accountID,
+			query.Encode(),
+		)
+	}
+
+	// ensure our endpoint is a real url
+	_, err = url.Parse(endpoint)
+	if err != nil {
+		err = errors.Wrap(err, "failed to parse endpoint")
+		return
+	}
+
+	resp, err := c.HTTP.Get(endpoint)
+	if err != nil {
+		err = errors.Wrap(err, "failed to load endpoint")
+		return
+	}
+
+	err = decodeResponse(resp, &offers)
+	return
+}
+
 // LoadMemo loads memo for a transaction in Payment
 func (c *Client) LoadMemo(p *Payment) (err error) {
 	res, err := c.HTTP.Get(p.Links.Transaction.Href)
 	if err != nil {
-		return errors.Wrap(err, "load transaciton failed")
+		return errors.Wrap(err, "load transaction failed")
 	}
 	defer res.Body.Close()
 	return json.NewDecoder(res.Body).Decode(&p.Memo)
@@ -63,60 +113,137 @@ func (c *Client) SequenceForAccount(
 	return xdr.SequenceNumber(seq), nil
 }
 
-func (c *Client) stream(url string, cursor *string, handler func(data []byte) error) (err error) {
-	if cursor != nil {
-		url += "?cursor=" + *cursor
-	}
+// LoadOrderBook loads order book for given selling and buying assets.
+func (c *Client) LoadOrderBook(selling Asset, buying Asset) (orderBook OrderBookSummary, err error) {
+	query := url.Values{}
 
-	req, err := http.NewRequest("GET", url, nil)
+	query.Add("selling_asset_type", selling.Type)
+	query.Add("selling_asset_code", selling.Code)
+	query.Add("selling_asset_issuer", selling.Issuer)
+
+	query.Add("buying_asset_type", buying.Type)
+	query.Add("buying_asset_code", buying.Code)
+	query.Add("buying_asset_issuer", buying.Issuer)
+
+	resp, err := c.HTTP.Get(c.URL + "/order_book?" + query.Encode())
 	if err != nil {
 		return
 	}
-	req.Header.Set("Accept", "text/event-stream")
 
-	resp, err := c.HTTP.Do(req)
-	if err != nil {
-		return err
+	err = decodeResponse(resp, &orderBook)
+	return
+}
+
+func (c *Client) stream(ctx context.Context, baseURL string, cursor *Cursor, handler func(data []byte) error) error {
+	query := url.Values{}
+	if cursor != nil {
+		query.Set("cursor", string(*cursor))
 	}
-	defer resp.Body.Close()
-	scanner := bufio.NewScanner(resp.Body)
-	scanner.Split(splitSSE)
 
-	for scanner.Scan() {
-		if len(scanner.Bytes()) == 0 {
-			continue
-		}
-
-		ev, err := parseEvent(scanner.Bytes())
+	for {
+		req, err := http.NewRequest("GET", fmt.Sprintf("%s?%s", baseURL, query.Encode()), nil)
 		if err != nil {
 			return err
 		}
+		req.Header.Set("Accept", "text/event-stream")
 
-		if ev.Event != "message" {
-			continue
-		}
-
-		err = handler(ev.Data.([]byte))
+		resp, err := c.HTTP.Do(req)
 		if err != nil {
 			return err
 		}
-	}
+		defer resp.Body.Close()
+		scanner := bufio.NewScanner(resp.Body)
+		scanner.Split(splitSSE)
 
-	err = scanner.Err()
-	if err == io.ErrUnexpectedEOF {
-		return nil
-	}
-	if err != nil {
-		return err
+		var objectBytes []byte
+
+		for scanner.Scan() {
+			// Check if ctx is not cancelled
+			select {
+			case <-ctx.Done():
+				return nil
+			default:
+				// Continue streaming
+			}
+
+			if len(scanner.Bytes()) == 0 {
+				continue
+			}
+
+			ev, err := parseEvent(scanner.Bytes())
+			if err != nil {
+				return err
+			}
+
+			if ev.Event != "message" {
+				continue
+			}
+
+			switch data := ev.Data.(type) {
+			case string:
+				err = handler([]byte(data))
+				objectBytes = []byte(data)
+			case []byte:
+				err = handler(data)
+				objectBytes = data
+			default:
+				err = errors.New("Invalid ev.Data type")
+			}
+			if err != nil {
+				return err
+			}
+		}
+
+		err = scanner.Err()
+
+		// Start streaming from the next object:
+		// - if there was no error OR
+		// - if connection was lost
+		if err == nil || err == io.ErrUnexpectedEOF {
+			object := struct {
+				PT string `json:"paging_token"`
+			}{}
+
+			err := json.Unmarshal(objectBytes, &object)
+			if err != nil {
+				return errors.Wrap(err, "Error unmarshaling objectBytes")
+			}
+
+			if object.PT != "" {
+				query.Set("cursor", object.PT)
+			} else {
+				return errors.New("no paging_token in object: cannot continue")
+			}
+
+			continue
+		}
+
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
 }
 
-// StreamPayments streams incoming payments
-func (c *Client) StreamPayments(accountID string, cursor *string, handler PaymentHandler) (err error) {
+// StreamLedgers streams incoming ledgers. Use context.WithCancel to stop streaming.
+func (c *Client) StreamLedgers(ctx context.Context, cursor *Cursor, handler LedgerHandler) (err error) {
+	url := fmt.Sprintf("%s/ledgers", c.URL)
+	return c.stream(ctx, url, cursor, func(data []byte) error {
+		var ledger Ledger
+		err = json.Unmarshal(data, &ledger)
+		if err != nil {
+			return errors.Wrap(err, "Error unmarshaling data")
+		}
+		handler(ledger)
+		return nil
+	})
+}
+
+// StreamPayments streams incoming payments. Use context.WithCancel to stop streaming.
+func (c *Client) StreamPayments(ctx context.Context, accountID string, cursor *Cursor, handler PaymentHandler) (err error) {
 	url := fmt.Sprintf("%s/accounts/%s/payments", c.URL, accountID)
-	return c.stream(url, cursor, func(data []byte) error {
+	return c.stream(ctx, url, cursor, func(data []byte) error {
 		var payment Payment
 		err = json.Unmarshal(data, &payment)
 		if err != nil {
@@ -127,10 +254,10 @@ func (c *Client) StreamPayments(accountID string, cursor *string, handler Paymen
 	})
 }
 
-// StreamTransactions streams incoming transactions
-func (c *Client) StreamTransactions(accountID string, cursor *string, handler TransactionHandler) (err error) {
+// StreamTransactions streams incoming transactions. Use context.WithCancel to stop streaming.
+func (c *Client) StreamTransactions(ctx context.Context, accountID string, cursor *Cursor, handler TransactionHandler) (err error) {
 	url := fmt.Sprintf("%s/accounts/%s/transactions", c.URL, accountID)
-	return c.stream(url, cursor, func(data []byte) error {
+	return c.stream(ctx, url, cursor, func(data []byte) error {
 		var transaction Transaction
 		err = json.Unmarshal(data, &transaction)
 		if err != nil {

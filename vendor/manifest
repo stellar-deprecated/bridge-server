@@ -8,6 +8,12 @@
 			"branch": "master"
 		},
 		{
+			"importpath": "github.com/Masterminds/squirrel",
+			"repository": "https://github.com/Masterminds/squirrel",
+			"revision": "20f192218cf52a73397fa2df45bdda720f3e47c8",
+			"branch": "v1"
+		},
+		{
 			"importpath": "github.com/Sirupsen/logrus",
 			"repository": "https://github.com/Sirupsen/logrus",
 			"revision": "61e43dc76f7ee59a82bdf3d71033dc12bea4c77d",
@@ -458,7 +464,7 @@
 		{
 			"importpath": "github.com/stellar/go",
 			"repository": "https://github.com/stellar/go",
-			"revision": "2f5094023dd16538a61a0ad2820d9a2a3ba9afba",
+			"revision": "d73c794a1a2352e7020ad728697aaa5664bc62fa",
 			"branch": "master"
 		},
 		{
