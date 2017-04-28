@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+    "fmt"
 
 	"encoding/base64"
 
@@ -162,6 +163,11 @@ func (pl *PaymentListener) onPayment(payment horizon.PaymentResponse) (err error
 		return nil
 	}
 
+    if len(payment.AssetCode) == 0 && len(payment.AssetIssuer) == 0 {
+      fmt.Printf("AssetCode len 0 && AssetIssuer len 0 so set to native")
+      payment.AssetCode = "native"
+    }
+
 	err = pl.horizon.LoadMemo(&payment)
 	if err != nil {
 		pl.log.Error("Unable to load transaction memo")
@@ -266,8 +272,17 @@ func (pl *PaymentListener) onPayment(payment horizon.PaymentResponse) (err error
 }
 
 func (pl *PaymentListener) isAssetAllowed(code string, issuer string) bool {
+    fmt.Printf("code: %s  issuer: %s \n", code, issuer)
+    fmt.Printf("len code:%d  len issuer: %d \n",len(code), len(issuer))
 	for _, asset := range pl.config.Assets {
+        fmt.Printf("asset.code: %s  asset.Issuer %s.\n", asset.Code, asset.Issuer)
+        
 		if asset.Code == code && asset.Issuer == issuer {
+            fmt.Printf("asset is allowed \n")
+			return true
+		}
+        if asset.Code == "native" && len(code) == 0 && len(issuer) == 0 {
+            fmt.Printf("asset is native and is allowed \n")
 			return true
 		}
 	}
