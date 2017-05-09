@@ -388,6 +388,7 @@ name | description
 `route` | The recipient ID at the receiving FI. This will be the routing information contained in the memo or memo value if no compliance server is connected or memo type is not `hash`.
 `amount` | Amount that was sent
 `asset_code` | Code of the asset sent (ex. `USD`)
+`asset_issuer` | Issuer of the asset sent (ex. `GD4I7AFSLZGTDL34TQLWJOM2NHLIIOEKD5RHHZUW54HERBLSIRKUOXRR`)
 `memo_type` | Type of the memo attached to the transaction. This field will be empty when no memo was attached.
 `memo` | Value of the memo attached. This field will be empty when no memo was attached.
 `data` | Value of the [AuthData](https://www.stellar.org/developers/learn/integration-guides/compliance-protocol.html). This field will be empty when compliance server is not connected.

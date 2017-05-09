@@ -225,14 +225,15 @@ func (pl *PaymentListener) onPayment(payment horizon.PaymentResponse) (err error
 	resp, err := pl.postForm(
 		pl.config.Callbacks.Receive,
 		url.Values{
-			"id":         {payment.ID},
-			"from":       {payment.From},
-			"route":      {route},
-			"amount":     {payment.Amount},
-			"asset_code": {payment.AssetCode},
-			"memo_type":  {payment.Memo.Type},
-			"memo":       {payment.Memo.Value},
-			"data":       {receiveResponse.Data},
+			"id":           {payment.ID},
+			"from":         {payment.From},
+			"route":        {route},
+			"amount":       {payment.Amount},
+			"asset_code":   {payment.AssetCode},
+			"asset_issuer": {payment.AssetIssuer},
+			"memo_type":    {payment.Memo.Type},
+			"memo":         {payment.Memo.Value},
+			"data":         {receiveResponse.Data},
 		},
 	)
 	if err != nil {

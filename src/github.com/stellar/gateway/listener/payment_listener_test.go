@@ -192,7 +192,9 @@ func TestPaymentListener(t *testing.T) {
 
 		Convey("When receive callback returns success", func() {
 			operation.Type = "payment"
+			operation.From = "GBL27BKG2JSDU6KQ5YJKCDWTVIU24VTG4PLB63SF4K2DBZS5XZMWRPVU"
 			operation.To = "GATKP6ZQM5CSLECPMTAC5226PE367QALCPM6AFHTSULPPZMT62OOPMQB"
+			operation.Amount = "100"
 			operation.AssetCode = "USD"
 			operation.AssetIssuer = "GD4I7AFSLZGTDL34TQLWJOM2NHLIIOEKD5RHHZUW54HERBLSIRKUOXRR"
 			operation.Memo.Type = "text"
@@ -212,7 +214,16 @@ func TestPaymentListener(t *testing.T) {
 			).Return(
 				net.BuildHTTPResponse(200, "ok"),
 				nil,
-			).Once()
+			).Run(func(args mock.Arguments) {
+				req := args.Get(0).(*http.Request)
+
+				assert.Equal(t, operation.From, req.PostFormValue("from"))
+				assert.Equal(t, operation.Amount, req.PostFormValue("amount"))
+				assert.Equal(t, operation.AssetCode, req.PostFormValue("asset_code"))
+				assert.Equal(t, operation.AssetIssuer, req.PostFormValue("asset_issuer"))
+				assert.Equal(t, operation.Memo.Type, req.PostFormValue("memo_type"))
+				assert.Equal(t, operation.Memo.Value, req.PostFormValue("memo"))
+			}).Once()
 
 			Convey("it should save the status", func() {
 				err := paymentListener.onPayment(operation)
