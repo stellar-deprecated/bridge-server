@@ -406,7 +406,7 @@ This MAC can be used on the receiving side of the notification to verify that th
 ## Security
 
 * This server must be set up in an isolated environment (ex. AWS VPC). Please make sure your firewall is properly configured 
-and accepts connections from a trusted IPs only. You can also set the `api_key` config parameter but it's not recommended. 
+and accepts connections from a trusted IPs only. You can set the `api_key` config parameter as an additional protection but it's not recommended as the solely protection. 
 If you don't set this properly, an unauthorized person will be able to submit transactions from your accounts!
 * Make sure the `callbacks` you provide only accept connections from the bridge server IP.
 * Remember that `callbacks.receive` may be called multiple times with the same payment. Check `id` parameter and ignore 
