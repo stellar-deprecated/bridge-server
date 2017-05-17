@@ -41,7 +41,7 @@ The `bridge.cfg` file must be present in a working directory (you can load anoth
 * `accounts`
   * `base_seed` - The secret seed of the account used to send payments. If left blank you will need to pass it in calls to `/payment`. 
   * `authorizing_seed` - The secret seed of the public key that is able to submit `allow_trust` operations on the issuing account.
-  * `issuing_account_id` - The account ID of the issuing account.
+  * `issuing_account_id` - The account ID of the issuing account (only if you want to authorize trustlines via bridge server, otherwise leave empty).
   * `receiving_account_id` - The account ID that receives incoming payments. The `callbacks.receive` will be called when a payment is received by this account.
 * `callbacks`
   * `receive` - URL of the webhook where requests will be sent when a new payment is sent to the receiving account. The bridge server will keep calling the receive callback indefinitely until 200 OK status is returned by it. **WARNING** The bridge server can send multiple requests to this webhook for a single payment! You need to be prepared for it. See: [Security](#security).
