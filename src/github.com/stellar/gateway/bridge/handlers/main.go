@@ -4,6 +4,7 @@ import (
 	"github.com/stellar/gateway/bridge/config"
 	"github.com/stellar/gateway/external"
 	"github.com/stellar/gateway/horizon"
+	"github.com/stellar/gateway/listener"
 	"github.com/stellar/gateway/net"
 	"github.com/stellar/gateway/submitter"
 )
@@ -16,6 +17,7 @@ type RequestHandler struct {
 	StellarTomlResolver  external.StellarTomlClientInterface     `inject:""`
 	FederationResolver   external.FederationClientInterface      `inject:""`
 	TransactionSubmitter submitter.TransactionSubmitterInterface `inject:""`
+	PaymentListener      *listener.PaymentListener               `inject:""`
 }
 
 func (rh *RequestHandler) isAssetAllowed(code string, issuer string) bool {

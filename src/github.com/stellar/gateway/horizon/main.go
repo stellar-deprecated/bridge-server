@@ -23,6 +23,7 @@ type PaymentHandler func(PaymentResponse) error
 type HorizonInterface interface {
 	LoadAccount(accountID string) (response AccountResponse, err error)
 	LoadMemo(p *PaymentResponse) (err error)
+	LoadOperation(operationID string) (response PaymentResponse, err error)
 	StreamPayments(accountID string, cursor *string, onPaymentHandler PaymentHandler) (err error)
 	SubmitTransaction(txeBase64 string) (response SubmitTransactionResponse, err error)
 }
@@ -76,6 +77,41 @@ func (h *Horizon) LoadAccount(accountID string) (response AccountResponse, err e
 	h.log.WithFields(logrus.Fields{
 		"accountID": accountID,
 	}).Info("Account loaded")
+	return
+}
+
+// LoadOperation loads a single operation from Horizon server
+func (h *Horizon) LoadOperation(operationID string) (response PaymentResponse, err error) {
+	h.log.WithFields(logrus.Fields{
+		"operationID": operationID,
+	}).Info("Loading operation")
+	resp, err := http.Get(h.ServerURL + "/operations/" + operationID)
+	if err != nil {
+		return
+	}
+
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return
+	}
+
+	if resp.StatusCode != 200 {
+		h.log.WithFields(logrus.Fields{
+			"operationID": operationID,
+		}).Error("Operation does not exist")
+		err = fmt.Errorf("StatusCode indicates error: %s", body)
+		return
+	}
+
+	err = json.Unmarshal(body, &response)
+	if err != nil {
+		return
+	}
+
+	h.log.WithFields(logrus.Fields{
+		"operationID": operationID,
+	}).Info("Operation loaded")
 	return
 }
 

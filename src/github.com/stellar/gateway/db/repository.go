@@ -12,7 +12,7 @@ type RepositoryInterface interface {
 	GetAuthorizedTransactionByMemo(memo string) (*entities.AuthorizedTransaction, error)
 	GetAllowedFiByDomain(domain string) (*entities.AllowedFi, error)
 	GetAllowedUserByDomainAndUserID(domain, userID string) (*entities.AllowedUser, error)
-	GetReceivedPaymentByID(id int64) (*entities.ReceivedPayment, error)
+	GetReceivedPaymentByOperationID(operationID int64) (*entities.ReceivedPayment, error)
 }
 
 // Repository helps getting data from DB
@@ -61,6 +61,7 @@ func (r Repository) GetAuthorizedTransactionByMemo(memo string) (*entities.Autho
 		return nil, err
 	}
 
+	found.SetExists()
 	return &found, nil
 }
 
@@ -83,6 +84,7 @@ func (r Repository) GetAllowedFiByDomain(domain string) (*entities.AllowedFi, er
 		return nil, err
 	}
 
+	found.SetExists()
 	return &found, nil
 }
 
@@ -106,18 +108,19 @@ func (r Repository) GetAllowedUserByDomainAndUserID(domain, userID string) (*ent
 		return nil, err
 	}
 
+	found.SetExists()
 	return &found, nil
 }
 
-// GetReceivedPaymentByID returns received payment by id
-func (r Repository) GetReceivedPaymentByID(id int64) (*entities.ReceivedPayment, error) {
+// GetReceivedPaymentByOperationID returns received payment by operation_id
+func (r Repository) GetReceivedPaymentByOperationID(operationID int64) (*entities.ReceivedPayment, error) {
 
 	var found entities.ReceivedPayment
 
 	err := r.repo.GetRaw(
 		&found,
-		"SELECT * FROM ReceivedPayment WHERE id = ?",
-		id,
+		"SELECT * FROM ReceivedPayment WHERE operation_id = ?",
+		operationID,
 	)
 
 	if r.repo.NoRows(err) {
@@ -128,12 +131,15 @@ func (r Repository) GetReceivedPaymentByID(id int64) (*entities.ReceivedPayment,
 		return nil, err
 	}
 
+	found.SetExists()
 	return &found, nil
 }
 
 // getLastReceivedPayment returns the last received payment
 func (r Repository) getLastReceivedPayment() (*entities.ReceivedPayment, error) {
 	var receivedPayment entities.ReceivedPayment
+	// DO NOT use `processed_at` as payment can be reprocessed. Reprocessing will update `processed_at`
+	// value but not `id`.
 	err := r.repo.GetRaw(&receivedPayment, "SELECT * FROM ReceivedPayment ORDER BY id DESC LIMIT 1")
 
 	if r.repo.NoRows(err) {
@@ -144,5 +150,6 @@ func (r Repository) getLastReceivedPayment() (*entities.ReceivedPayment, error) 
 		return nil, err
 	}
 
+	receivedPayment.SetExists()
 	return &receivedPayment, nil
 }

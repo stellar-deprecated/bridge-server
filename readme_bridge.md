@@ -366,6 +366,16 @@ It will return [`SubmitTransactionResponse`](/src/github.com/stellar/gateway/hor
 * [`AllowTrustTrustNotRequired`](/src/github.com/stellar/gateway/protocols/bridge/authorize.go)
 * [`AllowTrustCantRevoke`](/src/github.com/stellar/gateway/protocols/bridge/authorize.go)
 
+### POST /reprocess
+Can be used to reprocess received payment.
+
+#### Request Parameters
+
+name |  | description
+--- | --- | ---
+`operation_id` | required | Horizon ID of operation to reprocess
+`force` | optional | Must be set to `true` when reprocessing successful operations.
+
 ## Callbacks
 
 The Bridge server listens for payment operations to the account specified by `accounts.receiving_account_id`. Every time 
