@@ -1,6 +1,6 @@
 language: go
 go:
-- '1.5'
+- '1.8'
 install:
 - go get github.com/constabulary/gb/...
 script:
@@ -17,4 +17,4 @@ deploy:
   on:
     repo: stellar/bridge-server
     tags: true
-    go: '1.5'
+    go: '1.8'
