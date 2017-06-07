@@ -113,6 +113,36 @@ func (pl *PaymentListener) Listen() (err error) {
 	return
 }
 
+func (pl *PaymentListener) ReprocessPayment(payment horizon.PaymentResponse, force bool) error {
+	pl.log.WithFields(logrus.Fields{"id": payment.ID}).Info("Reprocessing a payment")
+
+	id, err := strconv.ParseInt(payment.ID, 10, 64)
+	if err != nil {
+		pl.log.WithFields(logrus.Fields{"err": err}).Error("Error converting ID to int64")
+		return err
+	}
+
+	existingPayment, err := pl.repository.GetReceivedPaymentByOperationID(id)
+	if err != nil {
+		pl.log.WithFields(logrus.Fields{"err": err}).Error("Error checking if receive payment exists")
+		return err
+	}
+
+	if existingPayment == nil {
+		pl.log.WithFields(logrus.Fields{"id": payment.ID}).Info("Payment has not been processed yet")
+		return errors.New("Payment has not been processed yet")
+	}
+
+	if existingPayment.Status == "Success" && !force {
+		pl.log.WithFields(logrus.Fields{"id": payment.ID}).Info("Trying to reprocess successful transaction without force")
+		return errors.New("Trying to reprocess successful transaction without force")
+	}
+
+	existingPayment.ProcessedAt = pl.now()
+
+	return pl.process(payment, existingPayment)
+}
+
 func (pl *PaymentListener) onPayment(payment horizon.PaymentResponse) (err error) {
 	pl.log.WithFields(logrus.Fields{"id": payment.ID}).Info("New received payment")
 
@@ -122,7 +152,7 @@ func (pl *PaymentListener) onPayment(payment horizon.PaymentResponse) (err error
 		return err
 	}
 
-	existingPayment, err := pl.repository.GetReceivedPaymentByID(id)
+	existingPayment, err := pl.repository.GetReceivedPaymentByOperationID(id)
 	if err != nil {
 		pl.log.WithFields(logrus.Fields{"err": err}).Error("Error checking if receive payment exists")
 		return err
@@ -133,12 +163,16 @@ func (pl *PaymentListener) onPayment(payment horizon.PaymentResponse) (err error
 		return
 	}
 
-	dbPayment := entities.ReceivedPayment{
+	dbPayment := &entities.ReceivedPayment{
 		OperationID: payment.ID,
 		ProcessedAt: pl.now(),
 		PagingToken: payment.PagingToken,
 	}
 
+	return pl.process(payment, dbPayment)
+}
+
+func (pl *PaymentListener) process(payment horizon.PaymentResponse, dbPayment *entities.ReceivedPayment) (err error) {
 	savePayment := func(payment *entities.ReceivedPayment) (err error) {
 		err = pl.entityManager.Persist(payment)
 		return
@@ -146,19 +180,19 @@ func (pl *PaymentListener) onPayment(payment horizon.PaymentResponse) (err error
 
 	if payment.Type != "payment" && payment.Type != "path_payment" {
 		dbPayment.Status = "Not a payment operation"
-		savePayment(&dbPayment)
+		savePayment(dbPayment)
 		return
 	}
 
 	if payment.To != pl.config.Accounts.ReceivingAccountID {
 		dbPayment.Status = "Operation sent not received"
-		savePayment(&dbPayment)
+		savePayment(dbPayment)
 		return nil
 	}
 
 	if !pl.isAssetAllowed(payment.AssetCode, payment.AssetIssuer) {
 		dbPayment.Status = "Asset not allowed"
-		savePayment(&dbPayment)
+		savePayment(dbPayment)
 		return nil
 	}
 
@@ -257,7 +291,7 @@ func (pl *PaymentListener) onPayment(payment horizon.PaymentResponse) (err error
 	}
 
 	dbPayment.Status = "Success"
-	err = savePayment(&dbPayment)
+	err = savePayment(dbPayment)
 	if err != nil {
 		pl.log.Error("Error saving payment to the DB")
 		return err

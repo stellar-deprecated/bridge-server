@@ -81,6 +81,12 @@ func (m *MockHorizon) LoadAccount(accountID string) (response horizon.AccountRes
 	return a.Get(0).(horizon.AccountResponse), a.Error(1)
 }
 
+// LoadOperation is a mocking a method
+func (m *MockHorizon) LoadOperation(operationID string) (response horizon.PaymentResponse, err error) {
+	a := m.Called(operationID)
+	return a.Get(0).(horizon.PaymentResponse), a.Error(1)
+}
+
 // LoadMemo is a mocking a method
 func (m *MockHorizon) LoadMemo(p *horizon.PaymentResponse) (err error) {
 	a := m.Called(p)
@@ -137,9 +143,9 @@ func (m *MockRepository) GetAllowedUserByDomainAndUserID(domain, userID string) 
 	return a.Get(0).(*entities.AllowedUser), a.Error(1)
 }
 
-// GetReceivedPaymentByID is a mocking a method
-func (m *MockRepository) GetReceivedPaymentByID(id int64) (*entities.ReceivedPayment, error) {
-	a := m.Called(id)
+// GetReceivedPaymentByOperationID is a mocking a method
+func (m *MockRepository) GetReceivedPaymentByOperationID(operationID int64) (*entities.ReceivedPayment, error) {
+	a := m.Called(operationID)
 	if a.Get(0) == nil {
 		return nil, a.Error(1)
 	}

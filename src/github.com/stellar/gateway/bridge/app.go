@@ -194,6 +194,7 @@ func (a *App) Serve() {
 	bridge.Post("/builder", a.requestHandler.Builder)
 	bridge.Post("/payment", a.requestHandler.Payment)
 	bridge.Get("/payment", a.requestHandler.Payment)
+	bridge.Post("/reprocess", a.requestHandler.Reprocess)
 
 	err := graceful.ListenAndServe(portString, bridge)
 	if err != nil {
