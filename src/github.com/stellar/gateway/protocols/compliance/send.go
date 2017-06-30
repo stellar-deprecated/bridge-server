@@ -56,22 +56,21 @@ func (request *SendRequest) Validate() error {
 		return err
 	}
 
-	_, err = keypair.Parse(request.Source)
-	if err != nil {
-		return protocols.NewInvalidParameterError("source", request.Source)
+	if !protocols.IsValidAccountID(request.Source) {
+		return protocols.NewInvalidParameterError("source", request.Source, "Source must be a public key (starting with `G`).")
 	}
 
 	if !validateStellarAddress(request.Sender) {
-		return protocols.NewInvalidParameterError("sender", request.Sender)
+		return protocols.NewInvalidParameterError("sender", request.Sender, "Not a valid stellar address.")
 	}
 
 	if !validateStellarAddress(request.Destination) {
-		return protocols.NewInvalidParameterError("destination", request.Destination)
+		return protocols.NewInvalidParameterError("destination", request.Destination, "Not a valid stellar address.")
 	}
 
 	_, err = keypair.Parse(request.AssetIssuer)
-	if err != nil {
-		return protocols.NewInvalidParameterError("asset_issuer", request.AssetIssuer)
+	if !protocols.IsValidAccountID(request.AssetIssuer) {
+		return protocols.NewInvalidParameterError("asset_issuer", request.AssetIssuer, "Asset issuer must be a public key (starting with `G`).")
 	}
 
 	return nil

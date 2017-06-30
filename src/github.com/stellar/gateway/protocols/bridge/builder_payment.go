@@ -41,19 +41,19 @@ func (op PaymentOperationBody) ToTransactionMutator() b.TransactionMutator {
 // Validate validates if operation body is valid.
 func (op PaymentOperationBody) Validate() error {
 	if !protocols.IsValidAccountID(op.Destination) {
-		return protocols.NewInvalidParameterError("destination", op.Destination)
+		return protocols.NewInvalidParameterError("destination", op.Destination, "Destination must be a public key (starting with `G`).")
 	}
 
 	if !protocols.IsValidAmount(op.Amount) {
-		return protocols.NewInvalidParameterError("amount", op.Amount)
+		return protocols.NewInvalidParameterError("amount", op.Amount, "Invalid amount.")
 	}
 
 	if !op.Asset.Validate() {
-		return protocols.NewInvalidParameterError("asset", op.Asset.String())
+		return protocols.NewInvalidParameterError("asset", op.Asset.String(), "Invalid asset.")
 	}
 
 	if op.Source != nil && !protocols.IsValidAccountID(*op.Source) {
-		return protocols.NewInvalidParameterError("source", *op.Source)
+		return protocols.NewInvalidParameterError("source", *op.Source, "Source must be a public key (starting with `G`).")
 	}
 
 	return nil

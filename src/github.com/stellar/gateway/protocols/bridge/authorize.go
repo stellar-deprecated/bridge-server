@@ -6,7 +6,6 @@ import (
 
 	"github.com/stellar/gateway/bridge/config"
 	"github.com/stellar/gateway/protocols"
-	"github.com/stellar/go/keypair"
 )
 
 var (
@@ -45,9 +44,8 @@ func (request *AuthorizeRequest) Validate(allowedAssets []config.Asset, issuingA
 		return err
 	}
 
-	_, err = keypair.Parse(request.AccountID)
-	if err != nil {
-		return protocols.NewInvalidParameterError("account_id", request.AccountID)
+	if !protocols.IsValidAccountID(request.AccountID) {
+		return protocols.NewInvalidParameterError("account_id", request.AccountID, "Account ID must start with `G`.")
 	}
 
 	// Is asset allowed?
@@ -60,7 +58,7 @@ func (request *AuthorizeRequest) Validate(allowedAssets []config.Asset, issuingA
 	}
 
 	if !allowed {
-		return protocols.NewInvalidParameterError("asset_code", request.AssetCode)
+		return protocols.NewInvalidParameterError("asset_code", request.AssetCode, "Asset code not allowed.")
 	}
 
 	return nil

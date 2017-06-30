@@ -78,17 +78,17 @@ func (op SetOptionsOperationBody) ToTransactionMutator() b.TransactionMutator {
 // Validate validates if operation body is valid.
 func (op SetOptionsOperationBody) Validate() error {
 	if op.InflationDest != nil && !protocols.IsValidAccountID(*op.InflationDest) {
-		return protocols.NewInvalidParameterError("inflation_dest", *op.InflationDest)
+		return protocols.NewInvalidParameterError("inflation_dest", *op.InflationDest, "Inflation destination must be a public key (starting with `G`).")
 	}
 
 	if op.Signer != nil {
 		if !protocols.IsValidAccountID(op.Signer.PublicKey) {
-			return protocols.NewInvalidParameterError("signer.public_key", op.Signer.PublicKey)
+			return protocols.NewInvalidParameterError("signer.public_key", op.Signer.PublicKey, "Public key must be starting with `G`.")
 		}
 	}
 
 	if op.Source != nil && !protocols.IsValidAccountID(*op.Source) {
-		return protocols.NewInvalidParameterError("source", *op.Source)
+		return protocols.NewInvalidParameterError("source", *op.Source, "Source must be a public key (starting with `G`).")
 	}
 
 	return nil

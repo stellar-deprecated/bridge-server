@@ -49,12 +49,12 @@ func (op ManageOfferOperationBody) Validate() error {
 	if op.OfferID != nil {
 		_, err := strconv.ParseUint(*op.OfferID, 10, 64)
 		if err != nil {
-			return protocols.NewInvalidParameterError("offer_id", *op.OfferID)
+			return protocols.NewInvalidParameterError("offer_id", *op.OfferID, "Not a number.")
 		}
 	}
 
 	if op.Source != nil && !protocols.IsValidAccountID(*op.Source) {
-		return protocols.NewInvalidParameterError("source", *op.Source)
+		return protocols.NewInvalidParameterError("source", *op.Source, "Source must be a public key (starting with `G`).")
 	}
 
 	return nil

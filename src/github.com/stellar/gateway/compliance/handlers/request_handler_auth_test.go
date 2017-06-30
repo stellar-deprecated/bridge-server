@@ -84,7 +84,7 @@ func TestRequestHandlerAuth(t *testing.T) {
 					  "code": "invalid_parameter",
 					  "message": "Invalid parameter."
 					}`)
-			assert.Equal(t, expected, test.StringToJSONMap(responseString))
+			assert.Equal(t, expected, test.StringToJSONMap(responseString, "more_info"))
 		})
 
 		Convey("When data is invalid", func() {
@@ -100,7 +100,7 @@ func TestRequestHandlerAuth(t *testing.T) {
 					  "code": "invalid_parameter",
 					  "message": "Invalid parameter."
 					}`)
-			assert.Equal(t, expected, test.StringToJSONMap(responseString))
+			assert.Equal(t, expected, test.StringToJSONMap(responseString, "more_info"))
 		})
 
 		Convey("When sender's stellar.toml does not contain signing key", func() {
@@ -150,7 +150,7 @@ func TestRequestHandlerAuth(t *testing.T) {
 		    "name": "data.sender"
 		  }
 		}`)
-			assert.Equal(t, expected, test.StringToJSONMap(responseString))
+			assert.Equal(t, expected, test.StringToJSONMap(responseString, "more_info"))
 		})
 
 		Convey("When signature is invalid", func() {
@@ -213,7 +213,7 @@ func TestRequestHandlerAuth(t *testing.T) {
     "name": "sig"
   }
 }`)
-			assert.Equal(t, expected, test.StringToJSONMap(responseString))
+			assert.Equal(t, expected, test.StringToJSONMap(responseString, "more_info"))
 		})
 
 		Convey("When all params are valid", func() {

@@ -36,17 +36,17 @@ func (op ChangeTrustOperationBody) ToTransactionMutator() b.TransactionMutator {
 // Validate validates if operation body is valid.
 func (op ChangeTrustOperationBody) Validate() error {
 	if !op.Asset.Validate() {
-		return protocols.NewInvalidParameterError("asset", op.Asset.String())
+		return protocols.NewInvalidParameterError("asset", op.Asset.String(), "Asset is invalid.")
 	}
 
 	if op.Limit != nil {
 		if !protocols.IsValidAmount(*op.Limit) {
-			return protocols.NewInvalidParameterError("limit", *op.Limit)
+			return protocols.NewInvalidParameterError("limit", *op.Limit, "Limit is not a valid amount.")
 		}
 	}
 
 	if op.Source != nil && !protocols.IsValidAccountID(*op.Source) {
-		return protocols.NewInvalidParameterError("source", *op.Source)
+		return protocols.NewInvalidParameterError("source", *op.Source, "Source must be a public key (starting with `G`).")
 	}
 
 	return nil

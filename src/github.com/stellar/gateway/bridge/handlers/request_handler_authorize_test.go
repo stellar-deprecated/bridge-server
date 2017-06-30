@@ -54,7 +54,7 @@ func TestRequestHandlerAuthorize(t *testing.T) {
 				    "name": "account_id"
 				  }
 				}`)
-				assert.Equal(t, expected, test.StringToJSONMap(responseString))
+				assert.Equal(t, expected, test.StringToJSONMap(responseString, "more_info"))
 			})
 		})
 
@@ -73,7 +73,7 @@ func TestRequestHandlerAuthorize(t *testing.T) {
 				    "name": "asset_code"
 				  }
 				}`)
-				assert.Equal(t, expected, test.StringToJSONMap(responseString))
+				assert.Equal(t, expected, test.StringToJSONMap(responseString, "more_info"))
 			})
 		})
 

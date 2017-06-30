@@ -55,9 +55,9 @@ func (rh *RequestHandler) HandlerAuth(c web.C, w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	if senderStellarToml.SigningKey == "" {
-		errorResponse := protocols.NewInvalidParameterError("data.sender", authData.Sender)
-		log.WithFields(errorResponse.LogData).Warn("No SIGNING_KEY in stellar.toml of sender")
+	if !protocols.IsValidAccountID(senderStellarToml.SigningKey) {
+		errorResponse := protocols.NewInvalidParameterError("data.sender", authData.Sender, "SIGNING_KEY in stellar.toml of sender is invalid")
+		log.WithFields(errorResponse.LogData).Warn("SIGNING_KEY in stellar.toml of sender is invalid")
 		server.Write(w, errorResponse)
 		return
 	}
@@ -65,7 +65,7 @@ func (rh *RequestHandler) HandlerAuth(c web.C, w http.ResponseWriter, r *http.Re
 	// Verify signature
 	signatureBytes, err := base64.StdEncoding.DecodeString(authreq.Signature)
 	if err != nil {
-		errorResponse := protocols.NewInvalidParameterError("sig", authreq.Signature)
+		errorResponse := protocols.NewInvalidParameterError("sig", authreq.Signature, "Invalid base64 string.")
 		log.WithFields(errorResponse.LogData).Warn("Error decoding signature")
 		server.Write(w, errorResponse)
 		return
@@ -77,7 +77,7 @@ func (rh *RequestHandler) HandlerAuth(c web.C, w http.ResponseWriter, r *http.Re
 			"data":        authreq.Data,
 			"sig":         authreq.Signature,
 		}).Warn("Invalid signature")
-		errorResponse := protocols.NewInvalidParameterError("sig", authreq.Signature)
+		errorResponse := protocols.NewInvalidParameterError("sig", authreq.Signature, "Invalid signature.")
 		server.Write(w, errorResponse)
 		return
 	}
@@ -86,7 +86,7 @@ func (rh *RequestHandler) HandlerAuth(c web.C, w http.ResponseWriter, r *http.Re
 	var tx xdr.Transaction
 	_, err = xdr.Unmarshal(b64r, &tx)
 	if err != nil {
-		errorResponse := protocols.NewInvalidParameterError("data.tx", authData.Tx)
+		errorResponse := protocols.NewInvalidParameterError("data.tx", authData.Tx, "Error decoding Transaction XDR")
 		log.WithFields(log.Fields{
 			"err": err,
 			"tx":  authData.Tx,
@@ -96,7 +96,7 @@ func (rh *RequestHandler) HandlerAuth(c web.C, w http.ResponseWriter, r *http.Re
 	}
 
 	if tx.Memo.Hash == nil {
-		errorResponse := protocols.NewInvalidParameterError("data.tx", authData.Tx)
+		errorResponse := protocols.NewInvalidParameterError("data.tx", authData.Tx, "Transaction does not contain Memo.Hash")
 		log.WithFields(log.Fields{"tx": authData.Tx}).Warn("Transaction does not contain Memo.Hash")
 		server.Write(w, errorResponse)
 		return
@@ -107,7 +107,7 @@ func (rh *RequestHandler) HandlerAuth(c web.C, w http.ResponseWriter, r *http.Re
 	memoBytes := [32]byte(*tx.Memo.Hash)
 
 	if memoPreimageHashBytes != memoBytes {
-		errorResponse := protocols.NewInvalidParameterError("data.tx", authData.Tx)
+		errorResponse := protocols.NewInvalidParameterError("data.tx", authData.Tx, "Memo preimage hash does not equal tx Memo.Hash")
 
 		h := xdr.Hash(memoPreimageHashBytes)
 		tx.Memo.Hash = &h

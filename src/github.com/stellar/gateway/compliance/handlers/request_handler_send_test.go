@@ -108,7 +108,7 @@ func TestRequestHandlerSend(t *testing.T) {
 			    "name": "source"
 			  }
 			}`)
-			assert.Equal(t, expected, test.StringToJSONMap(responseString))
+			assert.Equal(t, expected, test.StringToJSONMap(responseString, "more_info"))
 		})
 
 		Convey("When params are valid", func() {

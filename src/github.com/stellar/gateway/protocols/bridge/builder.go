@@ -97,11 +97,11 @@ func (r BuilderRequest) Process() error {
 			err = json.Unmarshal(operation.RawBody, &manageData)
 			operationBody = manageData
 		default:
-			return protocols.NewInvalidParameterError("operations["+strconv.Itoa(i)+"][type]", string(operation.Type))
+			return protocols.NewInvalidParameterError("operations["+strconv.Itoa(i)+"][type]", string(operation.Type), "Invalid operation type.")
 		}
 
 		if err != nil {
-			return protocols.NewInvalidParameterError("operations["+strconv.Itoa(i)+"][body]", "", map[string]interface{}{"err": err})
+			return protocols.NewInvalidParameterError("operations["+strconv.Itoa(i)+"][body]", "", "Operation is invalid.", map[string]interface{}{"err": err})
 		}
 
 		r.Operations[i].Body = operationBody
@@ -113,12 +113,12 @@ func (r BuilderRequest) Process() error {
 // Validate validates if the request is correct.
 func (r BuilderRequest) Validate() error {
 	if !protocols.IsValidAccountID(r.Source) {
-		return protocols.NewInvalidParameterError("source", r.Source)
+		return protocols.NewInvalidParameterError("source", r.Source, "Source parameter must start with `G`.")
 	}
 
 	for i, signer := range r.Signers {
-		if !protocols.IsValidAccountID(signer) {
-			return protocols.NewInvalidParameterError("signers["+strconv.Itoa(i)+"]", signer)
+		if !protocols.IsValidSecret(signer) {
+			return protocols.NewInvalidParameterError("signers["+strconv.Itoa(i)+"]", signer, "Signer must start with `S`.")
 		}
 	}
 

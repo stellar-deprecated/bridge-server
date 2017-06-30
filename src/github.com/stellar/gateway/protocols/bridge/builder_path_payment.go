@@ -63,32 +63,32 @@ func (op PathPaymentOperationBody) ToTransactionMutator() b.TransactionMutator {
 // Validate validates if operation body is valid.
 func (op PathPaymentOperationBody) Validate() error {
 	if !protocols.IsValidAccountID(op.Destination) {
-		return protocols.NewInvalidParameterError("destination", op.Destination)
+		return protocols.NewInvalidParameterError("destination", op.Destination, "Destination must be a public key (starting with `G`).")
 	}
 
 	if !protocols.IsValidAmount(op.SendMax) {
-		return protocols.NewInvalidParameterError("send_max", op.SendMax)
+		return protocols.NewInvalidParameterError("send_max", op.SendMax, "Not a valid amount.")
 	}
 
 	if !protocols.IsValidAmount(op.DestinationAmount) {
-		return protocols.NewInvalidParameterError("destination_amount", op.DestinationAmount)
+		return protocols.NewInvalidParameterError("destination_amount", op.DestinationAmount, "Not a valid amount.")
 	}
 
 	if !op.SendAsset.Validate() {
-		return protocols.NewInvalidParameterError("send_asset", op.SendAsset.String())
+		return protocols.NewInvalidParameterError("send_asset", op.SendAsset.String(), "Invalid asset.")
 	}
 
 	if !op.DestinationAsset.Validate() {
-		return protocols.NewInvalidParameterError("destination_asset", op.DestinationAsset.String())
+		return protocols.NewInvalidParameterError("destination_asset", op.DestinationAsset.String(), "Invalid asset.")
 	}
 
 	if op.Source != nil && !protocols.IsValidAccountID(*op.Source) {
-		return protocols.NewInvalidParameterError("source", *op.Source)
+		return protocols.NewInvalidParameterError("source", *op.Source, "Source must be a public key (starting with `G`).")
 	}
 
 	for i, asset := range op.Path {
 		if !asset.Validate() {
-			return protocols.NewInvalidParameterError("path["+strconv.Itoa(i)+"]", asset.String())
+			return protocols.NewInvalidParameterError("path["+strconv.Itoa(i)+"]", asset.String(), "Invalid asset.")
 		}
 	}
 

@@ -24,7 +24,7 @@ func (op InflationOperationBody) ToTransactionMutator() b.TransactionMutator {
 // Validate validates if operation body is valid.
 func (op InflationOperationBody) Validate() error {
 	if op.Source != nil && !protocols.IsValidAccountID(*op.Source) {
-		return protocols.NewInvalidParameterError("source", *op.Source)
+		return protocols.NewInvalidParameterError("source", *op.Source, "Source must be a public key (starting with `G`).")
 	}
 
 	return nil

@@ -130,7 +130,7 @@ func (request *PaymentRequest) Validate() error {
 	if request.Source != "" {
 		_, err = keypair.Parse(request.Source)
 		if err != nil {
-			return protocols.NewInvalidParameterError("source", request.Source)
+			return protocols.NewInvalidParameterError("source", request.Source, "Source must be a public key (starting with `G`).")
 		}
 	}
 
@@ -153,9 +153,8 @@ func (request *PaymentRequest) Validate() error {
 	}
 
 	if request.AssetIssuer != "" {
-		_, err := keypair.Parse(request.AssetIssuer)
-		if err != nil {
-			return protocols.NewInvalidParameterError("asset_issuer", request.AssetIssuer)
+		if !protocols.IsValidAccountID(request.AssetIssuer) {
+			return protocols.NewInvalidParameterError("asset_issuer", request.AssetIssuer, "Asset issuer must be a public key (starting with `G`).")
 		}
 	}
 
@@ -169,9 +168,8 @@ func (request *PaymentRequest) Validate() error {
 	}
 
 	if request.SendAssetIssuer != "" {
-		_, err := keypair.Parse(request.SendAssetIssuer)
-		if err != nil {
-			return protocols.NewInvalidParameterError("send_asset_issuer", request.SendAssetIssuer)
+		if !protocols.IsValidAccountID(request.SendAssetIssuer) {
+			return protocols.NewInvalidParameterError("send_asset_issuer", request.SendAssetIssuer, "Send asset issuer must be a public key (starting with `G`).")
 		}
 	}
 

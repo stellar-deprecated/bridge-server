@@ -28,7 +28,7 @@ func (a Asset) ToBaseAsset() build.Asset {
 
 // String returns string representation of this asset
 func (a Asset) String() string {
-	return fmt.Sprintf("%+v", a)
+	return fmt.Sprintf("Code: %s, Issuer: %s", a.Code, a.Issuer)
 }
 
 // Validate checks if asset params are correct.

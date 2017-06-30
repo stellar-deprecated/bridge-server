@@ -26,7 +26,7 @@ func NewInternalServerError(logMessage string, logData map[string]interface{}) *
 }
 
 // NewInvalidParameterError creates and returns a new InvalidParameterError
-func NewInvalidParameterError(name, value string, additionalLogData ...map[string]interface{}) *ErrorResponse {
+func NewInvalidParameterError(name, value, moreInfo string, additionalLogData ...map[string]interface{}) *ErrorResponse {
 	logData := map[string]interface{}{"name": name, "value": value}
 	if len(additionalLogData) == 1 {
 		for k, v := range additionalLogData[0] {
@@ -35,11 +35,12 @@ func NewInvalidParameterError(name, value string, additionalLogData ...map[strin
 	}
 
 	return &ErrorResponse{
-		Status:  InvalidParameterError.Status,
-		Code:    InvalidParameterError.Code,
-		Message: InvalidParameterError.Message,
-		Data:    map[string]interface{}{"name": name},
-		LogData: logData,
+		Status:   InvalidParameterError.Status,
+		Code:     InvalidParameterError.Code,
+		Message:  InvalidParameterError.Message,
+		MoreInfo: moreInfo,
+		Data:     map[string]interface{}{"name": name},
+		LogData:  logData,
 	}
 }
 
@@ -63,6 +64,8 @@ type ErrorResponse struct {
 	Code string `json:"code"`
 	// Error message that will be returned to API consumer
 	Message string `json:"message"`
+	// Additional information returned to API consumer
+	MoreInfo string `json:"more_info,omitempty"`
 	// Error data that will be returned to API consumer
 	Data map[string]interface{} `json:"data,omitempty"`
 	// Error message that will be logged.

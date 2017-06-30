@@ -25,11 +25,11 @@ func (op AccountMergeOperationBody) ToTransactionMutator() b.TransactionMutator 
 // Validate validates if operation body is valid.
 func (op AccountMergeOperationBody) Validate() error {
 	if !protocols.IsValidAccountID(op.Destination) {
-		return protocols.NewInvalidParameterError("destination", op.Destination)
+		return protocols.NewInvalidParameterError("destination", op.Destination, "Destination must start with `G`.")
 	}
 
 	if op.Source != nil && !protocols.IsValidAccountID(*op.Source) {
-		return protocols.NewInvalidParameterError("source", *op.Source)
+		return protocols.NewInvalidParameterError("source", *op.Source, "Source must start with `G`.")
 	}
 
 	return nil

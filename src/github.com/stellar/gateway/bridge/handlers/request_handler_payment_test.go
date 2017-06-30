@@ -81,7 +81,7 @@ func TestRequestHandlerPayment(t *testing.T) {
     "name": "source"
   }
 }`)
-				assert.Equal(t, expected, test.StringToJSONMap(responseString))
+				assert.Equal(t, expected, test.StringToJSONMap(responseString, "more_info"))
 			})
 		})
 
@@ -111,7 +111,7 @@ func TestRequestHandlerPayment(t *testing.T) {
     "name": "destination"
   }
 }`)
-				assert.Equal(t, expected, test.StringToJSONMap(responseString))
+				assert.Equal(t, expected, test.StringToJSONMap(responseString, "more_info"))
 			})
 		})
 
@@ -345,7 +345,7 @@ func TestRequestHandlerPayment(t *testing.T) {
     "name": "asset_issuer"
   }
 }`)
-				assert.Equal(t, expected, test.StringToJSONMap(responseString))
+				assert.Equal(t, expected, test.StringToJSONMap(responseString, "more_info"))
 			})
 		})
 
@@ -395,7 +395,7 @@ func TestRequestHandlerPayment(t *testing.T) {
     "name": "asset_code"
   }
 }`)
-				assert.Equal(t, expected, test.StringToJSONMap(responseString))
+				assert.Equal(t, expected, test.StringToJSONMap(responseString, "more_info"))
 			})
 		})
 
@@ -445,7 +445,7 @@ func TestRequestHandlerPayment(t *testing.T) {
     "name": "amount"
   }
 }`)
-				assert.Equal(t, expected, test.StringToJSONMap(responseString))
+				assert.Equal(t, expected, test.StringToJSONMap(responseString, "more_info"))
 			})
 		})
 
@@ -565,7 +565,7 @@ func TestRequestHandlerPayment(t *testing.T) {
     "name": "memo"
   }
 }`)
-					assert.Equal(t, expected, test.StringToJSONMap(responseString))
+					assert.Equal(t, expected, test.StringToJSONMap(responseString, "more_info"))
 				})
 
 				Convey("unsupported memo_type", func() {
@@ -581,7 +581,7 @@ func TestRequestHandlerPayment(t *testing.T) {
     "name": "memo"
   }
 }`)
-					assert.Equal(t, expected, test.StringToJSONMap(responseString))
+					assert.Equal(t, expected, test.StringToJSONMap(responseString, "more_info"))
 				})
 
 				Convey("memo is attached to the transaction", func() {

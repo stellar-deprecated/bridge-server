@@ -11,6 +11,25 @@ func IsValidAccountID(accountID string) bool {
 	if err != nil {
 		return false
 	}
+
+	if accountID[0] != 'G' {
+		return false
+	}
+
+	return true
+}
+
+// IsValidSecret returns true if secret is valid
+func IsValidSecret(secret string) bool {
+	_, err := keypair.Parse(secret)
+	if err != nil {
+		return false
+	}
+
+	if secret[0] != 'S' {
+		return false
+	}
+
 	return true
 }
 

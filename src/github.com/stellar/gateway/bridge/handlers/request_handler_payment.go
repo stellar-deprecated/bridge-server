@@ -134,10 +134,9 @@ func (rh *RequestHandler) Payment(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		_, err = keypair.Parse(destinationObject.AccountID)
-		if err != nil {
+		if !protocols.IsValidAccountID(destinationObject.AccountID) {
 			log.WithFields(log.Fields{"AccountId": destinationObject.AccountID}).Print("Invalid AccountId in destination")
-			server.Write(w, protocols.NewInvalidParameterError("destination", request.Destination))
+			server.Write(w, protocols.NewInvalidParameterError("destination", request.Destination, "Destination public key must start with `G`."))
 			return
 		}
 
@@ -231,7 +230,7 @@ func (rh *RequestHandler) Payment(w http.ResponseWriter, r *http.Request) {
 			id, err := strconv.ParseUint(memo, 10, 64)
 			if err != nil {
 				log.WithFields(log.Fields{"memo": memo}).Print("Cannot convert memo_id value to uint64")
-				server.Write(w, protocols.NewInvalidParameterError("memo", request.Memo))
+				server.Write(w, protocols.NewInvalidParameterError("memo", request.Memo, "Memo.id must be a number"))
 				return
 			}
 			memoMutator = b.MemoID{id}
@@ -241,7 +240,7 @@ func (rh *RequestHandler) Payment(w http.ResponseWriter, r *http.Request) {
 			memoBytes, err := hex.DecodeString(memo)
 			if err != nil || len(memoBytes) != 32 {
 				log.WithFields(log.Fields{"memo": memo}).Print("Cannot decode hash memo value")
-				server.Write(w, protocols.NewInvalidParameterError("memo", request.Memo))
+				server.Write(w, protocols.NewInvalidParameterError("memo", request.Memo, "Memo.hash must be 32 bytes and hex encoded."))
 				return
 			}
 			var b32 [32]byte
@@ -250,7 +249,7 @@ func (rh *RequestHandler) Payment(w http.ResponseWriter, r *http.Request) {
 			memoMutator = &b.MemoHash{hash}
 		default:
 			log.Print("Not supported memo type: ", memoType)
-			server.Write(w, protocols.NewInvalidParameterError("memo", request.Memo))
+			server.Write(w, protocols.NewInvalidParameterError("memo", request.Memo, "Memo type not supported"))
 			return
 		}
 
@@ -289,12 +288,12 @@ func (rh *RequestHandler) Payment(w http.ResponseWriter, r *http.Request) {
 			case tx.Err.Error() == "Asset code length is invalid":
 				server.Write(
 					w,
-					protocols.NewInvalidParameterError("asset_code", request.AssetCode),
+					protocols.NewInvalidParameterError("asset_code", request.AssetCode, "Asset code length is invalid"),
 				)
 			case strings.Contains(tx.Err.Error(), "cannot parse amount"):
 				server.Write(
 					w,
-					protocols.NewInvalidParameterError("amount", request.Amount),
+					protocols.NewInvalidParameterError("amount", request.Amount, "Cannot parse amount"),
 				)
 			default:
 				log.WithFields(log.Fields{"err": tx.Err}).Print("Transaction builder error")

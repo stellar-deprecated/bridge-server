@@ -36,16 +36,16 @@ func (op ManageDataOperationBody) ToTransactionMutator() b.TransactionMutator {
 // Validate validates if operation body is valid.
 func (op ManageDataOperationBody) Validate() error {
 	if len(op.Name) > 64 {
-		return protocols.NewInvalidParameterError("name", op.Name)
+		return protocols.NewInvalidParameterError("name", op.Name, "Name must be less than or equal 64 characters.")
 	}
 
 	data, err := base64.StdEncoding.DecodeString(op.Data)
 	if err != nil || len(data) > 64 {
-		return protocols.NewInvalidParameterError("data", op.Data)
+		return protocols.NewInvalidParameterError("data", op.Data, "Not a valid base64 string.")
 	}
 
 	if op.Source != nil && !protocols.IsValidAccountID(*op.Source) {
-		return protocols.NewInvalidParameterError("source", *op.Source)
+		return protocols.NewInvalidParameterError("source", *op.Source, "Source must be a public key (starting with `G`).")
 	}
 
 	return nil
