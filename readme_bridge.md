@@ -94,6 +94,8 @@ In case of error it will return the following error:
 
 Builds a transaction from a given request. `Content-Type` of this request should be `application/json`. Check [List of operations](https://www.stellar.org/developers/learn/concepts/list-of-operations.html) doc to learn more about how each operation looks like.
 
+**Note** This will not submit a transaction to the network. Please use [Horizon](https://www.stellar.org/developers/horizon/reference/endpoints/transactions-create.html) to submit a transaction.
+
 #### Request
 
 Check example request below (remove comments before submitting it to the `bridge` server):

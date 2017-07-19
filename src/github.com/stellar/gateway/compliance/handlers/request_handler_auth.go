@@ -37,7 +37,7 @@ func (rh *RequestHandler) HandlerAuth(c web.C, w http.ResponseWriter, r *http.Re
 	err := authreq.Validate()
 	if err != nil {
 		log.WithFields(log.Fields{"err": err}).Info(err.Error())
-		server.Write(w, protocols.InvalidParameterError)
+		server.Write(w, protocols.NewInvalidParameterError("", "", err.Error()))
 		return
 	}
 
@@ -51,7 +51,8 @@ func (rh *RequestHandler) HandlerAuth(c web.C, w http.ResponseWriter, r *http.Re
 	senderStellarToml, err := rh.StellarTomlResolver.GetStellarTomlByAddress(authData.Sender)
 	if err != nil {
 		log.WithFields(log.Fields{"err": err, "sender": authData.Sender}).Warn("Cannot get stellar.toml of sender")
-		server.Write(w, protocols.InvalidParameterError)
+		errorResponse := protocols.NewInvalidParameterError("data.sender", authData.Sender, "Cannot get stellar.toml of sender")
+		server.Write(w, errorResponse)
 		return
 	}
 
@@ -107,8 +108,6 @@ func (rh *RequestHandler) HandlerAuth(c web.C, w http.ResponseWriter, r *http.Re
 	memoBytes := [32]byte(*tx.Memo.Hash)
 
 	if memoPreimageHashBytes != memoBytes {
-		errorResponse := protocols.NewInvalidParameterError("data.tx", authData.Tx, "Memo preimage hash does not equal tx Memo.Hash")
-
 		h := xdr.Hash(memoPreimageHashBytes)
 		tx.Memo.Hash = &h
 
@@ -116,22 +115,23 @@ func (rh *RequestHandler) HandlerAuth(c web.C, w http.ResponseWriter, r *http.Re
 		_, err = xdr.Marshal(&txBytes, tx)
 		if err != nil {
 			log.Error("Error mashaling transaction")
-			server.Write(w, protocols.InternalServerError)
+			errorResponse := protocols.NewInvalidParameterError("data.tx", authData.Tx, "Error marshaling transaction")
+			server.Write(w, errorResponse)
 			return
 		}
 
 		expectedTx := base64.StdEncoding.EncodeToString(txBytes.Bytes())
 
 		log.WithFields(log.Fields{"tx": authData.Tx, "expected_tx": expectedTx}).Warn("Memo preimage hash does not equal tx Memo.Hash")
+		errorResponse := protocols.NewInvalidParameterError("data.tx", authData.Tx, "Memo preimage hash does not equal tx Memo.Hash")
 		server.Write(w, errorResponse)
 		return
 	}
 
 	attachment, err := authData.Attachment()
 	if err != nil {
-		log.WithFields(log.Fields{"err": err}).Error(err.Error())
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte(err.Error()))
+		log.WithFields(log.Fields{"err": err}).Error("Error getting attachment")
+		server.Write(w, protocols.InternalServerError)
 		return
 	}
 

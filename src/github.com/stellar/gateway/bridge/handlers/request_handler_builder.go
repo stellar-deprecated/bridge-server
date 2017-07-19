@@ -20,7 +20,7 @@ func (rh *RequestHandler) Builder(w http.ResponseWriter, r *http.Request) {
 	err := decoder.Decode(&request)
 	if err != nil {
 		log.WithFields(log.Fields{"err": err}).Error("Error decoding request")
-		server.Write(w, protocols.InvalidParameterError)
+		server.Write(w, protocols.NewInvalidParameterError("", "", "Request body is not a valid JSON"))
 		return
 	}
 

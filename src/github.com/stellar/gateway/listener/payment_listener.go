@@ -174,6 +174,7 @@ func (pl *PaymentListener) onPayment(payment horizon.PaymentResponse) (err error
 
 func (pl *PaymentListener) process(payment horizon.PaymentResponse, dbPayment *entities.ReceivedPayment) (err error) {
 	savePayment := func(payment *entities.ReceivedPayment) (err error) {
+		pl.log.Info(payment.Status)
 		err = pl.entityManager.Persist(payment)
 		return
 	}
@@ -202,15 +203,18 @@ func (pl *PaymentListener) process(payment horizon.PaymentResponse, dbPayment *e
 		return err
 	}
 
+	pl.log.WithFields(logrus.Fields{"memo": payment.Memo.Value, "type": payment.Memo.Type}).Info("Loaded memo")
+
 	var receiveResponse callback.ReceiveResponse
 	var route string
 
 	// Request extra_memo from compliance server
 	if pl.config.Compliance != "" && payment.Memo.Type == "hash" {
-		resp, err := pl.postForm(
-			pl.config.Compliance+"/receive",
-			url.Values{"memo": {string(payment.Memo.Value)}},
-		)
+		complianceRequestURL := pl.config.Compliance + "/receive"
+		complianceRequestBody := url.Values{"memo": {string(payment.Memo.Value)}}
+
+		pl.log.WithFields(logrus.Fields{"url": complianceRequestURL, "body": complianceRequestBody}).Error("Sending request to compliance server")
+		resp, err := pl.postForm(complianceRequestURL, complianceRequestBody)
 		if err != nil {
 			pl.log.WithFields(logrus.Fields{"err": err}).Error("Error sending request to compliance server")
 			return err

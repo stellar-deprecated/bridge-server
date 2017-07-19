@@ -34,12 +34,17 @@ func NewInvalidParameterError(name, value, moreInfo string, additionalLogData ..
 		}
 	}
 
+	data := map[string]interface{}{}
+	if name != "" {
+		data["name"] = name
+	}
+
 	return &ErrorResponse{
 		Status:   InvalidParameterError.Status,
 		Code:     InvalidParameterError.Code,
 		Message:  InvalidParameterError.Message,
 		MoreInfo: moreInfo,
-		Data:     map[string]interface{}{"name": name},
+		Data:     data,
 		LogData:  logData,
 	}
 }
