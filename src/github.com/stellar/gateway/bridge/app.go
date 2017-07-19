@@ -139,20 +139,28 @@ func NewApp(config config.Config, migrateFlag bool) (app *App, err error) {
 
 	requestHandler := handlers.RequestHandler{}
 
-	federationClient := &federation.Client{
-		HTTP:        http.DefaultClient,
-		StellarTOML: stellartoml.DefaultClient,
+	httpClientWithTimeout := http.Client{
+		Timeout: 10 * time.Second,
+	}
+
+	stellartomlClient := stellartoml.Client{
+		HTTP: &httpClientWithTimeout,
+	}
+
+	federationClient := federation.Client{
+		HTTP:        &httpClientWithTimeout,
+		StellarTOML: &stellartomlClient,
 	}
 
 	err = g.Provide(
 		&inject.Object{Value: &requestHandler},
 		&inject.Object{Value: &config},
-		&inject.Object{Value: stellartoml.DefaultClient},
-		&inject.Object{Value: federationClient},
+		&inject.Object{Value: &stellartomlClient},
+		&inject.Object{Value: &federationClient},
 		&inject.Object{Value: &h},
 		&inject.Object{Value: &ts},
 		&inject.Object{Value: &paymentListener},
-		&inject.Object{Value: &http.Client{}},
+		&inject.Object{Value: &httpClientWithTimeout},
 	)
 
 	if err != nil {

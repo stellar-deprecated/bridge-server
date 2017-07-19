@@ -5,6 +5,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/facebookgo/inject"
 	"github.com/stellar/gateway/compliance/config"
@@ -62,9 +63,17 @@ func NewApp(config config.Config, migrateFlag bool) (app *App, err error) {
 
 	requestHandler := handlers.RequestHandler{}
 
-	federationClient := &federation.Client{
-		HTTP:        http.DefaultClient,
-		StellarTOML: stellartoml.DefaultClient,
+	httpClientWithTimeout := http.Client{
+		Timeout: 10 * time.Second,
+	}
+
+	stellartomlClient := stellartoml.Client{
+		HTTP: &httpClientWithTimeout,
+	}
+
+	federationClient := federation.Client{
+		HTTP:        &httpClientWithTimeout,
+		StellarTOML: &stellartomlClient,
 	}
 
 	err = g.Provide(
@@ -73,9 +82,9 @@ func NewApp(config config.Config, migrateFlag bool) (app *App, err error) {
 		&inject.Object{Value: &entityManager},
 		&inject.Object{Value: &repository},
 		&inject.Object{Value: &crypto.SignerVerifier{}},
-		&inject.Object{Value: stellartoml.DefaultClient},
-		&inject.Object{Value: federationClient},
-		&inject.Object{Value: &http.Client{}},
+		&inject.Object{Value: &stellartomlClient},
+		&inject.Object{Value: &federationClient},
+		&inject.Object{Value: &httpClientWithTimeout},
 		&inject.Object{Value: &handlers.NonceGenerator{}},
 	)
 
