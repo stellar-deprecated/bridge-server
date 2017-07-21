@@ -83,7 +83,7 @@ func (op SetOptionsOperationBody) Validate() error {
 
 	if op.Signer != nil {
 		if !protocols.IsValidAccountID(op.Signer.PublicKey) {
-			return protocols.NewInvalidParameterError("signer.public_key", op.Signer.PublicKey, "Public key must be starting with `G`.")
+			return protocols.NewInvalidParameterError("signer.public_key", op.Signer.PublicKey, "Public key invlaid, must start with `G`.")
 		}
 	}
 
