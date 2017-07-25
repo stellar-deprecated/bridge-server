@@ -191,7 +191,7 @@ func (pl *PaymentListener) process(payment horizon.PaymentResponse, dbPayment *e
 		return nil
 	}
 
-	if !pl.isAssetAllowed(payment.AssetCode, payment.AssetIssuer) {
+	if !pl.isAssetAllowed(payment.AssetType, payment.AssetCode, payment.AssetIssuer) {
 		dbPayment.Status = "Asset not allowed"
 		savePayment(dbPayment)
 		return nil
@@ -304,11 +304,17 @@ func (pl *PaymentListener) process(payment horizon.PaymentResponse, dbPayment *e
 	return nil
 }
 
-func (pl *PaymentListener) isAssetAllowed(code string, issuer string) bool {
+func (pl *PaymentListener) isAssetAllowed(asset_type string, code string, issuer string) bool {
 	for _, asset := range pl.config.Assets {
 		if asset.Code == code && asset.Issuer == issuer {
 			return true
 		}
+
+		if asset.Code == "XLM" && asset.Issuer == "" && asset_type == "native" {
+			pl.log.Info("XLM received")
+			return true
+		}
+
 	}
 	return false
 }
