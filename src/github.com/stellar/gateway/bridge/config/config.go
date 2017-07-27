@@ -68,6 +68,15 @@ func (c *Config) Validate() (err error) {
 		return
 	}
 
+	for _, asset := range c.Assets {
+		if asset.Issuer == "" {
+			if asset.Code != "XLM" {
+				err = errors.New("Issuer param is required for "+asset.Code)
+				return
+			}
+		}
+	}
+
 	var dbURL *url.URL
 	dbURL, err = url.Parse(c.Database.URL)
 	if err != nil {
