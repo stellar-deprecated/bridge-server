@@ -160,6 +160,7 @@ func TestPaymentListener(t *testing.T) {
 				err := paymentListener.onPayment(operation)
 				assert.Nil(t, err)
 				mockEntityManager.AssertExpectations(t)
+				mockRepository.AssertExpectations(t)
 			})
 		})
 
@@ -193,6 +194,7 @@ func TestPaymentListener(t *testing.T) {
 			Convey("it should save the status", func() {
 				err := paymentListener.onPayment(operation)
 				assert.Nil(t, err)
+				mockRepository.AssertExpectations(t)
 				mockHorizon.AssertExpectations(t)
 				mockEntityManager.AssertExpectations(t)
 			})
