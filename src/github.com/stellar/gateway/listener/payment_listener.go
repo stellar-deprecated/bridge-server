@@ -311,7 +311,6 @@ func (pl *PaymentListener) isAssetAllowed(asset_type string, code string, issuer
 		}
 
 		if asset.Code == "XLM" && asset.Issuer == "" && asset_type == "native" {
-			pl.log.Info("XLM received")
 			return true
 		}
 
