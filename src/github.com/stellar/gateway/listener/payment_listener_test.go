@@ -74,6 +74,9 @@ func TestPaymentListener(t *testing.T) {
 			PagingToken: operation.PagingToken,
 		}
 
+		config.Assets[1].Code = "EUR"
+		config.Assets[1].Issuer = "GD4I7AFSLZGTDL34TQLWJOM2NHLIIOEKD5RHHZUW54HERBLSIRKUOXRR"
+
 		Convey("When operation exists", func() {
 			operation.Type = "payment"
 			mockRepository.On("GetReceivedPaymentByOperationID", int64(1)).Return(&entities.ReceivedPayment{}, nil).Once()
