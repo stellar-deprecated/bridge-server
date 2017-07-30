@@ -106,7 +106,6 @@ func (pl *PaymentListener) Listen() (err error) {
 				pl.log.Info("Sleeping...")
 				time.Sleep(10 * time.Second)
 			}
-			pl.log.Info("Streaming connection closed. Restarting...")
 		}
 	}()
 
