@@ -3,8 +3,8 @@ package config
 import (
 	"errors"
 	"net/url"
-
 	"github.com/stellar/go/keypair"
+	"regexp"
 )
 
 // Config contains config params of the bridge server
@@ -74,6 +74,40 @@ func (c *Config) Validate() (err error) {
 				err = errors.New("Issuer param is required for "+asset.Code)
 				return
 			}
+		}
+
+		if asset.Issuer != "" {
+			_, err = keypair.Parse(asset.Issuer)
+			if err != nil {
+				err = errors.New("Issuing account is invalid for "+asset.Code)
+				return
+			}
+		}
+
+		if asset.Code == "" {
+			err = errors.New("Asset code is required")
+			return
+		}
+
+		if len(asset.Code) > 12 {
+			err = errors.New("Asset code can not be more than 12 characters long: "+ asset.Code)
+			return
+		}
+
+		if asset.Code != "" {
+
+			for _, s := range asset.Code {
+				matched, err := regexp.MatchString("^[a-zA-Z0-9]*$", string(s))
+				if err != nil {
+					return err
+				}
+
+				if !matched {
+					err = errors.New("Invalid character '"+string(s)+"' in asset code: "+asset.Code)
+					return err
+				}
+    	}
+
 		}
 	}
 
