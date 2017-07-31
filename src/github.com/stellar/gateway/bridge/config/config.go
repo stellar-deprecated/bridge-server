@@ -84,30 +84,14 @@ func (c *Config) Validate() (err error) {
 			}
 		}
 
-		if asset.Code == "" {
-			err = errors.New("Asset code is required")
-			return
+		matched, err := regexp.MatchString("^[a-zA-Z0-9]{1,12}$", asset.Code)
+		if err != nil {
+			return err
 		}
 
-		if len(asset.Code) > 12 {
-			err = errors.New("Asset code can not be more than 12 characters long: "+ asset.Code)
-			return
-		}
-
-		if asset.Code != "" {
-
-			for _, s := range asset.Code {
-				matched, err := regexp.MatchString("^[a-zA-Z0-9]*$", string(s))
-				if err != nil {
-					return err
-				}
-
-				if !matched {
-					err = errors.New("Invalid character '"+string(s)+"' in asset code: "+asset.Code)
-					return err
-				}
-    	}
-
+		if !matched {
+			err = errors.New("Invalid asset code: "+asset.Code)
+			return err
 		}
 	}
 
