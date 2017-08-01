@@ -74,6 +74,9 @@ func TestPaymentListener(t *testing.T) {
 			PagingToken: operation.PagingToken,
 		}
 
+		config.Assets[1].Code = "EUR"
+		config.Assets[1].Issuer = "GD4I7AFSLZGTDL34TQLWJOM2NHLIIOEKD5RHHZUW54HERBLSIRKUOXRR"
+
 		Convey("When operation exists", func() {
 			operation.Type = "payment"
 			mockRepository.On("GetReceivedPaymentByOperationID", int64(1)).Return(&entities.ReceivedPayment{}, nil).Once()
@@ -143,6 +146,64 @@ func TestPaymentListener(t *testing.T) {
 				mockEntityManager.AssertExpectations(t)
 			})
 		})
+
+		Convey("When payment is XLM(no XLM asset in config)", func() {
+			operation.Type = "payment"
+			operation.From = "GBL27BKG2JSDU6KQ5YJKCDWTVIU24VTG4PLB63SF4K2DBZS5XZMWRPVU"
+			operation.To = "GATKP6ZQM5CSLECPMTAC5226PE367QALCPM6AFHTSULPPZMT62OOPMQB"
+			operation.AssetCode = ""
+			operation.AssetIssuer = ""
+			operation.AssetType = "native"
+			dbPayment.Status = "Asset not allowed"
+			mockEntityManager.On("Persist", &dbPayment).Return(nil).Once()
+			mockRepository.On("GetReceivedPaymentByOperationID", int64(1)).Return(nil, nil).Once()
+
+
+			Convey("it should save the status", func() {
+				err := paymentListener.onPayment(operation)
+				assert.Nil(t, err)
+				mockEntityManager.AssertExpectations(t)
+				mockRepository.AssertExpectations(t)
+			})
+		})
+
+
+		Convey("When payment is XLM (XLM asset in config)", func() {
+			operation.Type = "payment"
+			operation.To = "GATKP6ZQM5CSLECPMTAC5226PE367QALCPM6AFHTSULPPZMT62OOPMQB"
+			operation.AssetCode = ""
+			operation.AssetIssuer = ""
+			operation.AssetType = "native"
+			dbPayment.Status = "Success"
+			operation.Memo.Type = "book"
+			operation.Memo.Value = "testing"
+			config.Assets[1].Code = "XLM"
+			config.Assets[1].Issuer = ""
+
+			mockRepository.On("GetReceivedPaymentByOperationID", int64(1)).Return(nil, nil).Once()
+			mockHorizon.On("LoadMemo", &operation).Return(nil).Once()
+			mockEntityManager.On("Persist", &dbPayment).Return(nil).Once()
+
+			mockHTTPClient.On(
+				"Do",
+				mock.MatchedBy(func(req *http.Request) bool {
+					return req.URL.String() == "http://receive_callback"
+				}),
+			).Return(
+				net.BuildHTTPResponse(200, "ok"),
+				nil,
+			).Once()
+
+			Convey("it should save the status", func() {
+				err := paymentListener.onPayment(operation)
+				assert.Nil(t, err)
+				mockRepository.AssertExpectations(t)
+				mockHorizon.AssertExpectations(t)
+				mockEntityManager.AssertExpectations(t)
+			})
+		})
+
+
 
 		Convey("When unable to load transaction memo", func() {
 			operation.Type = "payment"

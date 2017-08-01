@@ -32,7 +32,7 @@ The `bridge.cfg` file must be present in a working directory (you can load anoth
    * public network: `Public Global Stellar Network ; September 2015`
 * `compliance` - URL to compliance server instance if you want to carry out the compliance protocol
 * `horizon` - URL to [horizon](https://github.com/stellar/horizon) server instance
-* `assets` - array of approved assets codes that this server can authorize or receive. These are currency code/issuer pairs. 
+* `assets` - array of approved assets codes that this server can authorize or receive. These are currency code/issuer pairs. Use asset code 'XLM' with no issuer to listen for XLM payments. See [`bridge_example.cfg`](./bridge_example.cfg) for example.
 * `database`
   * `type` - database type (mysql, postgres)
   * `url` - url to database connection:

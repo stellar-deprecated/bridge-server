@@ -3,8 +3,8 @@ package config
 import (
 	"errors"
 	"net/url"
-
 	"github.com/stellar/go/keypair"
+	"regexp"
 )
 
 // Config contains config params of the bridge server
@@ -66,6 +66,33 @@ func (c *Config) Validate() (err error) {
 	if c.NetworkPassphrase == "" {
 		err = errors.New("network_passphrase param is required")
 		return
+	}
+
+	for _, asset := range c.Assets {
+		if asset.Issuer == "" {
+			if asset.Code != "XLM" {
+				err = errors.New("Issuer param is required for "+asset.Code)
+				return
+			}
+		}
+
+		if asset.Issuer != "" {
+			_, err = keypair.Parse(asset.Issuer)
+			if err != nil {
+				err = errors.New("Issuing account is invalid for "+asset.Code)
+				return
+			}
+		}
+
+		matched, err := regexp.MatchString("^[a-zA-Z0-9]{1,12}$", asset.Code)
+		if err != nil {
+			return err
+		}
+
+		if !matched {
+			err = errors.New("Invalid asset code: "+asset.Code)
+			return err
+		}
 	}
 
 	var dbURL *url.URL
