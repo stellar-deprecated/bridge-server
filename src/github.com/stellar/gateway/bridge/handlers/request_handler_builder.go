@@ -42,10 +42,20 @@ func (rh *RequestHandler) Builder(w http.ResponseWriter, r *http.Request) {
 
 	sequenceNumber, err := strconv.ParseUint(request.SequenceNumber, 10, 64)
 	if err != nil {
-		errorResponse := protocols.NewInvalidParameterError("sequence_number", request.SequenceNumber, "Sequence number must be a number")
-		log.WithFields(errorResponse.LogData).Error(errorResponse.Error())
-		server.Write(w, errorResponse)
-		return
+		accountResponse, err := rh.Horizon.LoadAccount(request.Source)
+		if err != nil {
+			errorResponse := protocols.NewInvalidParameterError("sequence_number", request.SequenceNumber, "Sequence number must be a number. Attempt to fetch failed.")
+			log.WithFields(errorResponse.LogData).Error(errorResponse.Error())
+			server.Write(w, errorResponse)
+			return
+		}
+		sequenceNumber, err = strconv.ParseUint(accountResponse.SequenceNumber, 10, 64)
+		if err != nil {
+			errorResponse := protocols.NewInvalidParameterError("sequence_number", request.SequenceNumber, "Sequence number must be a number. Attempt to fetch failed.")
+			log.WithFields(errorResponse.LogData).Error(errorResponse.Error())
+			server.Write(w, errorResponse)
+			return
+		}
 	}
 
 	mutators := []b.TransactionMutator{
