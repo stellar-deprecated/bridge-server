@@ -250,11 +250,11 @@ func TestPaymentListener(t *testing.T) {
 				Run(ensurePaymentStatus(t, operation, "Processing...")).Return(nil).Once()
 
 			mockEntityManager.On("Persist", mock.AnythingOfType("*entities.ReceivedPayment")).
-				Run(ensurePaymentStatus(t, operation, "Unable to load transaction memo")).Return(nil).Once()
+				Run(ensurePaymentStatus(t, operation, "Unable to load transaction memo: Connection error")).Return(nil).Once()
 
 			mockHorizon.On("LoadMemo", &operation).Return(errors.New("Connection error")).Once()
 
-			Convey("it should return error", func() {
+			Convey("it should save the status", func() {
 				err := paymentListener.onPayment(operation)
 				assert.NoError(t, err)
 				mockHorizon.AssertExpectations(t)
