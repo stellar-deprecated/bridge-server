@@ -137,9 +137,25 @@ func (pl *PaymentListener) ReprocessPayment(payment horizon.PaymentResponse, for
 		return errors.New("Trying to reprocess successful transaction without force")
 	}
 
+	existingPayment.Status = "Reprocessing..."
 	existingPayment.ProcessedAt = pl.now()
 
-	return pl.process(payment, existingPayment)
+	err = pl.entityManager.Persist(existingPayment)
+	if err != nil {
+		return err
+	}
+
+	err = pl.process(payment)
+
+	if err != nil {
+		pl.log.WithFields(logrus.Fields{"err": err}).Error("Payment reprocessed with errors")
+		existingPayment.Status = err.Error()
+	} else {
+		pl.log.Info("Payment successfully reprocessed")
+		existingPayment.Status = "Success"
+	}
+
+	return pl.entityManager.Persist(existingPayment)
 }
 
 func (pl *PaymentListener) onPayment(payment horizon.PaymentResponse) (err error) {
@@ -166,40 +182,43 @@ func (pl *PaymentListener) onPayment(payment horizon.PaymentResponse) (err error
 		OperationID: payment.ID,
 		ProcessedAt: pl.now(),
 		PagingToken: payment.PagingToken,
+		Status:      "Processing...",
 	}
 
-	return pl.process(payment, dbPayment)
+	err = pl.entityManager.Persist(dbPayment)
+	if err != nil {
+		return
+	}
+
+	err = pl.process(payment)
+
+	if err != nil {
+		pl.log.WithFields(logrus.Fields{"err": err}).Error("Payment processed with errors")
+		dbPayment.Status = err.Error()
+	} else {
+		pl.log.Info("Payment successfully processed")
+		dbPayment.Status = "Success"
+	}
+
+	return pl.entityManager.Persist(dbPayment)
 }
 
-func (pl *PaymentListener) process(payment horizon.PaymentResponse, dbPayment *entities.ReceivedPayment) (err error) {
-	savePayment := func(payment *entities.ReceivedPayment) (err error) {
-		pl.log.Info(payment.Status)
-		err = pl.entityManager.Persist(payment)
-		return
-	}
-
+func (pl *PaymentListener) process(payment horizon.PaymentResponse) error {
 	if payment.Type != "payment" && payment.Type != "path_payment" {
-		dbPayment.Status = "Not a payment operation"
-		savePayment(dbPayment)
-		return
+		return errors.New("Not a payment operation")
 	}
 
 	if payment.To != pl.config.Accounts.ReceivingAccountID {
-		dbPayment.Status = "Operation sent not received"
-		savePayment(dbPayment)
-		return nil
+		return errors.New("Operation sent not received")
 	}
 
 	if !pl.isAssetAllowed(payment.AssetType, payment.AssetCode, payment.AssetIssuer) {
-		dbPayment.Status = "Asset not allowed"
-		savePayment(dbPayment)
-		return nil
+		return errors.New("Asset not allowed")
 	}
 
-	err = pl.horizon.LoadMemo(&payment)
+	err := pl.horizon.LoadMemo(&payment)
 	if err != nil {
-		pl.log.Error("Unable to load transaction memo")
-		return err
+		return errors.Wrap(err, "Unable to load transaction memo")
 	}
 
 	pl.log.WithFields(logrus.Fields{"memo": payment.Memo.Value, "type": payment.Memo.Type}).Info("Loaded memo")
@@ -215,15 +234,13 @@ func (pl *PaymentListener) process(payment horizon.PaymentResponse, dbPayment *e
 		pl.log.WithFields(logrus.Fields{"url": complianceRequestURL, "body": complianceRequestBody}).Error("Sending request to compliance server")
 		resp, err := pl.postForm(complianceRequestURL, complianceRequestBody)
 		if err != nil {
-			pl.log.WithFields(logrus.Fields{"err": err}).Error("Error sending request to compliance server")
-			return err
+			return errors.Wrap(err, "Error sending request to compliance server")
 		}
 
 		defer resp.Body.Close()
 		body, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			pl.log.Error("Error reading compliance server response")
-			return err
+			return errors.Wrap(err, "Error reading compliance server response")
 		}
 
 		if resp.StatusCode != 200 {
@@ -231,27 +248,24 @@ func (pl *PaymentListener) process(payment horizon.PaymentResponse, dbPayment *e
 				"status": resp.StatusCode,
 				"body":   string(body),
 			}).Error("Error response from compliance server")
-			return err
+			return errors.New("Error response from compliance server")
 		}
 
 		err = json.Unmarshal([]byte(body), &receiveResponse)
 		if err != nil {
-			pl.log.WithFields(logrus.Fields{"err": err}).Error("Cannot unmarshal receiveResponse")
-			return err
+			return errors.Wrap(err, "Cannot unmarshal receiveResponse")
 		}
 
 		var authData compliance.AuthData
 		err = json.Unmarshal([]byte(receiveResponse.Data), &authData)
 		if err != nil {
-			pl.log.WithFields(logrus.Fields{"err": err}).Error("Cannot unmarshal authData")
-			return err
+			return errors.Wrap(err, "Cannot unmarshal authData")
 		}
 
 		var attachment compliance.Attachment
 		err = json.Unmarshal([]byte(authData.AttachmentJSON), &attachment)
 		if err != nil {
-			pl.log.WithFields(logrus.Fields{"err": err}).Error("Cannot unmarshal memo")
-			return err
+			return errors.Wrap(err, "Cannot unmarshal memo")
 		}
 
 		route = attachment.Transaction.Route
@@ -274,16 +288,14 @@ func (pl *PaymentListener) process(payment horizon.PaymentResponse, dbPayment *e
 		},
 	)
 	if err != nil {
-		pl.log.Error("Error sending request to receive callback")
-		return err
+		return errors.Wrap(err, "Error sending request to receive callback")
 	}
 
 	if resp.StatusCode != 200 {
 		defer resp.Body.Close()
 		body, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			pl.log.Error("Error reading receive callback response")
-			return err
+			return errors.Wrap(err, "Error reading receive callback response")
 		}
 
 		pl.log.WithFields(logrus.Fields{
@@ -291,13 +303,6 @@ func (pl *PaymentListener) process(payment horizon.PaymentResponse, dbPayment *e
 			"body":   string(body),
 		}).Error("Error response from receive callback")
 		return errors.New("Error response from receive callback")
-	}
-
-	dbPayment.Status = "Success"
-	err = savePayment(dbPayment)
-	if err != nil {
-		pl.log.Error("Error saving payment to the DB")
-		return err
 	}
 
 	return nil

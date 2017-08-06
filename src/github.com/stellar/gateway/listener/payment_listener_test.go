@@ -27,6 +27,16 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func ensurePaymentStatus(t *testing.T, operation horizon.PaymentResponse, status string) func(args mock.Arguments) {
+	return func(args mock.Arguments) {
+		payment := args.Get(0).(*entities.ReceivedPayment)
+		assert.Equal(t, operation.ID, payment.OperationID)
+		assert.Equal(t, mocks.PredefinedTime, payment.ProcessedAt)
+		assert.Equal(t, operation.PagingToken, payment.PagingToken)
+		assert.Equal(t, status, payment.Status)
+	}
+}
+
 func TestPaymentListener(t *testing.T) {
 	mockEntityManager := new(mocks.MockEntityManager)
 	mockHorizon := new(mocks.MockHorizon)
@@ -68,12 +78,6 @@ func TestPaymentListener(t *testing.T) {
 
 		mocks.PredefinedTime = time.Now()
 
-		dbPayment := entities.ReceivedPayment{
-			OperationID: operation.ID,
-			ProcessedAt: mocks.PredefinedTime,
-			PagingToken: operation.PagingToken,
-		}
-
 		config.Assets[1].Code = "EUR"
 		config.Assets[1].Issuer = "GD4I7AFSLZGTDL34TQLWJOM2NHLIIOEKD5RHHZUW54HERBLSIRKUOXRR"
 
@@ -90,74 +94,14 @@ func TestPaymentListener(t *testing.T) {
 
 		Convey("When operation is not a payment", func() {
 			operation.Type = "create_account"
-			dbPayment.Status = "Not a payment operation"
-			mockEntityManager.On("Persist", &dbPayment).Return(nil).Once()
+
+			mockEntityManager.On("Persist", mock.AnythingOfType("*entities.ReceivedPayment")).
+				Run(ensurePaymentStatus(t, operation, "Processing...")).Return(nil).Once()
+
+			mockEntityManager.On("Persist", mock.AnythingOfType("*entities.ReceivedPayment")).
+				Run(ensurePaymentStatus(t, operation, "Not a payment operation")).Return(nil).Once()
+
 			mockRepository.On("GetReceivedPaymentByOperationID", int64(1)).Return(nil, nil).Once()
-
-			Convey("it should save the status", func() {
-				err := paymentListener.onPayment(operation)
-				assert.Nil(t, err)
-				mockEntityManager.AssertExpectations(t)
-			})
-		})
-
-		Convey("When payment is sent not received", func() {
-			operation.Type = "payment"
-			operation.To = "GDNXBMIJLLLXZYKZBHXJ45WQ4AJQBRVT776YKGQTDBHTSPMNAFO3OZOS"
-			dbPayment.Status = "Operation sent not received"
-			mockEntityManager.On("Persist", &dbPayment).Return(nil).Once()
-			mockRepository.On("GetReceivedPaymentByOperationID", int64(1)).Return(nil, nil).Once()
-
-			Convey("it should save the status", func() {
-				err := paymentListener.onPayment(operation)
-				assert.Nil(t, err)
-				mockEntityManager.AssertExpectations(t)
-			})
-		})
-
-		Convey("When asset is not allowed (issuer)", func() {
-			operation.Type = "payment"
-			operation.To = "GATKP6ZQM5CSLECPMTAC5226PE367QALCPM6AFHTSULPPZMT62OOPMQB"
-			operation.AssetCode = "USD"
-			operation.AssetIssuer = "GC4WWLMUGZJMRVJM7JUVVZBY3LJ5HL4RKIPADEGKEMLAAJEDRONUGYG7"
-			dbPayment.Status = "Asset not allowed"
-			mockEntityManager.On("Persist", &dbPayment).Return(nil).Once()
-			mockRepository.On("GetReceivedPaymentByOperationID", int64(1)).Return(nil, nil).Once()
-
-			Convey("it should save the status", func() {
-				err := paymentListener.onPayment(operation)
-				assert.Nil(t, err)
-				mockEntityManager.AssertExpectations(t)
-			})
-		})
-
-		Convey("When asset is not allowed (code)", func() {
-			operation.Type = "payment"
-			operation.To = "GATKP6ZQM5CSLECPMTAC5226PE367QALCPM6AFHTSULPPZMT62OOPMQB"
-			operation.AssetCode = "GBP"
-			operation.AssetIssuer = "GD4I7AFSLZGTDL34TQLWJOM2NHLIIOEKD5RHHZUW54HERBLSIRKUOXRR"
-			dbPayment.Status = "Asset not allowed"
-			mockEntityManager.On("Persist", &dbPayment).Return(nil).Once()
-			mockRepository.On("GetReceivedPaymentByOperationID", int64(1)).Return(nil, nil).Once()
-
-			Convey("it should save the status", func() {
-				err := paymentListener.onPayment(operation)
-				assert.Nil(t, err)
-				mockEntityManager.AssertExpectations(t)
-			})
-		})
-
-		Convey("When payment is XLM(no XLM asset in config)", func() {
-			operation.Type = "payment"
-			operation.From = "GBL27BKG2JSDU6KQ5YJKCDWTVIU24VTG4PLB63SF4K2DBZS5XZMWRPVU"
-			operation.To = "GATKP6ZQM5CSLECPMTAC5226PE367QALCPM6AFHTSULPPZMT62OOPMQB"
-			operation.AssetCode = ""
-			operation.AssetIssuer = ""
-			operation.AssetType = "native"
-			dbPayment.Status = "Asset not allowed"
-			mockEntityManager.On("Persist", &dbPayment).Return(nil).Once()
-			mockRepository.On("GetReceivedPaymentByOperationID", int64(1)).Return(nil, nil).Once()
-
 
 			Convey("it should save the status", func() {
 				err := paymentListener.onPayment(operation)
@@ -167,6 +111,93 @@ func TestPaymentListener(t *testing.T) {
 			})
 		})
 
+		Convey("When payment is sent not received", func() {
+			operation.Type = "payment"
+			operation.To = "GDNXBMIJLLLXZYKZBHXJ45WQ4AJQBRVT776YKGQTDBHTSPMNAFO3OZOS"
+
+			mockEntityManager.On("Persist", mock.AnythingOfType("*entities.ReceivedPayment")).
+				Run(ensurePaymentStatus(t, operation, "Processing...")).Return(nil).Once()
+
+			mockEntityManager.On("Persist", mock.AnythingOfType("*entities.ReceivedPayment")).
+				Run(ensurePaymentStatus(t, operation, "Operation sent not received")).Return(nil).Once()
+
+			mockRepository.On("GetReceivedPaymentByOperationID", int64(1)).Return(nil, nil).Once()
+
+			Convey("it should save the status", func() {
+				err := paymentListener.onPayment(operation)
+				assert.Nil(t, err)
+				mockEntityManager.AssertExpectations(t)
+				mockRepository.AssertExpectations(t)
+			})
+		})
+
+		Convey("When asset is not allowed (issuer)", func() {
+			operation.Type = "payment"
+			operation.To = "GATKP6ZQM5CSLECPMTAC5226PE367QALCPM6AFHTSULPPZMT62OOPMQB"
+			operation.AssetCode = "USD"
+			operation.AssetIssuer = "GC4WWLMUGZJMRVJM7JUVVZBY3LJ5HL4RKIPADEGKEMLAAJEDRONUGYG7"
+
+			mockEntityManager.On("Persist", mock.AnythingOfType("*entities.ReceivedPayment")).
+				Run(ensurePaymentStatus(t, operation, "Processing...")).Return(nil).Once()
+
+			mockEntityManager.On("Persist", mock.AnythingOfType("*entities.ReceivedPayment")).
+				Run(ensurePaymentStatus(t, operation, "Asset not allowed")).Return(nil).Once()
+
+			mockRepository.On("GetReceivedPaymentByOperationID", int64(1)).Return(nil, nil).Once()
+
+			Convey("it should save the status", func() {
+				err := paymentListener.onPayment(operation)
+				assert.Nil(t, err)
+				mockEntityManager.AssertExpectations(t)
+				mockRepository.AssertExpectations(t)
+			})
+		})
+
+		Convey("When asset is not allowed (code)", func() {
+			operation.Type = "payment"
+			operation.To = "GATKP6ZQM5CSLECPMTAC5226PE367QALCPM6AFHTSULPPZMT62OOPMQB"
+			operation.AssetCode = "GBP"
+			operation.AssetIssuer = "GD4I7AFSLZGTDL34TQLWJOM2NHLIIOEKD5RHHZUW54HERBLSIRKUOXRR"
+
+			mockEntityManager.On("Persist", mock.AnythingOfType("*entities.ReceivedPayment")).
+				Run(ensurePaymentStatus(t, operation, "Processing...")).Return(nil).Once()
+
+			mockEntityManager.On("Persist", mock.AnythingOfType("*entities.ReceivedPayment")).
+				Run(ensurePaymentStatus(t, operation, "Asset not allowed")).Return(nil).Once()
+
+			mockRepository.On("GetReceivedPaymentByOperationID", int64(1)).Return(nil, nil).Once()
+
+			Convey("it should save the status", func() {
+				err := paymentListener.onPayment(operation)
+				assert.Nil(t, err)
+				mockEntityManager.AssertExpectations(t)
+				mockRepository.AssertExpectations(t)
+			})
+		})
+
+		Convey("When payment is XLM (no XLM asset in config)", func() {
+			operation.Type = "payment"
+			operation.From = "GBL27BKG2JSDU6KQ5YJKCDWTVIU24VTG4PLB63SF4K2DBZS5XZMWRPVU"
+			operation.To = "GATKP6ZQM5CSLECPMTAC5226PE367QALCPM6AFHTSULPPZMT62OOPMQB"
+			operation.AssetCode = ""
+			operation.AssetIssuer = ""
+			operation.AssetType = "native"
+
+			mockEntityManager.On("Persist", mock.AnythingOfType("*entities.ReceivedPayment")).
+				Run(ensurePaymentStatus(t, operation, "Processing...")).Return(nil).Once()
+
+			mockEntityManager.On("Persist", mock.AnythingOfType("*entities.ReceivedPayment")).
+				Run(ensurePaymentStatus(t, operation, "Asset not allowed")).Return(nil).Once()
+
+			mockRepository.On("GetReceivedPaymentByOperationID", int64(1)).Return(nil, nil).Once()
+
+			Convey("it should save the status", func() {
+				err := paymentListener.onPayment(operation)
+				assert.Nil(t, err)
+				mockEntityManager.AssertExpectations(t)
+				mockRepository.AssertExpectations(t)
+			})
+		})
 
 		Convey("When payment is XLM (XLM asset in config)", func() {
 			operation.Type = "payment"
@@ -174,7 +205,6 @@ func TestPaymentListener(t *testing.T) {
 			operation.AssetCode = ""
 			operation.AssetIssuer = ""
 			operation.AssetType = "native"
-			dbPayment.Status = "Success"
 			operation.Memo.Type = "book"
 			operation.Memo.Value = "testing"
 			config.Assets[1].Code = "XLM"
@@ -182,7 +212,12 @@ func TestPaymentListener(t *testing.T) {
 
 			mockRepository.On("GetReceivedPaymentByOperationID", int64(1)).Return(nil, nil).Once()
 			mockHorizon.On("LoadMemo", &operation).Return(nil).Once()
-			mockEntityManager.On("Persist", &dbPayment).Return(nil).Once()
+
+			mockEntityManager.On("Persist", mock.AnythingOfType("*entities.ReceivedPayment")).
+				Run(ensurePaymentStatus(t, operation, "Processing...")).Return(nil).Once()
+
+			mockEntityManager.On("Persist", mock.AnythingOfType("*entities.ReceivedPayment")).
+				Run(ensurePaymentStatus(t, operation, "Success")).Return(nil).Once()
 
 			mockHTTPClient.On(
 				"Do",
@@ -203,8 +238,6 @@ func TestPaymentListener(t *testing.T) {
 			})
 		})
 
-
-
 		Convey("When unable to load transaction memo", func() {
 			operation.Type = "payment"
 			operation.To = "GATKP6ZQM5CSLECPMTAC5226PE367QALCPM6AFHTSULPPZMT62OOPMQB"
@@ -212,13 +245,21 @@ func TestPaymentListener(t *testing.T) {
 			operation.AssetIssuer = "GD4I7AFSLZGTDL34TQLWJOM2NHLIIOEKD5RHHZUW54HERBLSIRKUOXRR"
 
 			mockRepository.On("GetReceivedPaymentByOperationID", int64(1)).Return(nil, nil).Once()
+
+			mockEntityManager.On("Persist", mock.AnythingOfType("*entities.ReceivedPayment")).
+				Run(ensurePaymentStatus(t, operation, "Processing...")).Return(nil).Once()
+
+			mockEntityManager.On("Persist", mock.AnythingOfType("*entities.ReceivedPayment")).
+				Run(ensurePaymentStatus(t, operation, "Unable to load transaction memo: Connection error")).Return(nil).Once()
+
 			mockHorizon.On("LoadMemo", &operation).Return(errors.New("Connection error")).Once()
 
-			Convey("it should return error", func() {
+			Convey("it should save the status", func() {
 				err := paymentListener.onPayment(operation)
-				assert.Error(t, err)
+				assert.NoError(t, err)
 				mockHorizon.AssertExpectations(t)
-				mockEntityManager.AssertNotCalled(t, "Persist")
+				mockEntityManager.AssertExpectations(t)
+				mockRepository.AssertExpectations(t)
 			})
 		})
 
@@ -233,6 +274,12 @@ func TestPaymentListener(t *testing.T) {
 			mockRepository.On("GetReceivedPaymentByOperationID", int64(1)).Return(nil, nil).Once()
 			mockHorizon.On("LoadMemo", &operation).Return(nil).Once()
 
+			mockEntityManager.On("Persist", mock.AnythingOfType("*entities.ReceivedPayment")).
+				Run(ensurePaymentStatus(t, operation, "Processing...")).Return(nil).Once()
+
+			mockEntityManager.On("Persist", mock.AnythingOfType("*entities.ReceivedPayment")).
+				Run(ensurePaymentStatus(t, operation, "Error response from receive callback")).Return(nil).Once()
+
 			mockHTTPClient.On(
 				"Do",
 				mock.MatchedBy(func(req *http.Request) bool {
@@ -245,9 +292,10 @@ func TestPaymentListener(t *testing.T) {
 
 			Convey("it should save the status", func() {
 				err := paymentListener.onPayment(operation)
-				assert.Error(t, err)
+				assert.NoError(t, err)
 				mockHorizon.AssertExpectations(t)
-				mockEntityManager.AssertNotCalled(t, "Persist")
+				mockEntityManager.AssertExpectations(t)
+				mockRepository.AssertExpectations(t)
 			})
 		})
 
@@ -261,11 +309,14 @@ func TestPaymentListener(t *testing.T) {
 			operation.Memo.Type = "text"
 			operation.Memo.Value = "testing"
 
-			dbPayment.Status = "Success"
-
 			mockRepository.On("GetReceivedPaymentByOperationID", int64(1)).Return(nil, nil).Once()
 			mockHorizon.On("LoadMemo", &operation).Return(nil).Once()
-			mockEntityManager.On("Persist", &dbPayment).Return(nil).Once()
+
+			mockEntityManager.On("Persist", mock.AnythingOfType("*entities.ReceivedPayment")).
+				Run(ensurePaymentStatus(t, operation, "Processing...")).Return(nil).Once()
+
+			mockEntityManager.On("Persist", mock.AnythingOfType("*entities.ReceivedPayment")).
+				Run(ensurePaymentStatus(t, operation, "Success")).Return(nil).Once()
 
 			mockHTTPClient.On(
 				"Do",
@@ -291,6 +342,7 @@ func TestPaymentListener(t *testing.T) {
 				assert.Nil(t, err)
 				mockHorizon.AssertExpectations(t)
 				mockEntityManager.AssertExpectations(t)
+				mockRepository.AssertExpectations(t)
 			})
 		})
 
@@ -300,11 +352,14 @@ func TestPaymentListener(t *testing.T) {
 			operation.AssetCode = "USD"
 			operation.AssetIssuer = "GD4I7AFSLZGTDL34TQLWJOM2NHLIIOEKD5RHHZUW54HERBLSIRKUOXRR"
 
-			dbPayment.Status = "Success"
+			mockEntityManager.On("Persist", mock.AnythingOfType("*entities.ReceivedPayment")).
+				Run(ensurePaymentStatus(t, operation, "Processing...")).Return(nil).Once()
+
+			mockEntityManager.On("Persist", mock.AnythingOfType("*entities.ReceivedPayment")).
+				Run(ensurePaymentStatus(t, operation, "Success")).Return(nil).Once()
 
 			mockRepository.On("GetReceivedPaymentByOperationID", int64(1)).Return(nil, nil).Once()
 			mockHorizon.On("LoadMemo", &operation).Return(nil).Once()
-			mockEntityManager.On("Persist", &dbPayment).Return(nil).Once()
 
 			mockHTTPClient.On(
 				"Do",
@@ -321,6 +376,7 @@ func TestPaymentListener(t *testing.T) {
 				assert.Nil(t, err)
 				mockHorizon.AssertExpectations(t)
 				mockEntityManager.AssertExpectations(t)
+				mockRepository.AssertExpectations(t)
 			})
 		})
 
@@ -334,11 +390,14 @@ func TestPaymentListener(t *testing.T) {
 			operation.Memo.Type = "hash"
 			operation.Memo.Value = "b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9"
 
-			dbPayment.Status = "Success"
-
 			mockRepository.On("GetReceivedPaymentByOperationID", int64(1)).Return(nil, nil).Once()
 			mockHorizon.On("LoadMemo", &operation).Return(nil).Once()
-			mockEntityManager.On("Persist", &dbPayment).Return(nil).Once()
+
+			mockEntityManager.On("Persist", mock.AnythingOfType("*entities.ReceivedPayment")).
+				Run(ensurePaymentStatus(t, operation, "Processing...")).Return(nil).Once()
+
+			mockEntityManager.On("Persist", mock.AnythingOfType("*entities.ReceivedPayment")).
+				Run(ensurePaymentStatus(t, operation, "Success")).Return(nil).Once()
 
 			attachment := compliance.Attachment{
 				Transaction: compliance.Transaction{
@@ -385,6 +444,7 @@ func TestPaymentListener(t *testing.T) {
 				assert.Nil(t, err)
 				mockHorizon.AssertExpectations(t)
 				mockEntityManager.AssertExpectations(t)
+				mockRepository.AssertExpectations(t)
 			})
 		})
 
@@ -413,6 +473,15 @@ func TestPaymentListener(t *testing.T) {
 
 				mockHorizon.On("LoadMemo", &operation).Return(nil).Once()
 				mockRepository.On("GetReceivedPaymentByOperationID", int64(1)).Return(&existingPayment, nil).Once()
+
+				mockEntityManager.On("Persist", &existingPayment).Return(nil).
+					Run(func(args mock.Arguments) {
+						dbPayment := args.Get(0).(*entities.ReceivedPayment)
+						assert.Equal(t, false, dbPayment.IsNew())
+						assert.Equal(t, int64(3), *dbPayment.ID)
+						assert.Equal(t, "Reprocessing...", dbPayment.Status)
+					}).Once()
+
 				mockEntityManager.On("Persist", &existingPayment).Return(nil).
 					Run(func(args mock.Arguments) {
 						dbPayment := args.Get(0).(*entities.ReceivedPayment)

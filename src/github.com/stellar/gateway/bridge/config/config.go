@@ -2,8 +2,8 @@ package config
 
 import (
 	"errors"
-	"net/url"
 	"github.com/stellar/go/keypair"
+	"net/url"
 	"regexp"
 )
 
@@ -71,7 +71,7 @@ func (c *Config) Validate() (err error) {
 	for _, asset := range c.Assets {
 		if asset.Issuer == "" {
 			if asset.Code != "XLM" {
-				err = errors.New("Issuer param is required for "+asset.Code)
+				err = errors.New("Issuer param is required for " + asset.Code)
 				return
 			}
 		}
@@ -79,7 +79,7 @@ func (c *Config) Validate() (err error) {
 		if asset.Issuer != "" {
 			_, err = keypair.Parse(asset.Issuer)
 			if err != nil {
-				err = errors.New("Issuing account is invalid for "+asset.Code)
+				err = errors.New("Issuing account is invalid for " + asset.Code)
 				return
 			}
 		}
@@ -90,7 +90,7 @@ func (c *Config) Validate() (err error) {
 		}
 
 		if !matched {
-			err = errors.New("Invalid asset code: "+asset.Code)
+			err = errors.New("Invalid asset code: " + asset.Code)
 			return err
 		}
 	}
