@@ -42,14 +42,19 @@ func (rh *RequestHandler) Builder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if request.SequenceNumber == "" {
-		accountResponse, _ := rh.Horizon.LoadAccount(request.Source)
-		sequenceNumber, _ = strconv.ParseUint(accountResponse.SequenceNumber, 10, 64)
+		accountResponse, err := rh.Horizon.LoadAccount(request.Source)
+		if err != nil {
+			log.WithFields(log.Fields{"err": err}).Error("Error when loading account")
+			server.Write(w, protocols.InternalServerError)
+			return
+		}
+		sequenceNumber, err = strconv.ParseUint(accountResponse.SequenceNumber, 10, 64)
 	}else{
-		sequenceNumber, _ = strconv.ParseUint(request.SequenceNumber, 10, 64)
+		sequenceNumber, err = strconv.ParseUint(request.SequenceNumber, 10, 64)
 	}
 
-	if sequenceNumber == 0{
-		errorResponse := protocols.NewInvalidParameterError("sequence_number", request.SequenceNumber, "Sequence number is invalid")
+	if err != nil {
+		errorResponse := protocols.NewInvalidParameterError("sequence_number", request.SequenceNumber, "Sequence number must be a number")
 		log.WithFields(errorResponse.LogData).Error(errorResponse.Error())
 		server.Write(w, errorResponse)
 		return
