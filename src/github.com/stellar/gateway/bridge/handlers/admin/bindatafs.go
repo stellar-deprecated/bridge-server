@@ -85,15 +85,12 @@ func (assetFS *bindataFS) Asset(name string) ([]byte, error) {
 
 func (assetFS *bindataFS) Glob(pattern string) (matches []string, err error) {
 	pattern = "vendor/src/github.com/qor/admin/views/" + pattern
-	fmt.Println(pattern)
 	if len(_bindata) > 0 {
 		for key := range _bindata {
-			fmt.Println(key)
 			if ok, err := filepath.Match(pattern, key); ok && err == nil {
 				matches = append(matches, key)
 			}
 		}
-		fmt.Println(matches)
 		return matches, nil
 	}
 
