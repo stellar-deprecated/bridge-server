@@ -137,7 +137,7 @@ func NewApp(config config.Config, migrateFlag bool) (app *App, err error) {
 		return
 	}
 
-	requestHandler := handlers.RequestHandler{}
+	requestHandler := handlers.RequestHandler{Repository: repository}
 
 	httpClientWithTimeout := http.Client{
 		Timeout: 10 * time.Second,
@@ -187,7 +187,8 @@ func (a *App) Serve() {
 
 	bridge.Abandon(middleware.Logger)
 	bridge.Use(server.StripTrailingSlashMiddleware())
-	bridge.Use(server.HeadersMiddleware())
+	// TODO
+	// bridge.Use(server.HeadersMiddleware())
 	if a.config.APIKey != "" {
 		bridge.Use(server.APIKeyMiddleware(a.config.APIKey))
 	}
@@ -198,6 +199,9 @@ func (a *App) Serve() {
 		log.Warning("accounts.authorizing_seed not provided. /authorize endpoint will not be available.")
 	}
 
+	bridge.Get("/admin", a.requestHandler.Admin)
+	bridge.Get("/admin/*", a.requestHandler.Admin)
+	bridge.Post("/admin/*", a.requestHandler.Admin)
 	bridge.Post("/create-keypair", a.requestHandler.CreateKeypair)
 	bridge.Post("/builder", a.requestHandler.Builder)
 	bridge.Post("/payment", a.requestHandler.Payment)

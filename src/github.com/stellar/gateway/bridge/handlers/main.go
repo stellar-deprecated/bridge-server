@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"github.com/stellar/gateway/bridge/config"
+	"github.com/stellar/gateway/db"
 	"github.com/stellar/gateway/external"
 	"github.com/stellar/gateway/horizon"
 	"github.com/stellar/gateway/listener"
@@ -18,6 +19,7 @@ type RequestHandler struct {
 	FederationResolver   external.FederationClientInterface      `inject:""`
 	TransactionSubmitter submitter.TransactionSubmitterInterface `inject:""`
 	PaymentListener      *listener.PaymentListener               `inject:""`
+	Repository           db.RepositoryInterface                  `inject:""`
 }
 
 func (rh *RequestHandler) isAssetAllowed(code string, issuer string) bool {

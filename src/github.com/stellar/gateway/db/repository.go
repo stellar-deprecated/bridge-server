@@ -12,6 +12,7 @@ type RepositoryInterface interface {
 	GetAuthorizedTransactionByMemo(memo string) (*entities.AuthorizedTransaction, error)
 	GetAllowedFiByDomain(domain string) (*entities.AllowedFi, error)
 	GetAllowedUserByDomainAndUserID(domain, userID string) (*entities.AllowedUser, error)
+	GetReceivedPaymentByPrimaryKey(id int64) (*entities.ReceivedPayment, error)
 	GetReceivedPaymentByOperationID(operationID int64) (*entities.ReceivedPayment, error)
 }
 
@@ -98,6 +99,29 @@ func (r Repository) GetAllowedUserByDomainAndUserID(domain, userID string) (*ent
 		"SELECT * FROM AllowedUser WHERE fi_domain = ? AND user_id = ?",
 		domain,
 		userID,
+	)
+
+	if r.repo.NoRows(err) {
+		return nil, nil
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	found.SetExists()
+	return &found, nil
+}
+
+// GetReceivedPaymentByPrimaryKey returns received payment by primary key (`id`)
+func (r Repository) GetReceivedPaymentByPrimaryKey(id int64) (*entities.ReceivedPayment, error) {
+
+	var found entities.ReceivedPayment
+
+	err := r.repo.GetRaw(
+		&found,
+		"SELECT * FROM ReceivedPayment WHERE id = ?",
+		id,
 	)
 
 	if r.repo.NoRows(err) {
