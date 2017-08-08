@@ -1,0 +1,91 @@
+// Alerts
+// --------------------------------------------------
+.qor-alert {
+    margin: 0 24px 24px 24px;
+    padding: 16px 24px;
+    line-height: 24px;
+    color: unquote("rgb(#{$palette-grey-700})");
+    background-color: unquote("rgb(#{$palette-grey-100})");
+    @include shadow-2dp();
+    @include clearfix();
+
+    >button {
+        float: right;
+        margin: -4px 0 -4px 4px;
+        color: inherit;
+        opacity: 0.5;
+
+        &:hover,
+        &:focus {
+            opacity: 0.8;
+        }
+    }
+}
+
+.qor-alert--success {
+    color: unquote("rgb(#{$palette-blue-700})");
+    background-color: unquote("rgb(#{$palette-blue-100})");
+}
+
+.qor-alert--error {
+    color: unquote("rgb(#{$palette-pink-700})");
+    background-color: unquote("rgb(#{$palette-pink-100})");
+}
+
+
+.mdl-dialog-bg {
+    position: fixed;
+    background: unquote("rgba(#{$color-black}, 0.54)");
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 9998;
+}
+
+#dialog {
+    display: none;
+    .mdl-dialog {
+        position: absolute;
+        left: 0;
+        right: 0;
+        width: -moz-fit-content;
+        width: -webkit-fit-content;
+        width: fit-content;
+        height: -moz-fit-content;
+        height: -webkit-fit-content;
+        height: fit-content;
+        margin: auto;
+        padding: 1em;
+        background: white;
+        color: black;
+        display: block;
+        z-index: 9999;
+        top: 200px;
+        max-width: 50%;
+        min-width: 30%;
+        border: 2px solid rgba(0, 0, 0, .05);
+        .mdl-dialog__content {
+            >p {
+                display: inline-block;
+                vertical-align: top;
+                margin: 0;
+                width: 40px;
+                &.mdl-dialog__message {
+                    padding: 2px 0 0 16px;
+                    width: calc(100% - 100px);
+                }
+                i {
+                    font-size: 32px;
+                    color: #ff0600;
+                }
+            }
+        }
+        button[data-type=cancel] {
+            color: unquote("rgba(#{$color-black}, 0.54)");
+        }
+        .mdl-dialog__content {
+            color: unquote("rgba(#{$color-black}, 0.75)");
+        }
+    }
+}

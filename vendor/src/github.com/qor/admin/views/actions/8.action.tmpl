@@ -1,0 +1,24 @@
+{{$context := .}}
+{{$result := .Result}}
+{{$allowed_actions := (allowed_actions $context.Resource.Actions $context.Action $result)}}
+{{$resource := .Resource}}
+
+{{if gt (len $allowed_actions) 0 }}
+  <div class="qor-action-forms" data-toggle="qor.action.bulk">
+    {{range $action := $allowed_actions}}
+      {{if (eq $action.URLOpenType "_blank")}}
+        <a class="mdl-button mdl-button--colored mdl-button--raised mdl-js-button qor-action-button" href="{{if $action.URL}}{{call $action.URL $result $context}}{{else}}{{join_url (url_for $result $resource) $action.ToParam}}{{end}}" target="_blank">
+          {{t (printf "%v.actions.%v" $resource.ToParam $action.Label) $action.Label}}
+        </a>
+      {{else}}
+        <button class="mdl-button mdl-button--colored mdl-button--raised mdl-js-button qor-action-button" type="button"
+                                                                                                          data-url="{{if $action.URL}}{{call $action.URL $result $context}}{{else}}{{join_url (url_for $result $resource) $action.ToParam}}{{end}}"
+                                                                                                          {{if $action.URLOpenType}}data-open-type="{{$action.URLOpenType}}"
+                                                                                                          {{else if (and (not $action.Resource) (ne $action.Method "GET"))}}
+                                                                                                            data-ajax-form="true" data-dataType="json" data-confirm="{{t "qor_admin.form.are_you_sure" "Are You Sure?"}}"  data-method="{{$action.Method}}"{{end}}>
+          {{t (printf "%v.actions.%v" $resource.ToParam $action.Label) $action.Label}}
+        </button>
+      {{end}}
+    {{end}}
+  </div>
+{{end}}

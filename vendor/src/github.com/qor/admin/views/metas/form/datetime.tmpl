@@ -1,0 +1,26 @@
+<div class="qor-field">
+  <div class="mdl-textfield mdl-textfield--full-width mdl-js-textfield">
+    <label class="qor-field__label mdl-textfield__label" for="{{.InputId}}">
+      {{meta_label .Meta}}
+    </label>
+
+    <div class="qor-field__show">
+      {{.Value}}
+    </div>
+
+    <div class="qor-field__edit qor-field__datetimepicker" data-picker-type="datetime">
+      <input class="mdl-textfield__input qor-datetimepicker__input" placeholder="{{meta_placeholder .Meta .Context "YYYY-MM-DD HH:MM"}}" type="text" id="{{.InputId}}" name="{{.InputName}}" value="{{.Value}}" {{if not (has_update_permission .Meta)}} disabled{{end}}>
+
+      <div>
+        <button data-toggle="qor.datepicker" data-target-input=".qor-datetimepicker__input" class="mdl-button mdl-js-button mdl-button--icon qor-action__datepicker" type="button">
+          <i class="material-icons">date_range</i>
+        </button>
+
+        <button data-toggle="qor.timepicker" data-target-input=".qor-datetimepicker__input" class="mdl-button mdl-js-button mdl-button--icon qor-action__timepicker" type="button">
+          <i class="material-icons">access_time</i>
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>

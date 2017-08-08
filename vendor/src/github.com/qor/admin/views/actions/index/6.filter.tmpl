@@ -1,0 +1,8 @@
+{{if .Resource}}
+  {{$filters := .Resource.GetFilters}}
+  {{range $filter := $filters}}
+    <div class="qor-actions qor-bottomsheet__filter" data-toggle="qor.filter">
+      {{render_filter $filter}}
+    </div>
+  {{end}}
+{{end}}

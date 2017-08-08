@@ -1,0 +1,52 @@
+{{$value := (raw_value_of .ResourceValue .Meta)}}
+
+<div class="qor-field">
+  <label class="qor-field__label" for="{{.InputId}}">
+    {{meta_label .Meta}}
+  </label>
+
+  <div class="qor-field__block qor-file">
+    <div class="qor-fieldset">
+
+      <textarea class="qor-file__options hidden" data-cropper-title="{{t "qor_media_library.form.crop_image" "Crop image"}}" data-cropper-cancel="{{t "qor_media_library.form.cancel" "Cancel"}}" data-cropper-ok="{{t "qor_media_library.form.ok" "OK"}}" name="{{.InputName}}" aria-hidden="true">{{if $value}}{{$value.Value}}{{end}}</textarea>
+      <div class="qor-file__list">
+        {{if $value.GetSizes}}
+          <ul>
+            {{range $key, $v := $value.GetSizes}}
+              {{if not (is_included $key "@")}}
+                <li>
+                  <img src="{{$value.URL $key}}" data-original-url="{{$value.URL "original"}}" data-size-name="{{$key}}" data-size-resolution="{{marshal $v}}">
+                  <span>{{$key}} ({{$v.Width}}&times;{{$v.Height}} px)</span>
+                </li>
+              {{end}}
+            {{end}}
+          </ul>
+        {{else if $value.IsImage}}
+          <ul>
+            <li><img src="{{$value.URL}}" data-original-url="{{$value.URL "original"}}" data-size-name="original" alt="{{$value.GetFileName}}"></li>
+          </ul>
+        {{else if $value.URL}}
+          <div class="qor-file__list-item">
+            <span>
+              {{if (eq $value.Ext ".svg")}}
+                <img src="{{$value.URL}}" alt="{{$value.GetFileName}}">
+              {{else}}
+                <span>{{$value.GetFileName}}</span>
+              {{end}}
+            </span>
+            <div class="qor-file__action">
+              <a href="{{$value.URL}}" class="qor-file__action-download" title="{{t "qor_media_library.form.download" "Download"}}"><i class="material-icons">file_download</i></a>
+              <a href="javascript://" class="qor-file__action-delete qor-cropper__toggle--delete" title="{{t "qor_media_library.form.Delete" "Delete"}}"><i class="material-icons">delete</i></a>
+            </div>
+          </div>
+        {{end}}
+      </div>
+
+      <label class="mdl-button mdl-button--primary qor-button__icon-add" title="{{t "qor_media_library.form.choose_file" "Choose File"}}" {{if not (has_update_permission .Meta)}}disabled{{end}}>
+        <input class="visuallyhidden qor-file__input" id="{{.InputId}}" name="{{.InputName}}" type="file">
+        {{t (printf "%v.attributes.add_%v" .BaseResource.ToParam (singular (meta_label .Meta))) (printf "Add %v" (singular (meta_label .Meta)))}}
+      </label>
+
+    </div>
+  </div>
+</div>
