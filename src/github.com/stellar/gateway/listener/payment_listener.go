@@ -231,7 +231,7 @@ func (pl *PaymentListener) process(payment horizon.PaymentResponse) error {
 		complianceRequestURL := pl.config.Compliance + "/receive"
 		complianceRequestBody := url.Values{"memo": {string(payment.Memo.Value)}}
 
-		pl.log.WithFields(logrus.Fields{"url": complianceRequestURL, "body": complianceRequestBody}).Error("Sending request to compliance server")
+		pl.log.WithFields(logrus.Fields{"url": complianceRequestURL, "body": complianceRequestBody}).Info("Sending request to compliance server")
 		resp, err := pl.postForm(complianceRequestURL, complianceRequestBody)
 		if err != nil {
 			return errors.Wrap(err, "Error sending request to compliance server")
