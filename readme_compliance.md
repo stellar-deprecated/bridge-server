@@ -34,10 +34,14 @@ The `compliance.cfg` file must be present in a working directory (you can load a
   * `sanctions` - Callback that performs sanctions check. Read [Callbacks](#callbacks) section.
   * `ask_user` - Callback that asks user for permission for reading their data. Read [Callbacks](#callbacks) section.
   * `fetch_info` - Callback that returns user data. Read [Callbacks](#callbacks) section.
+  * `tx_status` - Callback that returns user data. Read [Callbacks](#callbacks) section.
 * `tls` (only when running HTTPS external server)
   * `certificate_file` - a file containing a certificate
   * `private_key_file` - a file containing a matching private key
 * `log_format` - set to `json` for JSON logs
+* `tx_status_auth` - authentication credentials for `/tx_status` endpoint.
+  * `username`
+  * `password` - minimum 10 chars
 
 Check [`compliance_example.cfg`](./compliance_example.cfg).
 
@@ -76,7 +80,7 @@ Returns [Auth response](https://www.stellar.org/developers/learn/integration-gui
 
 ### POST :internal_port/send
 
-Typically called by the bridge server when a user initiates a payment. This endpoint causes the compliance server to send an Auth request to another organization. It will call the Auth endpoint of the receiving instition. 
+Typically called by the bridge server when a user initiates a payment. This endpoint causes the compliance server to send an Auth request to another organization. It will call the Auth endpoint of the receiving instition.
 
 #### Request Parameters
 
@@ -239,6 +243,27 @@ This callback should return `200 OK` status code and JSON object with the custom
 	"date_of_birth": "1990-01-01"
 }
 ```
+### `callbacks.tx_status`
+This callback should return the status of a transaction as explained in [`SEP-0001`](https://github.com/stellar/stellar-protocol/blob/master/ecosystem/sep-0001.md).
+
+#### Request
+
+name | description
+--- | ---
+`id` | Stellar transaction ID.
+
+#### Response
+This callback should return `200 OK` status code and JSON object with the transaction status info:
+
+```json
+{
+  "status": "status code as defined in [`SEP-0001`](https://github.com/stellar/stellar-protocol/blob/master/ecosystem/sep-0001.md)",
+	"recv_code": "arbitrary string",
+	"refund_tx": "tx_hash",
+  "msg": "arbitrary string"
+}
+```
+
 
 Any other status code will be considered an error.
 
