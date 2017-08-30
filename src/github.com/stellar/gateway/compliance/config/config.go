@@ -36,6 +36,7 @@ type Callbacks struct {
 	Sanctions string
 	AskUser   string `mapstructure:"ask_user"`
 	FetchInfo string `mapstructure:"fetch_info"`
+	TxStatus  string `mapstructure:"tx_status"`
 }
 
 // Validate validates config and returns error if any of config values is incorrect
@@ -97,10 +98,10 @@ func (c *Config) Validate() (err error) {
 		}
 	}
 
-	if c.Callbacks.Sanctions != "" {
-		_, err = url.Parse(c.Callbacks.Sanctions)
+	if c.Callbacks.TxStatus != "" {
+		_, err = url.Parse(c.Callbacks.TxStatus)
 		if err != nil {
-			err = errors.New("Cannot parse callbacks.sanctions param")
+			err = errors.New("Cannot parse callbacks.tx_status param")
 			return
 		}
 	}
