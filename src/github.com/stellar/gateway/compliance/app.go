@@ -112,6 +112,7 @@ func (a *App) Serve() {
 	external.Use(server.HeadersMiddleware())
 	external.Post("/", a.requestHandler.HandlerAuth)
 	external.Get("/tx_status", a.requestHandler.HandlerTxStatus)
+	// external.Get("/tx_status", httpauth.SimpleBasicAuth(a.config.TxStatusAuth.Username, a.config.TxStatusAuth.Password)(a.requestHandler.HandlerTxStatus))
 	externalPortString := fmt.Sprintf(":%d", *a.config.ExternalPort)
 	log.Println("Starting external server on", externalPortString)
 	go func() {

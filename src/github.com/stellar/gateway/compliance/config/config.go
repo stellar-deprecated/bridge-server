@@ -24,6 +24,10 @@ type Config struct {
 		CertificateFile string `mapstructure:"certificate_file"`
 		PrivateKeyFile  string `mapstructure:"private_key_file"`
 	}
+	TxStatusAuth struct {
+		Username string `valid:"required,alphanum"`
+		Password string `valid:"required,length(10|1000)"`
+	} `valid:"required" toml:"tx_status_auth"`
 }
 
 // Keys contains values of `keys` config group
