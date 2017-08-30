@@ -10,7 +10,6 @@ import (
 
 	"github.com/stellar/gateway/protocols"
 	"github.com/stellar/gateway/server"
-	"github.com/zenazn/goji/web"
 )
 
 // TransactionStatusResponse represents a response from the tx_status endpoint
@@ -23,7 +22,7 @@ type TransactionStatusResponse struct {
 }
 
 // HandlerTxStatus implements /tx_status endpoint
-func (rh *RequestHandler) HandlerTxStatus(c web.C, w http.ResponseWriter, r *http.Request) {
+func (rh *RequestHandler) HandlerTxStatus(w http.ResponseWriter, r *http.Request) {
 
 	txid := r.URL.Query().Get("id")
 	if txid == "" {

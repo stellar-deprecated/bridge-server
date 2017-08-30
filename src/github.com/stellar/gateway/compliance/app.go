@@ -7,6 +7,7 @@ import (
 	"time"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/goji/httpauth"
 
 	"github.com/facebookgo/inject"
 	"github.com/stellar/gateway/compliance/config"
@@ -111,8 +112,7 @@ func (a *App) Serve() {
 	external.Use(server.StripTrailingSlashMiddleware())
 	external.Use(server.HeadersMiddleware())
 	external.Post("/", a.requestHandler.HandlerAuth)
-	external.Get("/tx_status", a.requestHandler.HandlerTxStatus)
-	// external.Get("/tx_status", httpauth.SimpleBasicAuth(a.config.TxStatusAuth.Username, a.config.TxStatusAuth.Password)(a.requestHandler.HandlerTxStatus))
+	external.Get("/tx_status", httpauth.SimpleBasicAuth(a.config.TxStatusAuth.Username, a.config.TxStatusAuth.Password)(http.HandlerFunc(a.requestHandler.HandlerTxStatus)))
 	externalPortString := fmt.Sprintf(":%d", *a.config.ExternalPort)
 	log.Println("Starting external server on", externalPortString)
 	go func() {

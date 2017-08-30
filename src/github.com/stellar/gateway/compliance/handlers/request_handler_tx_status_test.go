@@ -2,22 +2,16 @@ package handlers
 
 import (
 	"net/http"
-	// // "net/http/httptest"
 	"net/url"
-	// // "strings"
 	"testing"
 
 	"github.com/facebookgo/inject"
+	"github.com/goji/httpauth"
 	. "github.com/smartystreets/goconvey/convey"
 	"github.com/stellar/gateway/compliance/config"
-	// c"github.com/stellar/gateway/db/entities"
 	"github.com/stellar/gateway/mocks"
 	"github.com/stellar/gateway/net"
-	// // "github.com/stellar/gateway/test"
 	"github.com/stellar/go/support/http/httptest"
-	// callback "github.com/stellar/gateway/protocols/compliance"
-	// //"github.com/stretchr/testify/assert"
-	"github.com/zenazn/goji/web"
 )
 
 func TestRequestHandlerTxStatus(t *testing.T) {
@@ -28,6 +22,9 @@ func TestRequestHandlerTxStatus(t *testing.T) {
 			SigningSeed: "SDWTLFPALQSP225BSMX7HPZ7ZEAYSUYNDLJ5QI3YGVBNRUIIELWH3XUV",
 		},
 	}
+	c.TxStatusAuth.Username = "username"
+	c.TxStatusAuth.Password = "password"
+
 	txid := "abc123"
 	mockHTTPClient := new(mocks.MockHTTPClient)
 	mockEntityManager := new(mocks.MockEntityManager)
@@ -60,20 +57,34 @@ func TestRequestHandlerTxStatus(t *testing.T) {
 	}
 
 	httpHandle := func(w http.ResponseWriter, r *http.Request) {
-		requestHandler.HandlerTxStatus(web.C{}, w, r)
+		requestHandler.HandlerTxStatus(w, r)
 	}
 
-	testServer := httptest.NewServer(t, http.HandlerFunc(httpHandle))
+	testServer := httptest.NewServer(t, httpauth.SimpleBasicAuth(c.TxStatusAuth.Username,
+		c.TxStatusAuth.Password)(http.HandlerFunc(httpHandle)))
 	defer testServer.Close()
 
 	Convey("Given tx_status request", t, func() {
+		Convey("it returns unathorised when no auth", func() {
+			testServer.GET("/tx_status").
+				Expect().
+				Status(http.StatusUnauthorized)
+		})
+		Convey("it returns unauthorised when bad auth", func() {
+			testServer.GET("/tx_status").
+				WithBasicAuth("username", "wrong_password").
+				Expect().
+				Status(http.StatusUnauthorized)
+		})
 		Convey("it returns bad request when no parameter", func() {
 			testServer.GET("/tx_status").
+				WithBasicAuth("username", "password").
 				Expect().
 				Status(http.StatusBadRequest)
 		})
 		Convey("it returns unknown when no tx_status endpoint", func() {
 			testServer.GET("/tx_status").
+				WithBasicAuth("username", "password").
 				WithQuery("id", "123").
 				Expect().
 				Status(http.StatusOK).
@@ -85,15 +96,16 @@ func TestRequestHandlerTxStatus(t *testing.T) {
 			}
 
 			mockHTTPClient.On(
-					"PostForm",
-					"http://tx_status",
-					url.Values{"id": {txid}},
-				).Return(
-					net.BuildHTTPResponse(400, "badrequest"),
-					nil,
-				).Once()
+				"PostForm",
+				"http://tx_status",
+				url.Values{"id": {txid}},
+			).Return(
+				net.BuildHTTPResponse(400, "badrequest"),
+				nil,
+			).Once()
 
 			testServer.GET("/tx_status").
+				WithBasicAuth("username", "password").
 				WithQuery("id", txid).
 				Expect().
 				Status(http.StatusOK).
@@ -106,15 +118,16 @@ func TestRequestHandlerTxStatus(t *testing.T) {
 			}
 
 			mockHTTPClient.On(
-					"PostForm",
-					"http://tx_status",
-					url.Values{"id": {txid}},
-				).Return(
-					net.BuildHTTPResponse(200, "{}"),
-					nil,
-				).Once()
+				"PostForm",
+				"http://tx_status",
+				url.Values{"id": {txid}},
+			).Return(
+				net.BuildHTTPResponse(200, "{}"),
+				nil,
+			).Once()
 
 			testServer.GET("/tx_status").
+				WithBasicAuth("username", "password").
 				WithQuery("id", txid).
 				Expect().
 				Status(http.StatusOK).
@@ -127,21 +140,21 @@ func TestRequestHandlerTxStatus(t *testing.T) {
 			}
 
 			mockHTTPClient.On(
-					"PostForm",
-					"http://tx_status",
-					url.Values{"id": {txid}},
-				).Return(
-					net.BuildHTTPResponse(200, `{"status":"delivered","msg":"cash paid"}`),
-					nil,
-				).Once()
+				"PostForm",
+				"http://tx_status",
+				url.Values{"id": {txid}},
+			).Return(
+				net.BuildHTTPResponse(200, `{"status":"delivered","msg":"cash paid"}`),
+				nil,
+			).Once()
 
 			testServer.GET("/tx_status").
+				WithBasicAuth("username", "password").
 				WithQuery("id", txid).
 				Expect().
 				Status(http.StatusOK).
 				Body().Equal(`{"status":"delivered","msg":"cash paid"}` + "\n")
 		})
-
 
 	})
 }
