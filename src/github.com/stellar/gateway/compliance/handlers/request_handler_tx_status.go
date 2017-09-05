@@ -10,16 +10,8 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/stellar/gateway/protocols"
 	"github.com/stellar/gateway/server"
+	"github.com/stellar/go/protocols/compliance"
 )
-
-// TransactionStatusResponse represents a response from the tx_status endpoint
-type TransactionStatusResponse struct {
-	protocols.SuccessResponse
-	Status   string `json:"status"`
-	RecvCode string `json:"recv_code,omitempty"`
-	RefundTx string `json:"refund_tx,omitempty"`
-	Msg      string `json:"msg,omitempty"`
-}
 
 // HandlerTxStatus implements /tx_status endpoint
 func (rh *RequestHandler) HandlerTxStatus(w http.ResponseWriter, r *http.Request) {
@@ -27,13 +19,13 @@ func (rh *RequestHandler) HandlerTxStatus(w http.ResponseWriter, r *http.Request
 	txid := r.URL.Query().Get("id")
 	if txid == "" {
 		log.Info("unable to get query parameter")
-		server.Write(w, protocols.MissingParameterError)
+		server.Write(w, protocols.NewMissingParameter("id"))
 		return
 	}
-	response := TransactionStatusResponse{}
+	response := compliance.TransactionStatusResponse{}
 
 	if rh.Config.Callbacks.TxStatus == "" {
-		response.Status = "unknown"
+		response.Status = compliance.TransactionStatusUnknown
 	} else {
 		endpoint := fmt.Sprintf(
 			"%s?id=%s",
@@ -77,11 +69,11 @@ func (rh *RequestHandler) HandlerTxStatus(w http.ResponseWriter, r *http.Request
 				return
 			}
 			if response.Status == "" {
-				response.Status = "unknown"
+				response.Status = compliance.TransactionStatusUnknown
 			}
 
 		default:
-			response.Status = "unknown"
+			response.Status = compliance.TransactionStatusUnknown
 		}
 	}
 
