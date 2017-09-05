@@ -258,8 +258,8 @@ This callback should return `200 OK` status code and JSON object with the transa
 ```json
 {
   "status": "status code as defined in SEP-0001",
-	"recv_code": "arbitrary string",
-	"refund_tx": "tx_hash",
+  "recv_code": "arbitrary string",
+  "refund_tx": "tx_hash",
   "msg": "arbitrary string"
 }
 ```

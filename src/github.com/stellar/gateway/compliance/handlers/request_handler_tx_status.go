@@ -2,12 +2,12 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 
 	log "github.com/Sirupsen/logrus"
-
 	"github.com/stellar/gateway/protocols"
 	"github.com/stellar/gateway/server"
 )
@@ -27,7 +27,7 @@ func (rh *RequestHandler) HandlerTxStatus(w http.ResponseWriter, r *http.Request
 	txid := r.URL.Query().Get("id")
 	if txid == "" {
 		log.Info("unable to get query parameter")
-		server.Write(w, protocols.InvalidParameterError)
+		server.Write(w, protocols.MissingParameterError)
 		return
 	}
 	response := TransactionStatusResponse{}
@@ -35,10 +35,19 @@ func (rh *RequestHandler) HandlerTxStatus(w http.ResponseWriter, r *http.Request
 	if rh.Config.Callbacks.TxStatus == "" {
 		response.Status = "unknown"
 	} else {
-		resp, err := rh.Client.PostForm(
+		endpoint := fmt.Sprintf(
+			"%s?id=%s",
 			rh.Config.Callbacks.TxStatus,
-			url.Values{"id": {txid}},
+			txid,
 		)
+
+		_, err := url.Parse(endpoint)
+		if err != nil {
+			log.Error(err, "failed to parse tx status endpoint")
+			server.Write(w, protocols.InternalServerError)
+			return
+		}
+		resp, err := rh.Client.Get(endpoint)
 		if err != nil {
 			log.WithFields(log.Fields{
 				"tx_status": rh.Config.Callbacks.TxStatus,
@@ -77,5 +86,10 @@ func (rh *RequestHandler) HandlerTxStatus(w http.ResponseWriter, r *http.Request
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
+	err := json.NewEncoder(w).Encode(response)
+	if err != nil {
+		log.Error("Error encoding tx status response")
+		server.Write(w, protocols.InternalServerError)
+		return
+	}
 }

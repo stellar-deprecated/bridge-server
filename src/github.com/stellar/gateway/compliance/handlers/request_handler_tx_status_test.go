@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"net/http"
-	"net/url"
 	"testing"
 
 	"github.com/facebookgo/inject"
@@ -67,6 +66,7 @@ func TestRequestHandlerTxStatus(t *testing.T) {
 	Convey("Given tx_status request", t, func() {
 		Convey("it returns unathorised when no auth", func() {
 			testServer.GET("/tx_status").
+				WithQuery("id", "123").
 				Expect().
 				Status(http.StatusUnauthorized)
 		})
@@ -96,9 +96,8 @@ func TestRequestHandlerTxStatus(t *testing.T) {
 			}
 
 			mockHTTPClient.On(
-				"PostForm",
-				"http://tx_status",
-				url.Values{"id": {txid}},
+				"Get",
+				"http://tx_status?id="+txid,
 			).Return(
 				net.BuildHTTPResponse(400, "badrequest"),
 				nil,
@@ -118,9 +117,8 @@ func TestRequestHandlerTxStatus(t *testing.T) {
 			}
 
 			mockHTTPClient.On(
-				"PostForm",
-				"http://tx_status",
-				url.Values{"id": {txid}},
+				"Get",
+				"http://tx_status?id="+txid,
 			).Return(
 				net.BuildHTTPResponse(200, "{}"),
 				nil,
@@ -140,9 +138,8 @@ func TestRequestHandlerTxStatus(t *testing.T) {
 			}
 
 			mockHTTPClient.On(
-				"PostForm",
-				"http://tx_status",
-				url.Values{"id": {txid}},
+				"Get",
+				"http://tx_status?id="+txid,
 			).Return(
 				net.BuildHTTPResponse(200, `{"status":"delivered","msg":"cash paid"}`),
 				nil,
