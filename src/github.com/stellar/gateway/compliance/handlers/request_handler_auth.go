@@ -320,7 +320,7 @@ func (rh *RequestHandler) HandlerAuth(c web.C, w http.ResponseWriter, r *http.Re
 
 		if response.InfoStatus == compliance.AuthStatusOk {
 			// Fetch Info
-			fetchInfoRequest := callback.FetchInfoRequest{Address: attachment.Transaction.Route}
+			fetchInfoRequest := callback.FetchInfoRequest{Address: string(attachment.Transaction.Route)}
 			resp, err := rh.Client.PostForm(
 				rh.Config.Callbacks.FetchInfo,
 				fetchInfoRequest.ToValues(),

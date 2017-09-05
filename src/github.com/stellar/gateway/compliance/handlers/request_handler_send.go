@@ -175,7 +175,7 @@ func (rh *RequestHandler) HandlerSend(c web.C, w http.ResponseWriter, r *http.Re
 		Nonce: rh.NonceGenerator.Generate(),
 		Transaction: compliance.Transaction{
 			SenderInfo: senderInfo,
-			Route:      destinationObject.Memo.Value,
+			Route:      compliance.Route(destinationObject.Memo.Value),
 			Extra:      request.ExtraMemo,
 		},
 	}

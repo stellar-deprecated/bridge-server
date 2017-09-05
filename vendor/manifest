@@ -468,6 +468,13 @@
 			"branch": "master"
 		},
 		{
+			"importpath": "github.com/stellar/go/protocols/compliance",
+			"repository": "https://github.com/stellar/go",
+			"revision": "a2a363c0c6943b1f477f33db3a32e7a28bfc403e",
+			"branch": "master",
+			"path": "/protocols/compliance"
+		},
+		{
 			"importpath": "github.com/stretchr/objx",
 			"repository": "https://github.com/stretchr/objx",
 			"revision": "1a9d0bb9f541897e62256577b352fdbc1fb4fd94",

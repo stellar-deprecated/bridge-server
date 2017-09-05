@@ -32,7 +32,7 @@ func (r *AuthRequest) Validate() error {
 	authData := AuthData{}
 	err = json.Unmarshal([]byte(r.DataJSON), &authData)
 	if err != nil {
-		return errors.Wrap(err, "Data is not a valid JSON")
+		return errors.Wrap(err, "Data is not valid JSON")
 	}
 
 	// Validate DataJSON

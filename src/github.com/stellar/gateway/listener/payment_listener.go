@@ -268,7 +268,7 @@ func (pl *PaymentListener) process(payment horizon.PaymentResponse) error {
 			return errors.Wrap(err, "Cannot unmarshal memo")
 		}
 
-		route = attachment.Transaction.Route
+		route = string(attachment.Transaction.Route)
 	} else if payment.Memo.Type != "hash" {
 		route = payment.Memo.Value
 	}
