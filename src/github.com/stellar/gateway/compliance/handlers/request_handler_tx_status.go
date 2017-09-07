@@ -33,16 +33,20 @@ func (rh *RequestHandler) HandlerTxStatus(w http.ResponseWriter, r *http.Request
 			txid,
 		)
 
-		_, err := url.Parse(endpoint)
+		u, err := url.Parse(endpoint)
 		if err != nil {
 			log.Error(err, "failed to parse tx status endpoint")
 			server.Write(w, protocols.InternalServerError)
 			return
 		}
-		resp, err := rh.Client.Get(endpoint)
+
+		q := u.Query()
+		q.Set("id", txid)
+		u.RawQuery = q.Encode()
+		resp, err := rh.Client.Get(u.String())
 		if err != nil {
 			log.WithFields(log.Fields{
-				"tx_status": rh.Config.Callbacks.TxStatus,
+				"tx_status": u.String(),
 				"err":       err,
 			}).Error("Error sending request to tx_status server")
 			server.Write(w, protocols.InternalServerError)

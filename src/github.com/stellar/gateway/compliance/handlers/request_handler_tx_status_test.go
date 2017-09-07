@@ -64,7 +64,7 @@ func TestRequestHandlerTxStatus(t *testing.T) {
 	defer testServer.Close()
 
 	Convey("Given tx_status request", t, func() {
-		Convey("it returns unathorised when no auth", func() {
+		Convey("it returns unauthorised when no auth", func() {
 			testServer.GET("/tx_status").
 				WithQuery("id", "123").
 				Expect().
