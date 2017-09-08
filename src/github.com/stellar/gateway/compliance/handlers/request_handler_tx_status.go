@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -27,13 +26,8 @@ func (rh *RequestHandler) HandlerTxStatus(w http.ResponseWriter, r *http.Request
 	if rh.Config.Callbacks.TxStatus == "" {
 		response.Status = compliance.TransactionStatusUnknown
 	} else {
-		endpoint := fmt.Sprintf(
-			"%s?id=%s",
-			rh.Config.Callbacks.TxStatus,
-			txid,
-		)
 
-		u, err := url.Parse(endpoint)
+		u, err := url.Parse(rh.Config.Callbacks.TxStatus)
 		if err != nil {
 			log.Error(err, "failed to parse tx status endpoint")
 			server.Write(w, protocols.InternalServerError)
