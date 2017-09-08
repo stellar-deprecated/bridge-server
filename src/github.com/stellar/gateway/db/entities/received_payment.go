@@ -7,11 +7,11 @@ import (
 // ReceivedPayment represents payment received by the gateway server
 type ReceivedPayment struct {
 	exists      bool
-	ID          *int64    `db:"id"`
-	OperationID string    `db:"operation_id"`
-	ProcessedAt time.Time `db:"processed_at"`
-	PagingToken string    `db:"paging_token"`
-	Status      string    `db:"status"`
+	ID          *int64    `db:"id" json:"id"`
+	OperationID string    `db:"operation_id" json:"operation_id"`
+	ProcessedAt time.Time `db:"processed_at" json:"processed_at"`
+	PagingToken string    `db:"paging_token" json:"paging_token"`
+	Status      string    `db:"status" json:"status"`
 }
 
 // GetID returns ID of the entity

@@ -31,6 +31,20 @@ gb build
 
 After a successful build, you should find `bin/bridge` in the project directory.
 
+### GUI
+
+To build user interface for the bridge server go to `gui` folder and run:
+
+```
+gulp build
+```
+
+For development run:
+
+```
+gulp develop
+```
+
 ## Running tests
 
 ```

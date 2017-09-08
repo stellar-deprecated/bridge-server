@@ -1,0 +1,29 @@
+{
+  "name": "bridge-server-admin",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "author": "Stellar.org",
+  "dependencies": {
+    "axios": "^0.15.3",
+    "babel-core": "^6.23.0",
+    "babel-loader": "^6.3.2",
+    "babel-preset-es2015": "^6.22.0",
+    "babel-preset-react": "^6.23.0",
+    "babel-register": "^6.24.0",
+    "bignumber.js": "^3.0.1",
+    "browser-sync": "^2.18.2",
+    "fbemitter": "^2.1.1",
+    "file-loader": "^0.9.0",
+    "gulp": "^3.9.1",
+    "lodash": "^4.17.2",
+    "moment": "^2.17.1",
+    "muicss": "^0.9.24",
+    "react": "^15.4.1",
+    "react-d3-components": "^0.6.5",
+    "react-dom": "^15.4.1",
+    "react-router-dom": "^4.2.2",
+    "stellar-sdk": "^0.6.2",
+    "webpack": "^1.13.3"
+  }
+}

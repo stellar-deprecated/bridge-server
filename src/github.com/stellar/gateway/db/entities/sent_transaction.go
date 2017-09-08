@@ -2,11 +2,22 @@ package entities
 
 import (
 	"database/sql/driver"
+	"errors"
 	"time"
 )
 
 // SentTransactionStatus type represents sent transaction status
 type SentTransactionStatus string
+
+// Scan implements database/sql.Scanner interface
+func (s *SentTransactionStatus) Scan(src interface{}) error {
+	value, ok := src.([]byte)
+	if !ok {
+		return errors.New("Cannot convert value to SentTransactionStatus")
+	}
+	*s = SentTransactionStatus(value)
+	return nil
+}
 
 // Value implements driver.Valuer
 func (status SentTransactionStatus) Value() (driver.Value, error) {
@@ -27,15 +38,15 @@ const (
 // SentTransaction represents transaction sent by the gateway server
 type SentTransaction struct {
 	exists        bool
-	ID            *int64                `db:"id"`
-	TransactionID string                `db:"transaction_id"`
-	Status        SentTransactionStatus `db:"status"` // sending/success/failure
-	Source        string                `db:"source"`
-	SubmittedAt   time.Time             `db:"submitted_at"`
-	SucceededAt   *time.Time            `db:"succeeded_at"`
-	Ledger        *uint64               `db:"ledger"`
-	EnvelopeXdr   string                `db:"envelope_xdr"`
-	ResultXdr     *string               `db:"result_xdr"`
+	ID            *int64                `db:"id" json:"id"`
+	TransactionID string                `db:"transaction_id" json:"transaction_id"`
+	Status        SentTransactionStatus `db:"status" json:"status"` // sending/success/failure
+	Source        string                `db:"source" json:"source"`
+	SubmittedAt   time.Time             `db:"submitted_at" json:"submitted_at"`
+	SucceededAt   *time.Time            `db:"succeeded_at" json:"succeeded_at"`
+	Ledger        *uint64               `db:"ledger" json:"ledger"`
+	EnvelopeXdr   string                `db:"envelope_xdr" json:"envelope_xdr"`
+	ResultXdr     *string               `db:"result_xdr" json:"result_xdr"`
 }
 
 // GetID returns ID of the entity

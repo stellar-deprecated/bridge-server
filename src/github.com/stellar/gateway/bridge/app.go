@@ -6,6 +6,8 @@ import (
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 	"net/http"
+	"net/http/httputil"
+	"net/url"
 	"os"
 	"time"
 
@@ -50,7 +52,7 @@ func NewApp(config config.Config, migrateFlag bool, versionFlag bool, version st
 	}
 
 	var entityManager db.EntityManagerInterface
-	var repository db.RepositoryInterface
+	var repository db.Repository
 
 	if driver != nil {
 		err = driver.Init(config.Database.URL)
@@ -164,6 +166,8 @@ func NewApp(config config.Config, migrateFlag bool, versionFlag bool, version st
 		&inject.Object{Value: &stellartomlClient},
 		&inject.Object{Value: &federationClient},
 		&inject.Object{Value: &h},
+		&inject.Object{Value: &repository},
+		&inject.Object{Value: driver},
 		&inject.Object{Value: &ts},
 		&inject.Object{Value: &paymentListener},
 		&inject.Object{Value: &httpClientWithTimeout},
@@ -210,7 +214,18 @@ func (a *App) Serve() {
 	bridge.Get("/payment", a.requestHandler.Payment)
 	bridge.Post("/reprocess", a.requestHandler.Reprocess)
 
-	err := graceful.ListenAndServe(portString, bridge)
+	bridge.Get("/admin/received-payments", a.requestHandler.AdminReceivedPayments)
+	bridge.Get("/admin/received-payments/:id", a.requestHandler.AdminReceivedPayment)
+	bridge.Get("/admin/sent-transactions", a.requestHandler.AdminSentTransactions)
+
+	// Create a proxy server to localhost:3000 where GUI development server lives.
+	staticAdminURL, err := url.Parse("http://localhost:3000")
+	if err != nil {
+		panic(err)
+	}
+	bridge.Get("/*", httputil.NewSingleHostReverseProxy(staticAdminURL))
+
+	err = graceful.ListenAndServe(portString, bridge)
 	if err != nil {
 		log.Fatal(err)
 	}

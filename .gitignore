@@ -5,3 +5,6 @@
 /bin
 /dist
 /config.toml
+/gui/.tmp
+/gui/yarn.lock
+/gui/node_modules
