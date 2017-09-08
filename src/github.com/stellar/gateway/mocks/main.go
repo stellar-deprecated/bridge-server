@@ -158,6 +158,22 @@ func (m *MockRepository) GetReceivedPaymentByOperationID(operationID int64) (*en
 	return a.Get(0).(*entities.ReceivedPayment), a.Error(1)
 }
 
+func (m *MockRepository) GetReceivedPayments(page, limit int) ([]*entities.ReceivedPayment, error) {
+	a := m.Called(page, limit)
+	if a.Get(0) == nil {
+		return nil, a.Error(1)
+	}
+	return a.Get(0).([]*entities.ReceivedPayment), a.Error(1)
+}
+
+func (m *MockRepository) GetSentTransactions(page, limit int) ([]*entities.SentTransaction, error) {
+	a := m.Called(page, limit)
+	if a.Get(0) == nil {
+		return nil, a.Error(1)
+	}
+	return a.Get(0).([]*entities.SentTransaction), a.Error(1)
+}
+
 // MockSignerVerifier ...
 type MockSignerVerifier struct {
 	mock.Mock

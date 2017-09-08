@@ -9,7 +9,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/facebookgo/inject"
 	. "github.com/smartystreets/goconvey/convey"
 	"github.com/stellar/gateway/bridge/config"
 	"github.com/stellar/gateway/horizon"
@@ -37,26 +36,14 @@ func TestRequestHandlerPayment(t *testing.T) {
 	mockTransactionSubmitter := new(mocks.MockTransactionSubmitter)
 	mockFederationResolver := new(mocks.MockFederationResolver)
 	mockStellartomlResolver := new(mocks.MockStellartomlResolver)
-	requestHandler := RequestHandler{}
 
-	// Inject mocks
-	var g inject.Graph
-
-	err := g.Provide(
-		&inject.Object{Value: &requestHandler},
-		&inject.Object{Value: c},
-		&inject.Object{Value: mockHorizon},
-		&inject.Object{Value: mockHTTPClient},
-		&inject.Object{Value: mockTransactionSubmitter},
-		&inject.Object{Value: mockFederationResolver},
-		&inject.Object{Value: mockStellartomlResolver},
-	)
-	if err != nil {
-		panic(err)
-	}
-
-	if err := g.Populate(); err != nil {
-		panic(err)
+	requestHandler := RequestHandler{
+		Config:               c,
+		Client:               mockHTTPClient,
+		Horizon:              mockHorizon,
+		TransactionSubmitter: mockTransactionSubmitter,
+		FederationResolver:   mockFederationResolver,
+		StellarTomlResolver:  mockStellartomlResolver,
 	}
 
 	testServer := httptest.NewServer(http.HandlerFunc(requestHandler.Payment))
