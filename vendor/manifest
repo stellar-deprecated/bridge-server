@@ -167,6 +167,12 @@
 			"branch": "master"
 		},
 		{
+			"importpath": "github.com/goji/httpauth",
+			"repository": "https://github.com/goji/httpauth",
+			"revision": "2da839ab0f4df05a6db5eb277995589dadbd4fb9",
+			"branch": "master"
+		},
+		{
 			"importpath": "github.com/goji/param",
 			"repository": "https://github.com/goji/param",
 			"revision": "da86c81e3e3c23b1948bc7a003d381250a032aa7",

@@ -24,6 +24,10 @@ type Config struct {
 		CertificateFile string `mapstructure:"certificate_file"`
 		PrivateKeyFile  string `mapstructure:"private_key_file"`
 	}
+	TxStatusAuth struct {
+		Username string `mapstructure:"username"`
+		Password string `mapstructure:"password"`
+	} `mapstructure:"tx_status_auth"`
 }
 
 // Keys contains values of `keys` config group
@@ -36,6 +40,7 @@ type Callbacks struct {
 	Sanctions string
 	AskUser   string `mapstructure:"ask_user"`
 	FetchInfo string `mapstructure:"fetch_info"`
+	TxStatus  string `mapstructure:"tx_status"`
 }
 
 // Validate validates config and returns error if any of config values is incorrect
@@ -97,10 +102,10 @@ func (c *Config) Validate() (err error) {
 		}
 	}
 
-	if c.Callbacks.Sanctions != "" {
-		_, err = url.Parse(c.Callbacks.Sanctions)
+	if c.Callbacks.TxStatus != "" {
+		_, err = url.Parse(c.Callbacks.TxStatus)
 		if err != nil {
-			err = errors.New("Cannot parse callbacks.sanctions param")
+			err = errors.New("Cannot parse callbacks.tx_status param")
 			return
 		}
 	}

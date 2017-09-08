@@ -64,6 +64,12 @@ func (m *MockHTTPClient) PostForm(url string, data url.Values) (resp *http.Respo
 	return a.Get(0).(*http.Response), a.Error(1)
 }
 
+// Get is a mocking a method
+func (m *MockHTTPClient) Get(url string) (resp *http.Response, err error) {
+	a := m.Called(url)
+	return a.Get(0).(*http.Response), a.Error(1)
+}
+
 // Do is a mocking a method
 func (m *MockHTTPClient) Do(req *http.Request) (resp *http.Response, err error) {
 	a := m.Called(req)

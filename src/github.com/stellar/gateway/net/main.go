@@ -12,6 +12,7 @@ import (
 // HTTPClientInterface helps mocking http.Client in tests
 type HTTPClientInterface interface {
 	PostForm(url string, data url.Values) (resp *http.Response, err error)
+	Get(url string) (resp *http.Response, err error)
 }
 
 // BuildHTTPResponse is used in tests
