@@ -190,32 +190,44 @@ func (pl *PaymentListener) onPayment(payment horizon.PaymentResponse) (err error
 		return
 	}
 
-	err = pl.process(payment)
-
-	if err != nil {
-		pl.log.WithFields(logrus.Fields{"err": err}).Error("Payment processed with errors")
-		dbPayment.Status = err.Error()
+	process, status := pl.shouldProcessPayment(payment)
+	if !process {
+		dbPayment.Status = status
+		pl.log.Info(status)
 	} else {
-		pl.log.Info("Payment successfully processed")
-		dbPayment.Status = "Success"
+		err = pl.process(payment)
+
+		if err != nil {
+			pl.log.WithFields(logrus.Fields{"err": err}).Error("Payment processed with errors")
+			dbPayment.Status = err.Error()
+		} else {
+			pl.log.Info("Payment successfully processed")
+			dbPayment.Status = "Success"
+		}
 	}
 
 	return pl.entityManager.Persist(dbPayment)
 }
 
-func (pl *PaymentListener) process(payment horizon.PaymentResponse) error {
+// shouldProcessPayment returns false and text status if payment should not be processed
+// (ex. asset is different than allowed assets).
+func (pl *PaymentListener) shouldProcessPayment(payment horizon.PaymentResponse) (bool, string) {
 	if payment.Type != "payment" && payment.Type != "path_payment" {
-		return errors.New("Not a payment operation")
+		return false, "Not a payment operation"
 	}
 
 	if payment.To != pl.config.Accounts.ReceivingAccountID {
-		return errors.New("Operation sent not received")
+		return false, "Operation sent not received"
 	}
 
 	if !pl.isAssetAllowed(payment.AssetType, payment.AssetCode, payment.AssetIssuer) {
-		return errors.New("Asset not allowed")
+		return false, "Asset not allowed"
 	}
 
+	return true, ""
+}
+
+func (pl *PaymentListener) process(payment horizon.PaymentResponse) error {
 	err := pl.horizon.LoadMemo(&payment)
 	if err != nil {
 		return errors.Wrap(err, "Unable to load transaction memo")
