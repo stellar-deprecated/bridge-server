@@ -187,7 +187,7 @@ func getTypeData(object interface{}) (typeValue reflect.Type, tableName string, 
 		tableName = "AuthorizedTransaction"
 	case *entities.AllowedFi:
 		typeValue = reflect.TypeOf(*object)
-		tableName = "AllowedFi"
+		tableName = "AllowedFI"
 	case *entities.AllowedUser:
 		typeValue = reflect.TypeOf(*object)
 		tableName = "AllowedUser"
