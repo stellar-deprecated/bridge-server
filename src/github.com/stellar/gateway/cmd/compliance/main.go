@@ -1,8 +1,9 @@
 package main
 
 import (
-	log "github.com/Sirupsen/logrus"
 	"runtime"
+
+	log "github.com/Sirupsen/logrus"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -14,6 +15,8 @@ var app *compliance.App
 var rootCmd *cobra.Command
 var migrateFlag bool
 var configFile string
+var versionFlag bool
+var version = "N/A"
 
 func main() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
@@ -30,6 +33,7 @@ func init() {
 
 	rootCmd.Flags().BoolVarP(&migrateFlag, "migrate-db", "", false, "migrate DB to the newest schema version")
 	rootCmd.Flags().StringVarP(&configFile, "config", "c", "compliance.cfg", "path to config file")
+	rootCmd.Flags().BoolVarP(&versionFlag, "version", "v", false, "displays compliance server version")
 }
 
 func run(cmd *cobra.Command, args []string) {
@@ -53,7 +57,7 @@ func run(cmd *cobra.Command, args []string) {
 		log.SetFormatter(&log.JSONFormatter{})
 	}
 
-	app, err = compliance.NewApp(config, migrateFlag)
+	app, err = compliance.NewApp(config, migrateFlag, versionFlag, version)
 
 	if err != nil {
 		log.Fatal(err.Error())
