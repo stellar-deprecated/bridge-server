@@ -15,6 +15,7 @@ import (
 // Builder implements /builder endpoint
 func (rh *RequestHandler) Builder(w http.ResponseWriter, r *http.Request) {
 	var request bridge.BuilderRequest
+	var sequenceNumber uint64
 
 	decoder := json.NewDecoder(r.Body)
 	err := decoder.Decode(&request)
@@ -40,7 +41,18 @@ func (rh *RequestHandler) Builder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sequenceNumber, err := strconv.ParseUint(request.SequenceNumber, 10, 64)
+	if request.SequenceNumber == "" {
+		accountResponse, err := rh.Horizon.LoadAccount(request.Source)
+		if err != nil {
+			log.WithFields(log.Fields{"err": err}).Error("Error when loading account")
+			server.Write(w, protocols.InternalServerError)
+			return
+		}
+		sequenceNumber, err = strconv.ParseUint(accountResponse.SequenceNumber, 10, 64)
+	}else{
+		sequenceNumber, err = strconv.ParseUint(request.SequenceNumber, 10, 64)
+	}
+
 	if err != nil {
 		errorResponse := protocols.NewInvalidParameterError("sequence_number", request.SequenceNumber, "Sequence number must be a number")
 		log.WithFields(errorResponse.LogData).Error(errorResponse.Error())
