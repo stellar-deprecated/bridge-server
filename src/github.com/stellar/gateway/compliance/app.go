@@ -30,7 +30,7 @@ type App struct {
 }
 
 // NewApp constructs an new App instance from the provided config.
-func NewApp(config config.Config, migrateFlag bool) (app *App, err error) {
+func NewApp(config config.Config, migrateFlag bool, versionFlag bool, version string) (app *App, err error) {
 	var g inject.Graph
 
 	var driver db.Driver
@@ -59,6 +59,12 @@ func NewApp(config config.Config, migrateFlag bool) (app *App, err error) {
 		}
 
 		log.Info("Applied migrations: ", migrationsApplied)
+		os.Exit(0)
+		return
+	}
+
+	if versionFlag {
+		fmt.Printf("Compliance Server Version: %s \n", version)
 		os.Exit(0)
 		return
 	}
