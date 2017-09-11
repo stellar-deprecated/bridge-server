@@ -12,6 +12,7 @@ import (
 	"github.com/facebookgo/inject"
 	. "github.com/smartystreets/goconvey/convey"
 	"github.com/stellar/gateway/bridge/config"
+	"github.com/stellar/gateway/horizon"
 	"github.com/stellar/gateway/mocks"
 	"github.com/stellar/gateway/net"
 	"github.com/stellar/gateway/test"
@@ -51,6 +52,44 @@ func TestRequestHandlerBuilder(t *testing.T) {
 	defer testServer.Close()
 
 	Convey("Builder", t, func() {
+
+		Convey("Empty Sequence Number", func() {
+			data := test.StringToJSONMap(`{
+		"source": "GBWJES3WOKK7PRLJKZVGIPVFGQSSGCRMY7H3GCZ7BEG6ZTDB4FZXTPJ5",
+		"sequence_number": "",
+		"operations": [
+		{
+				"type": "create_account",
+				"body": {
+					"destination": "GCOEGO43PFSLE4K7WRZQNRO3PIOTRLKRASP32W7DSPBF65XFT4V6PSV3",
+					"starting_balance": "50"
+				}
+		}
+		],
+		"signers": ["SABY7FRMMJWPBTKQQ2ZN43AUJQ3Z2ZAK36VYSG2SPE2ABNQXA66H5E5G"]
+		}`)
+			// Loading sequence number
+			mockHorizon.On(
+				"LoadAccount",
+				"GBWJES3WOKK7PRLJKZVGIPVFGQSSGCRMY7H3GCZ7BEG6ZTDB4FZXTPJ5",
+			).Return(
+				horizon.AccountResponse{
+					SequenceNumber: "123",
+				},
+				nil,
+			).Once()
+
+			Convey("it should return correct XDR", func() {
+				statusCode, response := net.JSONGetResponse(testServer, data)
+				responseString := strings.TrimSpace(string(response))
+				assert.Equal(t, 200, statusCode)
+				expected := test.StringToJSONMap(`{
+		"transaction_envelope": "AAAAAGySS3ZylffFaVZqZD6lNCUjCizHz7MLPwkN7Mxh4XN5AAAAZAAAAAAAAAB7AAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAnEM7m3lksnFftHMGxdt6HTitUQSfvVvjk8JfduWfK+cAAAAAHc1lAAAAAAAAAAABn420/AAAAECXY+neSolhAeHUXf+UrOV6PjeJnvLM/HqjOlOEWD3hmu/z9aBksDu9zqa26jS14eMpZzq8sofnnvt248FUO+cP"
+		}`)
+				assert.Equal(t, expected, test.StringToJSONMap(responseString))
+			})
+		})
+
 		Convey("CreateAccount", func() {
 			data := test.StringToJSONMap(`{
   "source": "GBWJES3WOKK7PRLJKZVGIPVFGQSSGCRMY7H3GCZ7BEG6ZTDB4FZXTPJ5",
