@@ -11,8 +11,10 @@ import (
 	"os"
 	"time"
 
+	"github.com/elazarl/go-bindata-assetfs"
 	"github.com/facebookgo/inject"
 	"github.com/stellar/gateway/bridge/config"
+	"github.com/stellar/gateway/bridge/gui"
 	"github.com/stellar/gateway/bridge/handlers"
 	"github.com/stellar/gateway/db"
 	"github.com/stellar/gateway/db/drivers/mysql"
@@ -218,14 +220,28 @@ func (a *App) Serve() {
 	bridge.Get("/admin/received-payments/:id", a.requestHandler.AdminReceivedPayment)
 	bridge.Get("/admin/sent-transactions", a.requestHandler.AdminSentTransactions)
 
-	// Create a proxy server to localhost:3000 where GUI development server lives.
-	staticAdminURL, err := url.Parse("http://localhost:3000")
-	if err != nil {
-		panic(err)
+	if a.config.Develop {
+		// Create a proxy server to localhost:3000 where GUI development server lives.
+		staticAdminURL, err := url.Parse("http://localhost:3000")
+		if err != nil {
+			panic(err)
+		}
+		bridge.Get("/*", httputil.NewSingleHostReverseProxy(staticAdminURL))
+	} else {
+		// Load go-bindata files
+		fileServerHandler := http.FileServer(
+			&assetfs.AssetFS{
+				Asset:     gui.Asset,
+				AssetDir:  gui.AssetDir,
+				AssetInfo: gui.AssetInfo,
+			})
+		bridge.Get("/admin", func(w http.ResponseWriter, r *http.Request) {
+			http.Redirect(w, r, "/admin/", http.StatusPermanentRedirect)
+		})
+		bridge.Get("/admin/*", http.StripPrefix("/admin/", fileServerHandler))
 	}
-	bridge.Get("/*", httputil.NewSingleHostReverseProxy(staticAdminURL))
 
-	err = graceful.ListenAndServe(portString, bridge)
+	err := graceful.ListenAndServe(portString, bridge)
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -2,6 +2,7 @@ package server
 
 import (
 	"net/http"
+	"strings"
 )
 
 // StripTrailingSlashMiddleware strips trailing slash.
@@ -10,6 +11,13 @@ func StripTrailingSlashMiddleware() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
 			path := r.URL.Path
+
+			// Do not change /admin paths
+			if strings.HasPrefix(path, "/admin") {
+				next.ServeHTTP(w, r)
+				return
+			}
+
 			l := len(path)
 
 			// if the path is longer than 1 char (i.e., not '/')
@@ -28,6 +36,12 @@ func StripTrailingSlashMiddleware() func(next http.Handler) http.Handler {
 func HeadersMiddleware() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
+			// Do not change admin home
+			if r.URL.Path == "/admin/" {
+				next.ServeHTTP(w, r)
+				return
+			}
+
 			w.Header().Set("Content-Type", "application/json")
 			next.ServeHTTP(w, r)
 		}

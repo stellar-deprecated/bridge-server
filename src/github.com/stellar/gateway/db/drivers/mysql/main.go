@@ -170,7 +170,7 @@ func (d *Driver) GetOne(object entities.Entity, where string, params ...interfac
 }
 
 // GetMany returns many entities
-func (d *Driver) GetMany(slice interface{}, where, order, limit *string, params ...interface{}) (err error) {
+func (d *Driver) GetMany(slice interface{}, where, order, offset, limit *string, params ...interface{}) (err error) {
 	_, tableName, err := getTypeData(slice)
 	if err != nil {
 		return
@@ -188,7 +188,9 @@ func (d *Driver) GetMany(slice interface{}, where, order, limit *string, params 
 		query.WriteString(" ORDER BY " + *order)
 	}
 
-	if limit != nil {
+	if limit != nil && offset != nil {
+		query.WriteString(fmt.Sprintf(" LIMIT %s, %s", *offset, *limit))
+	} else if limit != nil {
 		query.WriteString(" LIMIT " + *limit)
 	}
 

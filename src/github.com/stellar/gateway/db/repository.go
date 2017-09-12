@@ -151,9 +151,11 @@ func (r Repository) GetReceivedPayments(page, limit int) ([]*entities.ReceivedPa
 
 	offset := (page - 1) * limit
 
-	limitQuery := fmt.Sprintf("%d, %d", offset, limit)
+	limitQuery := fmt.Sprintf("%d", limit)
+	offsetQuery := fmt.Sprintf("%d", offset)
 	orderQuery := "id desc"
-	err := r.driver.GetMany(&payments, nil, &orderQuery, &limitQuery)
+
+	err := r.driver.GetMany(&payments, nil, &orderQuery, &offsetQuery, &limitQuery)
 	return payments, err
 }
 
@@ -167,9 +169,11 @@ func (r Repository) GetSentTransactions(page, limit int) ([]*entities.SentTransa
 
 	offset := (page - 1) * limit
 
-	limitQuery := fmt.Sprintf("%d, %d", offset, limit)
+	limitQuery := fmt.Sprintf("%d", limit)
+	offsetQuery := fmt.Sprintf("%d", offset)
 	orderQuery := "id desc"
-	err := r.driver.GetMany(&transactions, nil, &orderQuery, &limitQuery)
+
+	err := r.driver.GetMany(&transactions, nil, &orderQuery, &offsetQuery, &limitQuery)
 	return transactions, err
 }
 

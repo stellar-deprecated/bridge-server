@@ -8,3 +8,4 @@
 /gui/.tmp
 /gui/yarn.lock
 /gui/node_modules
+/gui/dist

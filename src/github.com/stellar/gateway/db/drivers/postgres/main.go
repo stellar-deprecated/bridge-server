@@ -3,7 +3,6 @@ package postgres
 import (
 	"bytes"
 	"fmt"
-	"log"
 	"reflect"
 	"strings"
 
@@ -168,8 +167,9 @@ func (d *Driver) GetOne(object entities.Entity, where string, params ...interfac
 		return nil, err
 	}
 
-	sql := "SELECT * FROM " + tableName + " WHERE " + where + " LIMIT 1"
-	log.Println(sql)
+	sql := "SELECT * FROM " + tableName + " WHERE " + where + " LIMIT 1;"
+	sql = sqlx.Rebind(sqlx.DOLLAR, sql)
+
 	err = d.database.Get(object, sql, params...)
 	if err != nil {
 		if err.Error() == "sql: no rows in result set" {
@@ -182,7 +182,7 @@ func (d *Driver) GetOne(object entities.Entity, where string, params ...interfac
 }
 
 // GetMany returns many entities
-func (d *Driver) GetMany(slice interface{}, where, order, limit *string, params ...interface{}) (err error) {
+func (d *Driver) GetMany(slice interface{}, where, order, offset, limit *string, params ...interface{}) (err error) {
 	_, tableName, err := getTypeData(slice)
 	if err != nil {
 		return
@@ -198,6 +198,10 @@ func (d *Driver) GetMany(slice interface{}, where, order, limit *string, params 
 
 	if order != nil {
 		query.WriteString(" ORDER BY " + *order)
+	}
+
+	if offset != nil {
+		query.WriteString(" OFFSET " + *offset)
 	}
 
 	if limit != nil {

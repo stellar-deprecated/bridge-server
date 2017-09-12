@@ -119,6 +119,12 @@
 			"branch": "master"
 		},
 		{
+			"importpath": "github.com/elazarl/go-bindata-assetfs",
+			"repository": "https://github.com/elazarl/go-bindata-assetfs",
+			"revision": "30f82fa23fd844bd5bb1e5f216db87fd77b5eb43",
+			"branch": "master"
+		},
+		{
 			"importpath": "github.com/facebookgo/inject",
 			"repository": "https://github.com/facebookgo/inject",
 			"revision": "d5029152fecb2a8e68f7f8eb3c6391fc8ee70496",
