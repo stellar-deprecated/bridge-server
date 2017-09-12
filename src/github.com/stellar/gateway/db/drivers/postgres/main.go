@@ -1,8 +1,8 @@
 package postgres
 
 import (
+	"bytes"
 	"fmt"
-	"log"
 	"reflect"
 	"strings"
 
@@ -167,8 +167,9 @@ func (d *Driver) GetOne(object entities.Entity, where string, params ...interfac
 		return nil, err
 	}
 
-	sql := "SELECT * FROM " + tableName + " WHERE " + where + " LIMIT 1"
-	log.Println(sql)
+	sql := "SELECT * FROM " + tableName + " WHERE " + where + " LIMIT 1;"
+	sql = sqlx.Rebind(sqlx.DOLLAR, sql)
+
 	err = d.database.Get(object, sql, params...)
 	if err != nil {
 		if err.Error() == "sql: no rows in result set" {
@@ -178,6 +179,59 @@ func (d *Driver) GetOne(object entities.Entity, where string, params ...interfac
 	}
 	object.SetExists() // Mark this entity as existing
 	return object, err
+}
+
+// GetMany returns many entities
+func (d *Driver) GetMany(slice interface{}, where, order, offset, limit *string, params ...interface{}) (err error) {
+	_, tableName, err := getTypeData(slice)
+	if err != nil {
+		return
+	}
+
+	var query bytes.Buffer
+
+	query.WriteString("SELECT * FROM " + tableName)
+
+	if where != nil {
+		query.WriteString(" WHERE " + *where)
+	}
+
+	if order != nil {
+		query.WriteString(" ORDER BY " + *order)
+	}
+
+	if offset != nil {
+		query.WriteString(" OFFSET " + *offset)
+	}
+
+	if limit != nil {
+		query.WriteString(" LIMIT " + *limit)
+	}
+
+	query.WriteString(";")
+
+	switch slice := slice.(type) {
+	case *[]*entities.ReceivedPayment:
+		err = d.database.Select(slice, query.String(), params...)
+		tmp := *slice
+		for i := range tmp {
+			tmp[i].SetExists()
+		}
+		slice = &tmp
+	case *[]*entities.SentTransaction:
+		err = d.database.Select(slice, query.String(), params...)
+		tmp := *slice
+		for i := range tmp {
+			tmp[i].SetExists()
+		}
+		slice = &tmp
+	}
+
+	if err != nil && err.Error() == "sql: no rows in result set" {
+		return nil
+	}
+
+	return
 }
 
 func getTypeData(object interface{}) (typeValue reflect.Type, tableName string, err error) {
@@ -196,6 +250,10 @@ func getTypeData(object interface{}) (typeValue reflect.Type, tableName string, 
 		tableName = "SentTransaction"
 	case *entities.ReceivedPayment:
 		typeValue = reflect.TypeOf(*object)
+		tableName = "ReceivedPayment"
+	case *[]*entities.SentTransaction:
+		tableName = "SentTransaction"
+	case *[]*entities.ReceivedPayment:
 		tableName = "ReceivedPayment"
 	default:
 		return typeValue, tableName, fmt.Errorf("Unknown entity type: %T", object)

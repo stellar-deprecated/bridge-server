@@ -24,5 +24,5 @@ type PaymentResponse struct {
 	Memo struct {
 		Type  string `json:"memo_type"`
 		Value string `json:"memo"`
-	}
+	} `json:"memo"`
 }

@@ -6,11 +6,15 @@ import (
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 	"net/http"
+	"net/http/httputil"
+	"net/url"
 	"os"
 	"time"
 
+	"github.com/elazarl/go-bindata-assetfs"
 	"github.com/facebookgo/inject"
 	"github.com/stellar/gateway/bridge/config"
+	"github.com/stellar/gateway/bridge/gui"
 	"github.com/stellar/gateway/bridge/handlers"
 	"github.com/stellar/gateway/db"
 	"github.com/stellar/gateway/db/drivers/mysql"
@@ -50,7 +54,7 @@ func NewApp(config config.Config, migrateFlag bool, versionFlag bool, version st
 	}
 
 	var entityManager db.EntityManagerInterface
-	var repository db.RepositoryInterface
+	var repository db.Repository
 
 	if driver != nil {
 		err = driver.Init(config.Database.URL)
@@ -164,6 +168,8 @@ func NewApp(config config.Config, migrateFlag bool, versionFlag bool, version st
 		&inject.Object{Value: &stellartomlClient},
 		&inject.Object{Value: &federationClient},
 		&inject.Object{Value: &h},
+		&inject.Object{Value: &repository},
+		&inject.Object{Value: driver},
 		&inject.Object{Value: &ts},
 		&inject.Object{Value: &paymentListener},
 		&inject.Object{Value: &httpClientWithTimeout},
@@ -209,6 +215,31 @@ func (a *App) Serve() {
 	bridge.Post("/payment", a.requestHandler.Payment)
 	bridge.Get("/payment", a.requestHandler.Payment)
 	bridge.Post("/reprocess", a.requestHandler.Reprocess)
+
+	bridge.Get("/admin/received-payments", a.requestHandler.AdminReceivedPayments)
+	bridge.Get("/admin/received-payments/:id", a.requestHandler.AdminReceivedPayment)
+	bridge.Get("/admin/sent-transactions", a.requestHandler.AdminSentTransactions)
+
+	if a.config.Develop {
+		// Create a proxy server to localhost:3000 where GUI development server lives.
+		staticAdminURL, err := url.Parse("http://localhost:3000")
+		if err != nil {
+			panic(err)
+		}
+		bridge.Get("/*", httputil.NewSingleHostReverseProxy(staticAdminURL))
+	} else {
+		// Load go-bindata files
+		fileServerHandler := http.FileServer(
+			&assetfs.AssetFS{
+				Asset:     gui.Asset,
+				AssetDir:  gui.AssetDir,
+				AssetInfo: gui.AssetInfo,
+			})
+		bridge.Get("/admin", func(w http.ResponseWriter, r *http.Request) {
+			http.Redirect(w, r, "/admin/", http.StatusPermanentRedirect)
+		})
+		bridge.Get("/admin/*", http.StripPrefix("/admin/", fileServerHandler))
+	}
 
 	err := graceful.ListenAndServe(portString, bridge)
 	if err != nil {

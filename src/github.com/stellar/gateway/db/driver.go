@@ -16,4 +16,5 @@ type Driver interface {
 	Delete(object entities.Entity) (err error)
 
 	GetOne(object entities.Entity, where string, params ...interface{}) (entities.Entity, error)
+	GetMany(slice interface{}, where, order, offset, limit *string, params ...interface{}) (err error)
 }

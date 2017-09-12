@@ -1,6 +1,8 @@
 package db
 
 import (
+	"fmt"
+
 	"github.com/Sirupsen/logrus"
 	"github.com/stellar/gateway/db/entities"
 	"github.com/stellar/go/support/db"
@@ -13,16 +15,20 @@ type RepositoryInterface interface {
 	GetAllowedFiByDomain(domain string) (*entities.AllowedFi, error)
 	GetAllowedUserByDomainAndUserID(domain, userID string) (*entities.AllowedUser, error)
 	GetReceivedPaymentByOperationID(operationID int64) (*entities.ReceivedPayment, error)
+	GetReceivedPayments(page, limit int) ([]*entities.ReceivedPayment, error)
+	GetSentTransactions(page, limit int) ([]*entities.SentTransaction, error)
 }
 
 // Repository helps getting data from DB
 type Repository struct {
-	repo *db.Session
-	log  *logrus.Entry
+	driver Driver
+	repo   *db.Session
+	log    *logrus.Entry
 }
 
 // NewRepository creates a new Repository using driver
 func NewRepository(driver Driver) (r Repository) {
+	r.driver = driver
 	r.repo = &db.Session{DB: driver.DB()}
 	r.log = logrus.WithFields(logrus.Fields{
 		"service": "Repository",
@@ -133,6 +139,42 @@ func (r Repository) GetReceivedPaymentByOperationID(operationID int64) (*entitie
 
 	found.SetExists()
 	return &found, nil
+}
+
+// GetReceivedPayments returns received payments
+func (r Repository) GetReceivedPayments(page, limit int) ([]*entities.ReceivedPayment, error) {
+	payments := []*entities.ReceivedPayment{}
+
+	if page == 0 {
+		page = 1
+	}
+
+	offset := (page - 1) * limit
+
+	limitQuery := fmt.Sprintf("%d", limit)
+	offsetQuery := fmt.Sprintf("%d", offset)
+	orderQuery := "id desc"
+
+	err := r.driver.GetMany(&payments, nil, &orderQuery, &offsetQuery, &limitQuery)
+	return payments, err
+}
+
+// GetSentTransactions returns received payments
+func (r Repository) GetSentTransactions(page, limit int) ([]*entities.SentTransaction, error) {
+	transactions := []*entities.SentTransaction{}
+
+	if page == 0 {
+		page = 1
+	}
+
+	offset := (page - 1) * limit
+
+	limitQuery := fmt.Sprintf("%d", limit)
+	offsetQuery := fmt.Sprintf("%d", offset)
+	orderQuery := "id desc"
+
+	err := r.driver.GetMany(&transactions, nil, &orderQuery, &offsetQuery, &limitQuery)
+	return transactions, err
 }
 
 // getLastReceivedPayment returns the last received payment

@@ -16,6 +16,7 @@ type Config struct {
 	MACKey            string `mapstructure:"mac_key"`
 	APIKey            string `mapstructure:"api_key"`
 	NetworkPassphrase string `mapstructure:"network_passphrase"`
+	Develop           bool
 	Assets            []Asset
 	Database          struct {
 		Type string
