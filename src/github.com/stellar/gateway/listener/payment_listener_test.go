@@ -34,6 +34,7 @@ func ensurePaymentStatus(t *testing.T, operation horizon.PaymentResponse, status
 		assert.Equal(t, mocks.PredefinedTime, payment.ProcessedAt)
 		assert.Equal(t, operation.PagingToken, payment.PagingToken)
 		assert.Equal(t, status, payment.Status)
+		assert.Equal(t, operation.TransactionID, payment.TransactionID)
 	}
 }
 
@@ -506,6 +507,92 @@ func TestPaymentListener(t *testing.T) {
 				mockEntityManager.AssertExpectations(t)
 			})
 		})
+
+		Convey("When transaction id is not returned (current horizon release)", func() {
+			operation.Type = "payment"
+			operation.To = "GATKP6ZQM5CSLECPMTAC5226PE367QALCPM6AFHTSULPPZMT62OOPMQB"
+			operation.AssetCode = "USD"
+			operation.AssetIssuer = "GD4I7AFSLZGTDL34TQLWJOM2NHLIIOEKD5RHHZUW54HERBLSIRKUOXRR"
+			operation.Memo.Type = "text"
+			operation.Memo.Value = "testing"
+
+			mockRepository.On("GetReceivedPaymentByOperationID", int64(1)).Return(nil, nil).Once()
+			mockHorizon.On("LoadMemo", &operation).Return(nil).Once()
+
+			mockEntityManager.On("Persist", mock.AnythingOfType("*entities.ReceivedPayment")).
+				Run(ensurePaymentStatus(t, operation, "Processing...")).Return(nil).Once()
+
+			mockEntityManager.On("Persist", mock.AnythingOfType("*entities.ReceivedPayment")).
+				Run(ensurePaymentStatus(t, operation, "Error response from receive callback")).Return(nil).Once()
+
+			mockHTTPClient.On(
+				"Do",
+				mock.MatchedBy(func(req *http.Request) bool {
+					return req.URL.String() == "http://receive_callback"
+				}),
+			).Return(
+				net.BuildHTTPResponse(503, "ok"),
+				nil,
+			).Once()
+
+			Convey("it should save the status", func() {
+				err := paymentListener.onPayment(operation)
+				assert.NoError(t, err)
+				mockHorizon.AssertExpectations(t)
+				mockEntityManager.AssertExpectations(t)
+				mockRepository.AssertExpectations(t)
+			})
+		})
+
+		Convey("When transaction id is not returned by horizon", func() {
+			operation.Type = "payment"
+			operation.From = "GBL27BKG2JSDU6KQ5YJKCDWTVIU24VTG4PLB63SF4K2DBZS5XZMWRPVU"
+			operation.To = "GATKP6ZQM5CSLECPMTAC5226PE367QALCPM6AFHTSULPPZMT62OOPMQB"
+			operation.Amount = "100"
+			operation.AssetCode = "USD"
+			operation.AssetIssuer = "GD4I7AFSLZGTDL34TQLWJOM2NHLIIOEKD5RHHZUW54HERBLSIRKUOXRR"
+			operation.Memo.Type = "text"
+			operation.Memo.Value = "testing"
+			operation.TransactionID = "18ce6c3320d35e683cb653a3e812ce43e8f5c24ab0d0e87668d5591c679c9755"
+
+			mockRepository.On("GetReceivedPaymentByOperationID", int64(1)).Return(nil, nil).Once()
+			mockHorizon.On("LoadMemo", &operation).Return(nil).Once()
+
+			mockEntityManager.On("Persist", mock.AnythingOfType("*entities.ReceivedPayment")).
+				Run(ensurePaymentStatus(t, operation, "Processing...")).Return(nil).Once()
+
+			mockEntityManager.On("Persist", mock.AnythingOfType("*entities.ReceivedPayment")).
+				Run(ensurePaymentStatus(t, operation, "Success")).Return(nil).Once()
+
+			mockHTTPClient.On(
+				"Do",
+				mock.MatchedBy(func(req *http.Request) bool {
+					return req.URL.String() == "http://receive_callback"
+				}),
+			).Return(
+				net.BuildHTTPResponse(200, "ok"),
+				nil,
+			).Run(func(args mock.Arguments) {
+				req := args.Get(0).(*http.Request)
+
+				assert.Equal(t, operation.From, req.PostFormValue("from"))
+				assert.Equal(t, operation.Amount, req.PostFormValue("amount"))
+				assert.Equal(t, operation.AssetCode, req.PostFormValue("asset_code"))
+				assert.Equal(t, operation.AssetIssuer, req.PostFormValue("asset_issuer"))
+				assert.Equal(t, operation.Memo.Type, req.PostFormValue("memo_type"))
+				assert.Equal(t, operation.Memo.Value, req.PostFormValue("memo"))
+				assert.Equal(t, operation.TransactionID, req.PostFormValue("transaction_id"))
+			}).Once()
+
+			Convey("it should save the status", func() {
+				err := paymentListener.onPayment(operation)
+				assert.Nil(t, err)
+				mockHorizon.AssertExpectations(t)
+				mockEntityManager.AssertExpectations(t)
+				mockRepository.AssertExpectations(t)
+			})
+		})
+
 	})
 }
 
