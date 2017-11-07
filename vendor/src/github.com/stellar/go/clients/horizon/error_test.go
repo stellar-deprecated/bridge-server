@@ -27,12 +27,6 @@ func TestError_ResultCodes(t *testing.T) {
 		}
 	}
 
-	// sad path: !transaction_failed
-	herr.Problem.Type = "transaction_success"
-	herr.Problem.Extras = make(map[string]json.RawMessage)
-	_, err = herr.ResultCodes()
-	assert.Equal(t, ErrTransactionNotFailed, err)
-
 	// sad path: missing result_codes extra
 	herr.Problem.Type = "transaction_failed"
 	herr.Problem.Extras = make(map[string]json.RawMessage)

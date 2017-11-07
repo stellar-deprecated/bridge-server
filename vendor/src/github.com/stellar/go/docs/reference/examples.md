@@ -27,14 +27,15 @@ func main() {
 	to := "GA3A7AD7ZR4PIYW6A52SP6IK7UISESICPMMZVJGNUTVIZ5OUYOPBTK6X"
 
 	tx := b.Transaction(
-		b.SourceAccount{from},
-		b.AutoSequence{horizon.DefaultTestNetClient},
-		b.Payment(
-			b.Destination{to},
-			b.NativeAmount{"0.1"},
-		),
-	)
-
+ 		b.SourceAccount{from},
+ 		b.TestNetwork,
+ 		b.AutoSequence{horizon.DefaultTestNetClient},
+ 		b.Payment(
+ 			b.Destination{to},
+  			b.NativeAmount{"0.1"},
+  		),
+  	)
+	
 	txe := tx.Sign(from)
 	txeB64, err := txe.Base64()
 

@@ -12,7 +12,7 @@ import (
 	"golang.org/x/net/context"
 )
 
-func ExampleStream() {
+func ExampleClient_StreamLedgers() {
 	client := DefaultPublicNetClient
 	cursor := Cursor("now")
 
@@ -31,6 +31,29 @@ func ExampleStream() {
 	if err != nil {
 		fmt.Println(err)
 	}
+}
+
+func ExampleClient_SubmitTransaction() {
+	client := DefaultPublicNetClient
+	transactionEnvelopeXdr := "AAAAABSxFjMo7qcQlJBlrZQypSqYsHA5hHaYxk5hFXwiehh6AAAAZAAIdakAAABZAAAAAAAAAAAAAAABAAAAAAAAAAEAAAAAFLEWMyjupxCUkGWtlDKlKpiwcDmEdpjGTmEVfCJ6GHoAAAAAAAAAAACYloAAAAAAAAAAASJ6GHoAAABAp0FnKOQ9lJPDXPTh/a91xoZ8BaznwLj59sdDGK94eGzCOk7oetw7Yw50yOSZg2mqXAST6Agc9Ao/f5T9gB+GCw=="
+
+	response, err := client.SubmitTransaction(transactionEnvelopeXdr)
+	if err != nil {
+		fmt.Println(err)
+		herr, isHorizonError := err.(*Error)
+		if isHorizonError {
+			resultCodes, err := herr.ResultCodes()
+			if err != nil {
+				fmt.Println("failed to extract result codes from horizon response")
+				return
+			}
+			fmt.Println(resultCodes)
+		}
+		return
+	}
+
+	fmt.Println("Success")
+	fmt.Println(response)
 }
 
 func TestHorizon(t *testing.T) {
@@ -189,13 +212,39 @@ var _ = Describe("Horizon", func() {
 			Expect(orderBook.Asks[0].PriceR.D).To(Equal(int32(803984111)))
 		})
 
+		It("success response with limit", func() {
+			hmock.On(
+				"GET",
+				"https://localhost/order_book?buying_asset_code=DEMO&buying_asset_issuer=GBAMBOOZDWZPVV52RCLJQYMQNXOBLOXWNQAY2IF2FREV2WL46DBCH3BE&buying_asset_type=credit_alphanum4&limit=20&selling_asset_code=&selling_asset_issuer=&selling_asset_type=native",
+			).ReturnString(200, orderBookResponse)
+
+			orderBook, err := client.LoadOrderBook(Asset{Type: "native"}, Asset{"credit_alphanum4", "DEMO", "GBAMBOOZDWZPVV52RCLJQYMQNXOBLOXWNQAY2IF2FREV2WL46DBCH3BE"}, Limit(20))
+			Expect(err).To(BeNil())
+			Expect(orderBook.Selling.Type).To(Equal("native"))
+			Expect(orderBook.Buying.Type).To(Equal("credit_alphanum4"))
+			Expect(orderBook.Buying.Code).To(Equal("DEMO"))
+			Expect(orderBook.Buying.Issuer).To(Equal("GBAMBOOZDWZPVV52RCLJQYMQNXOBLOXWNQAY2IF2FREV2WL46DBCH3BE"))
+
+			Expect(len(orderBook.Bids)).To(Equal(20))
+			Expect(orderBook.Bids[0].Price).To(Equal("0.0024937"))
+			Expect(orderBook.Bids[0].Amount).To(Equal("0.4363975"))
+			Expect(orderBook.Bids[0].PriceR.N).To(Equal(int32(24937)))
+			Expect(orderBook.Bids[0].PriceR.D).To(Equal(int32(10000000)))
+
+			Expect(len(orderBook.Asks)).To(Equal(20))
+			Expect(orderBook.Asks[0].Price).To(Equal("0.0025093"))
+			Expect(orderBook.Asks[0].Amount).To(Equal("1248.9663104"))
+			Expect(orderBook.Asks[0].PriceR.N).To(Equal(int32(2017413)))
+			Expect(orderBook.Asks[0].PriceR.D).To(Equal(int32(803984111)))
+		})
+
 		It("failure response", func() {
 			hmock.On(
 				"GET",
-				"https://localhost/order_book?buying_asset_code=DEMO&buying_asset_issuer=GBAMBOOZDWZPVV52RCLJQYMQNXOBLOXWNQAY2IF2FREV2WL46DBCH3BE&buying_asset_type=credit_alphanum4&selling_asset_code=&selling_asset_issuer=&selling_asset_type=native",
+				"https://localhost/order_book?buying_asset_code=DEMO&buying_asset_issuer=GBAMBOOZDWZPVV52RCLJQYMQNXOBLOXWNQAY2IF2FREV2WL46DBCH3BE&buying_asset_type=credit_alphanum4&limit=20&selling_asset_code=&selling_asset_issuer=&selling_asset_type=native",
 			).ReturnString(404, notFoundResponse)
 
-			_, err := client.LoadOrderBook(Asset{Type: "native"}, Asset{"credit_alphanum4", "DEMO", "GBAMBOOZDWZPVV52RCLJQYMQNXOBLOXWNQAY2IF2FREV2WL46DBCH3BE"})
+			_, err := client.LoadOrderBook(Asset{Type: "native"}, Asset{"credit_alphanum4", "DEMO", "GBAMBOOZDWZPVV52RCLJQYMQNXOBLOXWNQAY2IF2FREV2WL46DBCH3BE"}, Limit(20))
 			Expect(err).NotTo(BeNil())
 			Expect(err.Error()).To(HavePrefix("Horizon error"))
 			horizonError, ok := err.(*Error)
@@ -206,10 +255,10 @@ var _ = Describe("Horizon", func() {
 		It("connection error", func() {
 			hmock.On(
 				"GET",
-				"https://localhost/order_book?buying_asset_code=DEMO&buying_asset_issuer=GBAMBOOZDWZPVV52RCLJQYMQNXOBLOXWNQAY2IF2FREV2WL46DBCH3BE&buying_asset_type=credit_alphanum4&selling_asset_code=&selling_asset_issuer=&selling_asset_type=native",
+				"https://localhost/order_book?buying_asset_code=DEMO&buying_asset_issuer=GBAMBOOZDWZPVV52RCLJQYMQNXOBLOXWNQAY2IF2FREV2WL46DBCH3BE&buying_asset_type=credit_alphanum4&limit=20&selling_asset_code=&selling_asset_issuer=&selling_asset_type=native",
 			).ReturnError("http.Client error")
 
-			_, err := client.LoadOrderBook(Asset{Type: "native"}, Asset{"credit_alphanum4", "DEMO", "GBAMBOOZDWZPVV52RCLJQYMQNXOBLOXWNQAY2IF2FREV2WL46DBCH3BE"})
+			_, err := client.LoadOrderBook(Asset{Type: "native"}, Asset{"credit_alphanum4", "DEMO", "GBAMBOOZDWZPVV52RCLJQYMQNXOBLOXWNQAY2IF2FREV2WL46DBCH3BE"}, Limit(20))
 			Expect(err).NotTo(BeNil())
 			Expect(err.Error()).To(ContainSubstring("http.Client error"))
 			_, ok := err.(*Error)

@@ -4,8 +4,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/segmentio/go-loggly"
+	"github.com/sirupsen/logrus"
 )
 
 // NewLogglyHook creates a new hook

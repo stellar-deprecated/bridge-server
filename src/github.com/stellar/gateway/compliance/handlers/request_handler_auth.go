@@ -182,15 +182,26 @@ func (rh *RequestHandler) HandlerAuth(c web.C, w http.ResponseWriter, r *http.Re
 		case http.StatusAccepted: // AuthStatusPending
 			response.TxStatus = compliance.AuthStatusPending
 
-			pendingResponse := struct {
-				Pending int `json:"pending"`
-			}{}
-			err := json.Unmarshal(body, &pendingResponse)
+			callbackResponse := callback.CallbackResponse{}
+			err := json.Unmarshal(body, &callbackResponse)
 			if err != nil {
 				// Set default value
 				response.Pending = 600
 			} else {
-				response.Pending = pendingResponse.Pending
+				response.Pending = callbackResponse.Pending
+			}
+		case http.StatusBadRequest: // AuthStatusError
+			response.TxStatus = compliance.AuthStatusError
+
+			callbackResponse := callback.CallbackResponse{}
+			err := json.Unmarshal(body, &callbackResponse)
+			if err != nil {
+				log.WithFields(log.Fields{
+					"status": resp.StatusCode,
+					"body":   string(body),
+				}).Error("Error response from sanctions server")
+			} else {
+				response.Error = callbackResponse.Error
 			}
 		case http.StatusForbidden: // AuthStatusDenied
 			response.TxStatus = compliance.AuthStatusDenied
@@ -296,15 +307,26 @@ func (rh *RequestHandler) HandlerAuth(c web.C, w http.ResponseWriter, r *http.Re
 			case http.StatusAccepted: // AuthStatusPending
 				response.InfoStatus = compliance.AuthStatusPending
 
-				pendingResponse := struct {
-					Pending int `json:"pending"`
-				}{}
-				err := json.Unmarshal(body, &pendingResponse)
+				callbackResponse := callback.CallbackResponse{}
+				err := json.Unmarshal(body, &callbackResponse)
 				if err != nil {
 					// Set default value
 					response.Pending = 600
 				} else {
-					response.Pending = pendingResponse.Pending
+					response.Pending = callbackResponse.Pending
+				}
+			case http.StatusBadRequest: // AuthStatusError
+				response.InfoStatus = compliance.AuthStatusError
+
+				callbackResponse := callback.CallbackResponse{}
+				err := json.Unmarshal(body, &callbackResponse)
+				if err != nil {
+					log.WithFields(log.Fields{
+						"status": resp.StatusCode,
+						"body":   string(body),
+					}).Error("Error response from sanctions server")
+				} else {
+					response.Error = callbackResponse.Error
 				}
 			case http.StatusForbidden: // AuthStatusDenied
 				response.InfoStatus = compliance.AuthStatusDenied
@@ -362,6 +384,7 @@ func (rh *RequestHandler) HandlerAuth(c web.C, w http.ResponseWriter, r *http.Re
 	}
 
 	if response.TxStatus == compliance.AuthStatusOk && response.InfoStatus == compliance.AuthStatusOk {
+		w.WriteHeader(http.StatusOK)
 		authorizedTransaction := &entities.AuthorizedTransaction{
 			TransactionID:  hex.EncodeToString(transactionHash[:]),
 			Memo:           base64.StdEncoding.EncodeToString(memoBytes[:]),
@@ -375,6 +398,12 @@ func (rh *RequestHandler) HandlerAuth(c web.C, w http.ResponseWriter, r *http.Re
 			server.Write(w, protocols.InternalServerError)
 			return
 		}
+	} else if response.TxStatus == compliance.AuthStatusDenied || response.InfoStatus == compliance.AuthStatusDenied {
+		w.WriteHeader(http.StatusForbidden)
+	} else if response.TxStatus == compliance.AuthStatusError || response.InfoStatus == compliance.AuthStatusError {
+		w.WriteHeader(http.StatusBadRequest)
+	} else if response.TxStatus == compliance.AuthStatusPending || response.InfoStatus == compliance.AuthStatusPending {
+		w.WriteHeader(http.StatusAccepted)
 	}
 
 	responseBody, err := response.Marshal()

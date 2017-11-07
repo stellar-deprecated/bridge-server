@@ -90,7 +90,7 @@ func Parse(addressOrSeed string) (KP, error) {
 	return nil, err
 }
 
-// FromRawSeed creates a new keypair from the provided raw ED25519 seed:w
+// FromRawSeed creates a new keypair from the provided raw ED25519 seed
 func FromRawSeed(rawSeed [32]byte) (*Full, error) {
 	seed, err := strkey.Encode(strkey.VersionByteSeed, rawSeed[:])
 	if err != nil {

@@ -38,8 +38,8 @@ func (m *MockClient) LoadMemo(p *Payment) error {
 }
 
 // LoadOrderBook is a mocking a method
-func (m *MockClient) LoadOrderBook(selling Asset, buying Asset) (orderBook OrderBookSummary, err error) {
-	a := m.Called(selling, buying)
+func (m *MockClient) LoadOrderBook(selling Asset, buying Asset, params ...interface{}) (orderBook OrderBookSummary, err error) {
+	a := m.Called(selling, buying, params)
 	return a.Get(0).(OrderBookSummary), a.Error(1)
 }
 

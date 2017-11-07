@@ -5,8 +5,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/segmentio/go-loggly"
+	"github.com/sirupsen/logrus"
 	"github.com/stellar/go/support/http/mutil"
 	"golang.org/x/net/context"
 )

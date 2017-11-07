@@ -139,7 +139,7 @@ func (m PayWithPath) MutatePayment(o interface{}) (err error) {
 	var xdrAsset xdr.Asset
 
 	for _, asset := range m.Path {
-		xdrAsset, err = asset.ToXdrObject()
+		xdrAsset, err = asset.ToXDR()
 		if err != nil {
 			return err
 		}
@@ -150,6 +150,6 @@ func (m PayWithPath) MutatePayment(o interface{}) (err error) {
 	pathPaymentOp.Path = path
 
 	// Asset
-	pathPaymentOp.SendAsset, err = m.Asset.ToXdrObject()
+	pathPaymentOp.SendAsset, err = m.Asset.ToXDR()
 	return
 }

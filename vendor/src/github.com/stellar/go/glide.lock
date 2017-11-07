@@ -1,17 +1,22 @@
-hash: 805bc7accf5266e737482b8bff09ee04c554d404e3daecb1d84e7086277dbe70
-updated: 2016-11-10T15:52:55.78656724-08:00
+hash: d706a6b1bff95df93546374ff7ef6ecf0b11cf60d054c67569f46df10e477cf3
+updated: 2017-10-05T09:54:13.340235406-07:00
 imports:
+- name: bitbucket.org/ww/goautoneg
+  version: 75cd24fc2f2c2a2088577d12123ddee5f54e0675
 - name: github.com/agl/ed25519
   version: 278e1ec8e8a6e017cd07577924d6766039146ced
+  repo: https://github.com/agl/ed25519
   subpackages:
   - edwards25519
 - name: github.com/ajg/form
   version: 523a5da1a92f01b01f840b61689c0340a0243532
+  repo: https://github.com/ajg/form
 - name: github.com/asaskevich/govalidator
   version: f0666aa80d7dcf75bd564ae8717b952d74a29d6a
   repo: https://github.com/stellar/govalidator.git
 - name: github.com/aws/aws-sdk-go
-  version: d3e3f4281292478e8095bea047e2297e005152da
+  version: 8649d278323ebf6bd20c9cd56ecb152b1c617375
+  repo: https://github.com/aws/aws-sdk-go
   subpackages:
   - aws
   - aws/awserr
@@ -25,10 +30,10 @@ imports:
   - aws/credentials/stscreds
   - aws/defaults
   - aws/ec2metadata
+  - aws/endpoints
   - aws/request
   - aws/session
   - aws/signer/v4
-  - private/endpoints
   - private/protocol
   - private/protocol/query
   - private/protocol/query/queryutil
@@ -40,74 +45,136 @@ imports:
   - service/sts
 - name: github.com/BurntSushi/toml
   version: 99064174e013895bbd9b025c31100bd1d9b590ca
+  repo: https://github.com/BurntSushi/toml
+- name: github.com/codegangsta/negroni
+  version: c7477ad8e330bef55bf1ebe300cf8aa67c492d1b
+  repo: https://github.com/codegangsta/negroni
 - name: github.com/davecgh/go-spew
-  version: 6d212800a42e8ab5c146b8ace3490ee17e5225f9
+  version: 5215b55f46b2b919f50a1df0eaa5886afe4e3b3d
+  repo: https://github.com/davecgh/go-spew
   subpackages:
   - spew
 - name: github.com/fatih/structs
-  version: dc3312cb1a4513a366c4c9e622ad55c32df12ed3
-- name: github.com/gavv/gojsondiff
-  version: 4e533b0f28d6258fa9153191e70acb312e497243
+  version: a720dfa8df582c51dee1b36feabb906bde1588bd
+  repo: https://github.com/fatih/structs
+- name: github.com/garyburd/redigo
+  version: 8b1d80a45a732e6d95e22dcc2e067312c664936c
+  repo: https://github.com/garyburd/redigo
   subpackages:
-  - formatter
+  - internal
+  - redis
 - name: github.com/gavv/monotime
-  version: 259cd7b345f5aa080eff16f21d7866ef7dea9528
+  version: 47d58efa69556a936a3c15eb2ed42706d968ab01
+  repo: https://github.com/gavv/monotime
 - name: github.com/getsentry/raven-go
   version: c9d3cc542ad199f62c0264286be537f9bce6063c
+  repo: https://github.com/getsentry/raven-go
+- name: github.com/go-errors/errors
+  version: a41850380601eeb43f4350f7d17c6bbd8944aaf8
+  repo: https://github.com/go-errors/errors
 - name: github.com/go-ini/ini
-  version: 6e4869b434bd001f6983749881c7ead3545887d8
+  version: 6f66b0e091edb3c7b380f7c4f0f884274d550b67
+  repo: https://github.com/go-ini/ini
 - name: github.com/go-sql-driver/mysql
-  version: 0b58b37b664c21f3010e836f1b931e1d0b0b0685
+  version: 2e00b5cd70399450106cec6431c2e2ce3cae5034
+  repo: https://github.com/go-sql-driver/mysql
+- name: github.com/goji/context
+  version: cc5d214cefa9d50beb2cdbf2344eb8c4bd14709b
+  repo: https://github.com/goji/context
+- name: github.com/golang/groupcache
+  version: 604ed5785183e59ae2789449d89e73f3a2a77987
+  repo: https://github.com/golang/groupcache
+  subpackages:
+  - lru
 - name: github.com/google/go-querystring
   version: 9235644dd9e52eeae6fa48efd539fdc351a0af53
+  repo: https://github.com/google/go-querystring
   subpackages:
   - query
+- name: github.com/guregu/null
+  version: 79c5bd36b615db4c06132321189f579c8a5fca98
+  repo: https://github.com/guregu/null
 - name: github.com/howeyc/gopass
-  version: f5387c492211eb133053880d23dfae62aa14123d
+  version: bf9dde6d0d2c004a008c27aaee91170c786f6db8
+  repo: https://github.com/howeyc/gopass
 - name: github.com/imkira/go-interpol
-  version: b9781c93ae51c8b4fc3af1b1426909721af0a624
+  version: 5accad8134979a6ac504d456a6c7f1c53da237ca
+  repo: https://github.com/imkira/go-interpol
 - name: github.com/inconshreveable/mousetrap
   version: 76626ae9c91c4f2a10f34cad8ce83ea42c93bb75
+  repo: https://github.com/inconshreveable/mousetrap
 - name: github.com/jarcoal/httpmock
-  version: 145b10d659265440f062c31ea15326166bae56ee
+  version: 4442edb3db31196622da56482fd8d0fa375fba4d
+  repo: https://github.com/jarcoal/httpmock
 - name: github.com/jmespath/go-jmespath
   version: bd40a432e4c76585ef6b72d3fd96fb9b6dc7b68d
+  repo: https://github.com/jmespath/go-jmespath
 - name: github.com/jmoiron/sqlx
   version: 05b81a7d5d38058e42148dc01f17daf4acba4640
+  repo: https://github.com/jmoiron/sqlx
   subpackages:
   - reflectx
+- name: github.com/jtolds/gls
+  version: 9a4a02dbe491bef4bab3c24fd9f3087d6c4c6690
+  repo: https://github.com/jtolds/gls
 - name: github.com/klauspost/compress
-  version: 08fe86a420401e830c24114bdf9f1ba91331407a
+  version: e3b7981a12dd3cab49afa1d3a50e715846f23732
+  repo: https://github.com/klauspost/compress
   subpackages:
   - flate
   - gzip
   - zlib
 - name: github.com/klauspost/cpuid
   version: 09cded8978dc9e80714c4d85b0322337b0a1e5e0
+  repo: https://github.com/klauspost/cpuid
 - name: github.com/klauspost/crc32
-  version: 19b0b332c9e4516a6370a0456e6182c3b5036720
+  version: cb6bfca970f6908083f26f39a79009d608efd5cd
+  repo: https://github.com/klauspost/crc32
+- name: github.com/kr/pretty
+  version: e6ac2fc51e89a3249e82157fa0bb7a18ef9dd5bb
+  repo: https://github.com/kr/pretty
+- name: github.com/kr/text
+  version: e373e137fafd8abd480af49182dea0513914adb4
+  repo: https://github.com/kr/text
 - name: github.com/lann/builder
-  version: f22ce00fd9394014049dad11c244859432bd6820
-- name: github.com/lann/ps
-  version: 62de8c46ede02a7675c4c79c84883eb164cb71e3
+  version: c603884a2c1fcf331c71940f3227a8111d29f3ba
+  repo: https://github.com/lann/builder
 - name: github.com/lib/pq
   version: 50761b0867bd1d9d069276790bcd4a3bccf2324a
+  repo: https://github.com/lib/pq
   subpackages:
   - oid
+- name: github.com/magiconair/properties
+  version: 359442d561ca28acd0fe503aa9f075f505bc9ed0
+  repo: https://github.com/magiconair/properties
 - name: github.com/manucorporat/sse
   version: ee05b128a739a0fb76c7ebd3ae4810c1de808d6d
+  repo: https://github.com/manucorporat/sse
 - name: github.com/Masterminds/squirrel
-  version: cb03830e33a9c086b3f9051548a81d299e190939
+  version: 20f192218cf52a73397fa2df45bdda720f3e47c8
+  repo: https://github.com/Masterminds/squirrel
 - name: github.com/mattn/go-sqlite3
-  version: 4b0af852c17164dce48e6754e3094c55192e4934
+  version: efea85cb9a06f1d4f661649f6beb5fd04597a366
+  repo: https://github.com/mattn/go-sqlite3
+- name: github.com/mitchellh/mapstructure
+  version: 2caf8efc93669b6c43e0441cdc6aed17546c96f3
+  repo: https://github.com/mitchellh/mapstructure
+- name: github.com/mndrix/ps
+  version: 33ddf69629c1bcea76b04f4a4e9e00e4cce82eb6
+  repo: https://github.com/mndrix/ps
 - name: github.com/moul/http2curl
-  version: b1479103caacaa39319f75e7f57fc545287fca0d
+  version: 4e24498b31dba4683efb9d35c1c8a91e2eda28c8
+  repo: https://github.com/moul/http2curl
+- name: github.com/nullstyle/go-codegen
+  version: 97a55a0a5d715d65c940bd07b8b719c082db26d6
+  repo: https://github.com/nullstyle/go-codegen
 - name: github.com/nullstyle/go-xdr
-  version: 3c3a95da20cd1e19018bf098dce9c3ce358848df
+  version: a875e7c9fa2388ce03279f6b5ba1c2ccd1f9e917
+  repo: https://github.com/nullstyle/go-xdr
   subpackages:
   - xdr3
 - name: github.com/onsi/ginkgo
-  version: c07a44f02cf4a895e331f4f473c0943ee116c668
+  version: 11459a886d9cd66b319dac7ef1e917ee221372c9
   subpackages:
   - config
   - extensions/table
@@ -117,6 +184,7 @@ imports:
   - internal/leafnodes
   - internal/remote
   - internal/spec
+  - internal/spec_iterator
   - internal/specrunner
   - internal/suite
   - internal/testingtproxy
@@ -127,7 +195,7 @@ imports:
   - reporters/stenographer/support/go-isatty
   - types
 - name: github.com/onsi/gomega
-  version: ff4bc6b6f9f5affa66635cd04d31d2a7ee21ffd6
+  version: dcabb60a477c2b6f456df65037cb6708210fbb02
   subpackages:
   - format
   - internal/assertion
@@ -142,75 +210,153 @@ imports:
   - types
 - name: github.com/pkg/errors
   version: 645ef00459ed84a119197bfb8d8205042c6df63d
+  repo: https://github.com/pkg/errors
 - name: github.com/pmezard/go-difflib
-  version: d8ed2627bdf02c080bf22230dbb337003b7aba2d
+  version: 792786c7400a136282c1664665ae0a8db921c6c2
+  repo: https://github.com/pmezard/go-difflib
   subpackages:
   - difflib
+- name: github.com/PuerkitoBio/throttled
+  version: 1c8297c643b774435df8df65f7502b37d014fb6b
+  repo: https://github.com/PuerkitoBio/throttled
+  subpackages:
+  - store
+- name: github.com/rcrowley/go-metrics
+  version: a5cfc242a56ba7fa70b785f678d6214837bf93b9
+  repo: https://github.com/rcrowley/go-metrics
 - name: github.com/rs/cors
   version: a62a804a8a009876ca59105f7899938a1349f4b3
+  repo: https://github.com/rs/cors
 - name: github.com/rs/xhandler
   version: ed27b6fd65218132ee50cd95f38474a3d8a2cd12
+- name: github.com/rubenv/sql-migrate
+  version: 53184e1edfb4f9655b0fa8dd2c23e7763f452bda
+  repo: https://github.com/rubenv/sql-migrate
+  subpackages:
+  - sqlparse
+- name: github.com/sebest/xff
+  version: 7a36e3a787b5228de26fbfec89d5060701010da0
+  repo: https://github.com/sebest/xff
 - name: github.com/segmentio/go-loggly
   version: e78f6971ebca5835614673e2f5f6a47ca5f13501
+  repo: https://github.com/segmentio/go-loggly
 - name: github.com/sergi/go-diff
-  version: 97b2266dfe4bd4ea1b81a463322f04f8b724801e
+  version: 83532ca1c1caa393179c677b6facf48e61f4ca5d
+  repo: https://github.com/sergi/go-diff
   subpackages:
   - diffmatchpatch
-- name: github.com/Sirupsen/logrus
-  version: 3ec0642a7fb6488f65b06f9040adc67e3990296a
+- name: github.com/sirupsen/logrus
+  version: 68cec9f21fbf3ea8d8f98c044bc6ce05f17b267a
+  repo: https://github.com/sirupsen/logrus
   subpackages:
   - hooks/test
+- name: github.com/smartystreets/assertions
+  version: 22fd8e1982688f4ff04e8e9ec6feae2c2459460d
+  repo: https://github.com/smartystreets/assertions
+  subpackages:
+  - internal/oglematchers
+- name: github.com/smartystreets/goconvey
+  version: ab7641a0db76b0e88765294b1377b026ec01f26b
+  repo: https://github.com/smartystreets/goconvey
+  subpackages:
+  - convey
+  - convey/gotest
+  - convey/reporting
+- name: github.com/spf13/cast
+  version: 4d07383ffe94b5e5a6fa3af9211374a4507a0184
+  repo: https://github.com/spf13/cast
 - name: github.com/spf13/cobra
   version: 9c28e4bbd74e5c3ed7aacbc552b2cab7cfdfe744
+  repo: https://github.com/spf13/cobra
+- name: github.com/spf13/jwalterweatherman
+  version: 3d60171a64319ef63c78bd45bd60e6eab1e75f8b
+  repo: https://github.com/spf13/jwalterweatherman
 - name: github.com/spf13/pflag
   version: 4bd69631f4750a9df249ee317f4536e02cbc3c65
+  repo: https://github.com/spf13/pflag
+- name: github.com/spf13/viper
+  version: db7ff930a189b98d602179d9001d33345f42b8c7
+  repo: https://github.com/spf13/viper
 - name: github.com/stretchr/objx
-  version: cbeaeb16a013161a98496fad62933b1d21786672
+  version: 1a9d0bb9f541897e62256577b352fdbc1fb4fd94
+  repo: https://github.com/stretchr/objx
 - name: github.com/stretchr/testify
   version: 976c720a22c8eb4eb6a0b4348ad85ad12491a506
+  repo: https://github.com/stretchr/testify
   subpackages:
-  - mock
   - assert
+  - mock
   - require
+- name: github.com/tylerb/graceful
+  version: 7116c7a8115899e80197cd9e0b97998c0f97ed8e
+  repo: https://github.com/tylerb/graceful
 - name: github.com/valyala/bytebufferpool
   version: e746df99fe4a3986f4d4f79e13c1e0117ce9c2f7
+  repo: https://github.com/valyala/bytebufferpool
 - name: github.com/valyala/fasthttp
   version: 0a7f0a797cd66b89588d0a7fdd670b706579a621
+  repo: https://github.com/valyala/fasthttp
   subpackages:
   - fasthttputil
+  - stackless
 - name: github.com/visionmedia/go-debug
   version: ff4a55a20a86994118644bbddc6a216da193cc13
+  repo: https://github.com/visionmedia/go-debug
 - name: github.com/xeipuuv/gojsonpointer
   version: e0fe6f68307607d540ed8eac07a342c33fa1b54a
+  repo: https://github.com/xeipuuv/gojsonpointer
 - name: github.com/xeipuuv/gojsonreference
   version: e02fc20de94c78484cd5ffb007f8af96be030a45
+  repo: https://github.com/xeipuuv/gojsonreference
 - name: github.com/xeipuuv/gojsonschema
-  version: 4f624f6197547606054e042e7903db103585e151
+  version: f06f290571ce81ab347174c6f7ad2e1865af41a7
+  repo: https://github.com/xeipuuv/gojsonschema
 - name: github.com/y0ssar1an/q
-  version: 2db904a96a52a061170a3c0d8db384d388315af6
+  version: 392ac3089fcf8c70ebbe85f4c29778b7ebe27a9f
 - name: github.com/yalp/jsonpath
   version: 31a79c7593bb93eb10b163650d4a3e6ca190e4dc
+  repo: https://github.com/yalp/jsonpath
 - name: github.com/yudai/gojsondiff
   version: 7b1b7adf999dab73a6eb02669c3d82dbb27a3dd6
+  repo: https://github.com/yudai/gojsondiff
+  subpackages:
+  - formatter
 - name: github.com/yudai/golcs
   version: d1c525dea8ce39ea9a783d33cf08932305373f2c
+  repo: https://github.com/yudai/golcs
+- name: github.com/zenazn/goji
+  version: bf843a174a08e846246b8945f8a9a853d84a256a
+  repo: https://github.com/zenazn/goji
+  subpackages:
+  - bind
+  - graceful
+  - web
+  - web/middleware
+  - web/mutil
 - name: goji.io
   version: e355964ac565b94cf0fc7f218346626529125086
+  repo: https://github.com/goji/goji
   subpackages:
-  - pat
   - internal
+  - pat
   - pattern
 - name: golang.org/x/crypto
-  version: 7682e7e3945130cf3cde089834664f68afdd1523
+  version: 1f22c0103821b9390939b6776727195525381532
+  repo: https://go.googlesource.com/crypto
   subpackages:
   - ssh/terminal
 - name: golang.org/x/net
   version: 9bc2a3340c92c17a20edcd0080e93851ed58f5d5
+  repo: https://go.googlesource.com/net
   subpackages:
   - context
+  - html
+  - html/atom
+  - html/charset
   - http2
   - http2/hpack
   - lex/httplex
+  - netutil
   - publicsuffix
 - name: golang.org/x/sys
   version: 1f5e250e1174502017917628cc48b52fdc25b531
@@ -218,13 +364,32 @@ imports:
   - unix
 - name: gopkg.in/gavv/httpexpect.v1
   version: 40724cf1e4a08b670b14a02deff693a91f3aa9a0
+  repo: https://gopkg.in/gavv/httpexpect.v1
+- name: gopkg.in/gorp.v1
+  version: c87af80f3cc5036b55b83d77171e156791085e2e
+  repo: https://gopkg.in/gorp.v1
 - name: gopkg.in/tylerb/graceful.v1
   version: 50a48b6e73fcc75b45e22c05b79629a67c79e938
-testImports:
-- name: github.com/kr/pretty
-  version: cfb55aafdaf3ec08f0db22699ab822c50091b1c4
-  repo: https://github.com/kr/pretty
-- name: github.com/kr/text
-  version: 7cafcd837844e784b526369c9bce262804aebc60
+  repo: https://gopkg.in/tylerb/graceful.v1
 - name: gopkg.in/yaml.v2
-  version: a5b47d31c556af34a302ce5d659e6fea44d90de0
+  version: 7ad95dd0798a40da1ccdff6dff35fd177b5edf40
+  repo: https://gopkg.in/yaml.v2
+testImports:
+- name: golang.org/x/text
+  version: 1cbadb444a806fd9430d14ad08967ed91da4fa0a
+  subpackages:
+  - encoding
+  - encoding/charmap
+  - encoding/htmlindex
+  - encoding/internal
+  - encoding/internal/identifier
+  - encoding/japanese
+  - encoding/korean
+  - encoding/simplifiedchinese
+  - encoding/traditionalchinese
+  - encoding/unicode
+  - internal/tag
+  - internal/utf8internal
+  - language
+  - runes
+  - transform

@@ -6,7 +6,9 @@ package main
 
 import (
 	"bufio"
+	"flag"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"strings"
@@ -18,13 +20,36 @@ import (
 
 var in *bufio.Reader
 
+var infile = flag.String("infile", "", "transaction envelope")
+
 func main() {
+	flag.Parse()
 	in = bufio.NewReader(os.Stdin)
 
-	// read envelope
-	env, err := readLine("Enter envelope (base64): ", false)
-	if err != nil {
-		log.Fatal(err)
+	var (
+		env string
+		err error
+	)
+
+	if *infile == "" {
+		// read envelope
+		env, err = readLine("Enter envelope (base64): ", false)
+		if err != nil {
+			log.Fatal(err)
+		}
+	} else {
+		file, err := os.Open(*infile)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer file.Close()
+
+		raw, err := ioutil.ReadAll(file)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		env = string(raw)
 	}
 
 	// parse the envelope
@@ -64,7 +89,9 @@ func main() {
 	}
 
 	fmt.Print("\n==== Result ====\n\n")
+	fmt.Print("```\n")
 	fmt.Println(newEnv)
+	fmt.Print("```\n")
 
 }
 
