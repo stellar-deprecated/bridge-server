@@ -3,7 +3,7 @@ package db
 import (
 	"fmt"
 
-	"github.com/Sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 	"github.com/stellar/gateway/db/entities"
 	"github.com/stellar/go/support/db"
 )

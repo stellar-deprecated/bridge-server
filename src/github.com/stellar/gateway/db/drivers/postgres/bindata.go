@@ -161,7 +161,7 @@ func AssetNames() []string {
 
 // _bindata is a table, holding each asset generator, mapped to its name.
 var _bindata = map[string]func() (*asset, error){
-	"migrations_gateway/01_init.sql": migrations_gateway01_initSql,
+	"migrations_gateway/01_init.sql":    migrations_gateway01_initSql,
 	"migrations_compliance/01_init.sql": migrations_compliance01_initSql,
 }
 
@@ -204,6 +204,7 @@ type bintree struct {
 	Func     func() (*asset, error)
 	Children map[string]*bintree
 }
+
 var _bintree = &bintree{nil, map[string]*bintree{
 	"migrations_compliance": &bintree{nil, map[string]*bintree{
 		"01_init.sql": &bintree{migrations_compliance01_initSql, map[string]*bintree{}},
@@ -259,4 +260,3 @@ func _filePath(dir, name string) string {
 	cannonicalName := strings.Replace(name, "\\", "/", -1)
 	return filepath.Join(append([]string{dir}, strings.Split(cannonicalName, "/")...)...)
 }
-

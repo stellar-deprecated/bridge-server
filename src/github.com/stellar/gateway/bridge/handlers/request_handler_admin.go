@@ -7,7 +7,7 @@ import (
 	"net/url"
 	"strconv"
 
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	"github.com/stellar/gateway/db/entities"
 	"github.com/stellar/gateway/horizon"
 	"github.com/stellar/gateway/protocols"

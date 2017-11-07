@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"net/url"
 
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	"github.com/stellar/gateway/protocols"
 	"github.com/stellar/gateway/server"
 	"github.com/stellar/go/protocols/compliance"

@@ -14,14 +14,14 @@
 			"branch": "v1"
 		},
 		{
-			"importpath": "github.com/Sirupsen/logrus",
-			"repository": "https://github.com/Sirupsen/logrus",
+			"importpath": "github.com/sirupsen/logrus",
+			"repository": "https://github.com/sirupsen/logrus",
 			"revision": "68cec9f21fbf3ea8d8f98c044bc6ce05f17b267a",
 			"branch": "master"
 		},
 		{
-			"importpath": "github.com/Sirupsen/logrus/hooks/test",
-			"repository": "https://github.com/Sirupsen/logrus",
+			"importpath": "github.com/sirupsen/logrus/hooks/test",
+			"repository": "https://github.com/sirupsen/logrus",
 			"revision": "68cec9f21fbf3ea8d8f98c044bc6ce05f17b267a",
 			"branch": "master",
 			"path": "/hooks/test"
