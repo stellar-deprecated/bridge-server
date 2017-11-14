@@ -1,11 +1,36 @@
-package xdr_test
+package xdr
 
 import (
-	. "github.com/stellar/go/xdr"
+	"encoding/base64"
+	"fmt"
+	"log"
+	"strings"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
+
+// ExampleUnmarshal shows the lowest-level process to decode a base64
+// envelope encoded in base64.
+func ExampleUnmarshal() {
+	data := "AAAAAGL8HQvQkbK2HA3WVjRrKmjX00fG8sLI7m0ERwJW/AX3AAAACgAAAAAAAAABAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAArqN6LeOagjxMaUP96Bzfs9e0corNZXzBWJkFoK7kvkwAAAAAO5rKAAAAAAAAAAABVvwF9wAAAEAKZ7IPj/46PuWU6ZOtyMosctNAkXRNX9WCAI5RnfRk+AyxDLoDZP/9l3NvsxQtWj9juQOuoBlFLnWu8intgxQA"
+
+	rawr := strings.NewReader(data)
+	b64r := base64.NewDecoder(base64.StdEncoding, rawr)
+
+	var tx TransactionEnvelope
+	bytesRead, err := Unmarshal(b64r, &tx)
+
+	fmt.Printf("read %d bytes\n", bytesRead)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Printf("This tx has %d operations\n", len(tx.Tx.Operations))
+	// Output: read 192 bytes
+	// This tx has 1 operations
+}
 
 var _ = Describe("xdr.SafeUnmarshal", func() {
 	var (

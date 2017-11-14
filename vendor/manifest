@@ -14,15 +14,15 @@
 			"branch": "v1"
 		},
 		{
-			"importpath": "github.com/Sirupsen/logrus",
-			"repository": "https://github.com/Sirupsen/logrus",
-			"revision": "61e43dc76f7ee59a82bdf3d71033dc12bea4c77d",
+			"importpath": "github.com/sirupsen/logrus",
+			"repository": "https://github.com/sirupsen/logrus",
+			"revision": "68cec9f21fbf3ea8d8f98c044bc6ce05f17b267a",
 			"branch": "master"
 		},
 		{
-			"importpath": "github.com/Sirupsen/logrus/hooks/test",
-			"repository": "https://github.com/Sirupsen/logrus",
-			"revision": "61e43dc76f7ee59a82bdf3d71033dc12bea4c77d",
+			"importpath": "github.com/sirupsen/logrus/hooks/test",
+			"repository": "https://github.com/sirupsen/logrus",
+			"revision": "68cec9f21fbf3ea8d8f98c044bc6ce05f17b267a",
 			"branch": "master",
 			"path": "/hooks/test"
 		},
@@ -476,13 +476,13 @@
 		{
 			"importpath": "github.com/stellar/go",
 			"repository": "https://github.com/stellar/go",
-			"revision": "d73c794a1a2352e7020ad728697aaa5664bc62fa",
+			"revision": "78d294bf7c2afe35e0cfef5c1e6e61aa38b1c04c",
 			"branch": "master"
 		},
 		{
 			"importpath": "github.com/stellar/go/protocols/compliance",
 			"repository": "https://github.com/stellar/go",
-			"revision": "a2a363c0c6943b1f477f33db3a32e7a28bfc403e",
+			"revision": "78d294bf7c2afe35e0cfef5c1e6e61aa38b1c04c",
 			"branch": "master",
 			"path": "/protocols/compliance"
 		},

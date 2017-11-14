@@ -104,24 +104,24 @@ func (m Rate) MutateManageOffer(o interface{}) (err error) {
 	default:
 		err = errors.New("Unexpected operation type")
 	case *xdr.ManageOfferOp:
-		o.Selling, err = m.Selling.ToXdrObject()
+		o.Selling, err = m.Selling.ToXDR()
 		if err != nil {
 			return
 		}
 
-		o.Buying, err = m.Buying.ToXdrObject()
+		o.Buying, err = m.Buying.ToXDR()
 		if err != nil {
 			return
 		}
 
 		o.Price, err = price.Parse(string(m.Price))
 	case *xdr.CreatePassiveOfferOp:
-		o.Selling, err = m.Selling.ToXdrObject()
+		o.Selling, err = m.Selling.ToXDR()
 		if err != nil {
 			return
 		}
 
-		o.Buying, err = m.Buying.ToXdrObject()
+		o.Buying, err = m.Buying.ToXDR()
 		if err != nil {
 			return
 		}

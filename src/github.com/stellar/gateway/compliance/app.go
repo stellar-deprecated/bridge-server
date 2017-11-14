@@ -6,8 +6,8 @@ import (
 	"os"
 	"time"
 
-	log "github.com/Sirupsen/logrus"
 	"github.com/goji/httpauth"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/facebookgo/inject"
 	"github.com/stellar/gateway/compliance/config"

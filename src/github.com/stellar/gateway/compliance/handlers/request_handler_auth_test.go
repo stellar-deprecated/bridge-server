@@ -387,11 +387,32 @@ func TestRequestHandlerAuth(t *testing.T) {
 
 				statusCode, response := net.GetResponse(testServer, params)
 				responseString := strings.TrimSpace(string(response))
-				assert.Equal(t, 200, statusCode)
+				assert.Equal(t, 403, statusCode)
 				expected := test.StringToJSONMap(`{
 		  "info_status": "ok",
 		  "tx_status": "denied"
 		}`)
+				assert.Equal(t, expected, test.StringToJSONMap(responseString))
+			})
+
+			Convey("when sanctions server returns bad request it returns tx_status `error`", func() {
+				mockHTTPClient.On(
+					"PostForm",
+					"http://sanctions",
+					url.Values{"sender": {string(senderInfoJSON)}},
+				).Return(
+					net.BuildHTTPResponse(400, "{\"error\": \"Invalid name\"}"),
+					nil,
+				).Once()
+
+				statusCode, response := net.GetResponse(testServer, params)
+				responseString := strings.TrimSpace(string(response))
+				assert.Equal(t, 400, statusCode)
+				expected := test.StringToJSONMap(`{
+  "info_status": "ok",
+  "tx_status": "error",
+  "error": "Invalid name"
+}`)
 				assert.Equal(t, expected, test.StringToJSONMap(responseString))
 			})
 
@@ -407,7 +428,7 @@ func TestRequestHandlerAuth(t *testing.T) {
 
 				statusCode, response := net.GetResponse(testServer, params)
 				responseString := strings.TrimSpace(string(response))
-				assert.Equal(t, 200, statusCode)
+				assert.Equal(t, 202, statusCode)
 				expected := test.StringToJSONMap(`{
   "info_status": "ok",
   "tx_status": "pending",
@@ -516,10 +537,37 @@ func TestRequestHandlerAuth(t *testing.T) {
 
 				statusCode, response := net.GetResponse(testServer, params)
 				responseString := strings.TrimSpace(string(response))
-				assert.Equal(t, 200, statusCode)
+				assert.Equal(t, 403, statusCode)
 				expected := test.StringToJSONMap(`{
   "info_status": "denied",
   "tx_status": "ok"
+}`)
+				assert.Equal(t, expected, test.StringToJSONMap(responseString))
+			})
+
+			Convey("when ask_user server returns bad request it returns info_status `error`", func() {
+				mockHTTPClient.On(
+					"PostForm",
+					"http://ask_user",
+					url.Values{
+						"sender":       {string(senderInfoJSON)},
+						"note":         {attachment.Transaction.Note},
+						"amount":       {"20.0000000"},
+						"asset_code":   {"USD"},
+						"asset_issuer": {"GAMVF7G4GJC4A7JMFJWLUAEIBFQD5RT3DCB5DC5TJDEKQBBACQ4JZVEE"},
+					},
+				).Return(
+					net.BuildHTTPResponse(400, "{\"error\": \"Invalid name\"}"),
+					nil,
+				).Once()
+
+				statusCode, response := net.GetResponse(testServer, params)
+				responseString := strings.TrimSpace(string(response))
+				assert.Equal(t, 400, statusCode)
+				expected := test.StringToJSONMap(`{
+  "info_status": "error",
+  "tx_status": "ok",
+  "error": "Invalid name"
 }`)
 				assert.Equal(t, expected, test.StringToJSONMap(responseString))
 			})
@@ -542,7 +590,7 @@ func TestRequestHandlerAuth(t *testing.T) {
 
 				statusCode, response := net.GetResponse(testServer, params)
 				responseString := strings.TrimSpace(string(response))
-				assert.Equal(t, 200, statusCode)
+				assert.Equal(t, 202, statusCode)
 				expected := test.StringToJSONMap(`{
   "info_status": "pending",
   "tx_status": "ok",
@@ -569,7 +617,7 @@ func TestRequestHandlerAuth(t *testing.T) {
 
 				statusCode, response := net.GetResponse(testServer, params)
 				responseString := strings.TrimSpace(string(response))
-				assert.Equal(t, 200, statusCode)
+				assert.Equal(t, 202, statusCode)
 				expected := test.StringToJSONMap(`{
   "info_status": "pending",
   "tx_status": "ok",
@@ -761,7 +809,7 @@ func TestRequestHandlerAuth(t *testing.T) {
 
 					statusCode, response := net.GetResponse(testServer, params)
 					responseString := strings.TrimSpace(string(response))
-					assert.Equal(t, 200, statusCode)
+					assert.Equal(t, 403, statusCode)
 					expected := test.StringToJSONMap(`{
   "info_status": "denied",
   "tx_status": "ok"

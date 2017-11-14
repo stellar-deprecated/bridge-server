@@ -29,10 +29,16 @@ type Driver interface {
 }
 
 // ErrorResponse represents the JSON response sent to a client when the request
-// triggered an error.
+// triggered an error. FederationDriver methods can return this as an error and
+// it will be passed to end user.
 type ErrorResponse struct {
-	Code    string `json:"code"`
-	Message string `json:"message"`
+	StatusCode int    `json:"-"`
+	Code       string `json:"code"`
+	Message    string `json:"message"`
+}
+
+func (response ErrorResponse) Error() string {
+	return response.Message
 }
 
 // Handler represents an http handler that can service http requests that

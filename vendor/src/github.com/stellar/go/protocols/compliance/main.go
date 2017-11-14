@@ -10,6 +10,8 @@ const (
 	AuthStatusPending AuthStatus = "pending"
 	// AuthStatusDenied is returned when authentication was denied
 	AuthStatusDenied AuthStatus = "denied"
+	// AuthStatusError is returned when there was an error
+	AuthStatusError AuthStatus = "error"
 )
 
 // AuthRequest represents auth request sent to compliance server
@@ -34,14 +36,16 @@ type AuthData struct {
 
 // AuthResponse represents response sent by auth server
 type AuthResponse struct {
-	// If this FI is willing to share AML information or not. {ok, denied, pending}
+	// If this FI is willing to share AML information or not. {ok, denied, pending, error}
 	InfoStatus AuthStatus `json:"info_status"`
-	// If this FI is willing to accept this transaction. {ok, denied, pending}
+	// If this FI is willing to accept this transaction. {ok, denied, pending, error}
 	TxStatus AuthStatus `json:"tx_status"`
 	// (only present if info_status is ok) JSON of the recipient's AML information. in the Stellar attachment convention
 	DestInfo string `json:"dest_info,omitempty"`
 	// (only present if info_status or tx_status is pending) Estimated number of seconds till the sender can check back for a change in status. The sender should just resubmit this request after the given number of seconds.
 	Pending int `json:"pending,omitempty"`
+	// (only present if info_status or tx_status is error)
+	Error string `json:"error,omitempty"`
 }
 
 // Attachment represents preimage object of compliance protocol in

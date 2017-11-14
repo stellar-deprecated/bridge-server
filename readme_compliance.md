@@ -177,11 +177,14 @@ The customer information that is exchanged between FIs is flexible but the typic
 Respond with one of the following status codes:
 * `200 OK` when sender/receiver is allowed and the payment should be processed,
 * `202 Accepted` when your callback needs some time for processing,
+* `400 Bad Request` when sender info is invalid.
 * `403 Forbidden` when sender/receiver is denied.
 
 Any other status code will be considered an error.
 
-When `202 Accepted` is returned the response body should contain JSON object with a `pending` field which represents the estimated number of seconds needed for processing. For example, the following response means to try the payment again in an hour.
+When `202 Accepted` is returned the response body should contain JSON object with `pending` field which represents the estimated number of seconds needed for processing. For example, the following response means to try the payment again in an hour.
+
+When `400 Bad Request` is returned the response body should contain JSON object with `error` field with error string.
 
 ```json
 {"pending": 3600}
@@ -212,11 +215,14 @@ The customer information (`sender`) that is exchanged between FIs is flexible bu
 Respond with one of the following status codes:
 * `200 OK` when your customer has allowed sharing his/her compliance information with the requesting FI.
 * `202 Accepted` when your callback needs some time for processing, ie to ask the customer.
+* `400 Bad Request` when request data is invalid.
 * `403 Forbidden` when your customer has denied sharing his/her compliance information with the requesting FI.
 
 Any other status code will be considered an error.
 
-When `202 Accepted` is returned the response body should contain JSON object with `pending` field which represents estimated number of seconds needed for processing. For example, the following response means to try the payment again in an hour:
+When `202 Accepted` is returned the response body should contain JSON object with `pending` field which represents estimated number of seconds needed for processing. For example, the following response means to try the payment again in an hour.
+
+When `400 Bad Request` is returned the response body should contain JSON object with `error` field with error string.
 
 ```json
 {"pending": 3600}
@@ -244,7 +250,7 @@ This callback should return `200 OK` status code and JSON object with the custom
 }
 ```
 ### `callbacks.tx_status`
-This callback should return the status of a transaction as explained in [`SEP-0001`](https://github.com/stellar/stellar-protocol/blob/master/ecosystem/sep-0001.md).
+This callback should return the status of a transaction as explained in [`SEP-0004`](https://github.com/stellar/stellar-protocol/blob/master/ecosystem/sep-0004.md).
 
 #### Request
 

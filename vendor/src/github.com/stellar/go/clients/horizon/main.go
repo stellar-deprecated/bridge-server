@@ -46,10 +46,6 @@ const (
 )
 
 var (
-	// ErrTransactionNotFailed is the error returned from a call to ResultCodes()
-	// against a `Problem` value that is not of type "transaction_failed".
-	ErrTransactionNotFailed = errors.New("cannot get result codes from transaction that did not fail")
-
 	// ErrResultCodesNotPopulated is the error returned from a call to
 	// ResultCodes() against a `Problem` value that doesn't have the
 	// "result_codes" extra field populated when it is expected to be.
@@ -74,7 +70,7 @@ type ClientInterface interface {
 	LoadAccount(accountID string) (Account, error)
 	LoadAccountOffers(accountID string, params ...interface{}) (offers OffersPage, err error)
 	LoadMemo(p *Payment) error
-	LoadOrderBook(selling Asset, buying Asset) (orderBook OrderBookSummary, err error)
+	LoadOrderBook(selling Asset, buying Asset, params ...interface{}) (orderBook OrderBookSummary, err error)
 	StreamLedgers(ctx context.Context, cursor *Cursor, handler LedgerHandler) error
 	StreamPayments(ctx context.Context, accountID string, cursor *Cursor, handler PaymentHandler) error
 	StreamTransactions(ctx context.Context, accountID string, cursor *Cursor, handler TransactionHandler) error

@@ -90,9 +90,9 @@ func ExampleSetOptions() {
 	// Output: tx base64: AAAAADZY/nWY0gx6beMpf4S8Ur0qHsjA8fbFtBzBx1cbQzHwAAAAZAAAAAAAAAABAAAAAAAAAAAAAAABAAAAAAAAAAUAAAABAAAAAKf5dCD2RflX5jEYTCZ2cHEwuB+QuJJh/0AIM3zwaiyoAAAAAQAAAAcAAAABAAAABwAAAAEAAAABAAAAAQAAAAIAAAABAAAAAwAAAAEAAAAEAAAAAQAAAAtzdGVsbGFyLm9yZwAAAAABAAAAALwxmfetrj7X13WT+tJjwj9VPrqIE2DUJ48+59etBKjTAAAABQAAAAAAAAABG0Mx8AAAAECZF17pOfZcyc7YJXMyx++PMydIvL6g2yZcPDY8h4+tmlz+3rsE6uuX0R6xfgNnuMntvK4YMmaOvp4DvaZMMNoA
 }
 
-// ExampleSetOptionsOperations creates and signs a simple transaction with many SetOptions operations, and then
+// ExampleSetOptions_manyOperations creates and signs a simple transaction with many SetOptions operations, and then
 // encodes it into a base64 string capable of being submitted to stellar-core.
-func ExampleSetOptionsOperations() {
+func ExampleSetOptions_manyOperations() {
 	seed := "SDOTALIMPAM2IV65IOZA7KZL7XWZI5BODFXTRVLIHLQZQCKK57PH5F3H"
 	tx := Transaction(
 		SourceAccount{seed},
@@ -136,9 +136,9 @@ func ExampleChangeTrust() {
 	// Output: tx base64: AAAAADZY/nWY0gx6beMpf4S8Ur0qHsjA8fbFtBzBx1cbQzHwAAAAZAAAAAAAAAABAAAAAAAAAAAAAAABAAAAAAAAAAYAAAABVVNEAAAAAAAtJGku0Iu/Z5uhmUSIcNIZHodv7Nkv3Z9tJ02k5t4TQQAAAAA7wO+gAAAAAAAAAAEbQzHwAAAAQOIy19X38Y3jcFzvhDsmXu6iDzrzb4iwfS2NAq9GGAFiRJUGoFX85vKtlNcXzQppF4X8oIMNPEb74fuZE/N+GAE=
 }
 
-// ExampleChangeTrustMaxLimit creates and signs a simple transaction with ChangeTrust operation (maximum limit), and then
+// ExampleChangeTrust_maxLimit creates and signs a simple transaction with ChangeTrust operation (maximum limit), and then
 // encodes it into a base64 string capable of being submitted to stellar-core.
-func ExampleChangeTrustMaxLimit() {
+func ExampleChangeTrust_maxLimit() {
 	seed := "SDOTALIMPAM2IV65IOZA7KZL7XWZI5BODFXTRVLIHLQZQCKK57PH5F3H"
 	tx := Transaction(
 		SourceAccount{seed},

@@ -3,7 +3,7 @@ package handlers
 import (
 	"net/http"
 
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	"github.com/stellar/gateway/protocols"
 	"github.com/stellar/gateway/protocols/bridge"
 	"github.com/stellar/gateway/server"

@@ -52,7 +52,7 @@ func (m Asset) MutateChangeTrust(o *xdr.ChangeTrustOp) (err error) {
 		return errors.New("Native asset not allowed")
 	}
 
-	o.Line, err = m.ToXdrObject()
+	o.Line, err = m.ToXDR()
 	return
 }
 

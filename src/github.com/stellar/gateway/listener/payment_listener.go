@@ -13,7 +13,7 @@ import (
 
 	"encoding/base64"
 
-	"github.com/Sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 	"github.com/stellar/gateway/bridge/config"
 	"github.com/stellar/gateway/db"
 	"github.com/stellar/gateway/db/entities"
