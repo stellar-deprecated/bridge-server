@@ -62,7 +62,7 @@ func (rh *RequestHandler) Builder(w http.ResponseWriter, r *http.Request) {
 
 	mutators := []b.TransactionMutator{
 		b.SourceAccount{request.Source},
-		b.Sequence{sequenceNumber},
+		b.Sequence{sequenceNumber + 1},
 		b.Network{rh.Config.NetworkPassphrase},
 	}
 
