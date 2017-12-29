@@ -2,9 +2,10 @@ package handlers
 
 import (
 	"encoding/json"
-	log "github.com/sirupsen/logrus"
 	"net/http"
 	"strconv"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/stellar/gateway/protocols"
 	"github.com/stellar/gateway/protocols/bridge"
@@ -49,6 +50,10 @@ func (rh *RequestHandler) Builder(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		sequenceNumber, err = strconv.ParseUint(accountResponse.SequenceNumber, 10, 64)
+		if err == nil {
+			// increment sequence number when none is provided
+			sequenceNumber = sequenceNumber + 1
+		}
 	} else {
 		sequenceNumber, err = strconv.ParseUint(request.SequenceNumber, 10, 64)
 	}

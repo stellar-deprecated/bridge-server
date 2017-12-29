@@ -69,7 +69,7 @@ func TestRequestHandlerBuilder(t *testing.T) {
 				responseString := strings.TrimSpace(string(response))
 				assert.Equal(t, 200, statusCode)
 				expected := test.StringToJSONMap(`{
-		"transaction_envelope": "AAAAAGySS3ZylffFaVZqZD6lNCUjCizHz7MLPwkN7Mxh4XN5AAAAZAAAAAAAAAB7AAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAnEM7m3lksnFftHMGxdt6HTitUQSfvVvjk8JfduWfK+cAAAAAHc1lAAAAAAAAAAABn420/AAAAECXY+neSolhAeHUXf+UrOV6PjeJnvLM/HqjOlOEWD3hmu/z9aBksDu9zqa26jS14eMpZzq8sofnnvt248FUO+cP"
+		"transaction_envelope": "AAAAAGySS3ZylffFaVZqZD6lNCUjCizHz7MLPwkN7Mxh4XN5AAAAZAAAAAAAAAB8AAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAnEM7m3lksnFftHMGxdt6HTitUQSfvVvjk8JfduWfK+cAAAAAHc1lAAAAAAAAAAABn420/AAAAECZTxo7tUr19fExL97C9wjIjRj0A7NK6gUVt7LwUrKqGsVxM6Un1L907brqp6hEjrqWlfvZchwgFv6syME3rXQE"
 		}`)
 				assert.Equal(t, expected, test.StringToJSONMap(responseString))
 			})
