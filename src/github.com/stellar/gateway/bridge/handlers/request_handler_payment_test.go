@@ -16,6 +16,7 @@ import (
 	"github.com/stellar/gateway/net"
 	callback "github.com/stellar/gateway/protocols/compliance"
 	"github.com/stellar/gateway/test"
+	"github.com/stellar/go/build"
 	"github.com/stellar/go/protocols/federation"
 	"github.com/stellar/go/xdr"
 	"github.com/stretchr/testify/assert"
@@ -110,17 +111,6 @@ func TestRequestHandlerPayment(t *testing.T) {
 				"amount":      {"20.0"},
 			}
 
-			// Loading sequence number
-			mockHorizon.On(
-				"LoadAccount",
-				"GBKGH7QZVCZ2ZA5OUGZSTHFNXTBHL3MPCKSCBJUAQODGPMWP7OMMRKDW",
-			).Return(
-				horizon.AccountResponse{
-					SequenceNumber: "100",
-				},
-				nil,
-			).Once()
-
 			// Checking if destination account exists
 			mockHorizon.On(
 				"LoadAccount",
@@ -135,10 +125,19 @@ func TestRequestHandlerPayment(t *testing.T) {
 				Extras: nil,
 			}
 
-			mockHorizon.On(
+			mockTransactionSubmitter.On(
 				"SubmitTransaction",
-				"AAAAAFRj/hmos6yDrqGzKZytvMJ17Y8SpCCmgIOGZ7LP+5jIAAAAZAAAAAAAAABlAAAAAAAAAAAAAAABAAAAAAAAAAEAAAAAHinv2ogmGid/i3THKgjKzySx29sYKUaXnM6DVHizim4AAAAAAAAAAAvrwgAAAAAAAAAAAc/7mMgAAABAh6unGAOSOD3+9vbZXHwhDq4xdp/hl4MqZu0VVdLwldKPVy9MpXstDDxnNBBBzU48Hto+jH3qL73bbu+7zVXvCQ==",
-			).Return(horizonResponse, nil).Once()
+				mock.AnythingOfType("*string"),
+				"SDRAS7XIQNX25UDCCX725R4EYGBFYGJE4HJ2A3DFCWJIHMRSMS7CXX42",
+				mock.AnythingOfType("build.PaymentBuilder"),
+				nil,
+			).Run(func(args mock.Arguments) {
+				operation, ok := args.Get(2).(build.PaymentBuilder)
+				assert.True(t, ok, "Invalid conversion")
+				assert.Equal(t, "GAPCT362RATBUJ37RN2MOKQIZLHSJMO33MMCSRUXTTHIGVDYWOFG5HDS", operation.P.Destination.Address())
+				assert.Equal(t, int64(200000000), int64(operation.P.Amount))
+				assert.Equal(t, xdr.AssetTypeAssetTypeNative, operation.P.Asset.Type)
+			}).Return(horizonResponse, nil).Once()
 
 			Convey("it should return success", func() {
 				statusCode, response := net.GetResponse(testServer, validParams)
@@ -203,17 +202,6 @@ func TestRequestHandlerPayment(t *testing.T) {
 					"GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632",
 				).Return(horizon.AccountResponse{}, nil).Once()
 
-				// Loading sequence number
-				mockHorizon.On(
-					"LoadAccount",
-					"GCF3WVYTHF75PEG6622G5G6KU26GOSDQPDHSCJ3DQD7VONH4EYVDOGKJ",
-				).Return(
-					horizon.AccountResponse{
-						SequenceNumber: "100",
-					},
-					nil,
-				).Once()
-
 				var ledger uint64
 				ledger = 1988728
 				horizonResponse := horizon.SubmitTransactionResponse{
@@ -222,10 +210,19 @@ func TestRequestHandlerPayment(t *testing.T) {
 					Extras: nil,
 				}
 
-				mockHorizon.On(
+				mockTransactionSubmitter.On(
 					"SubmitTransaction",
-					"AAAAAIu7VxM5f9eQ3va0bpvKprxnSHB4zyEnY4D/VzT8Jio3AAAAZAAAAAAAAABlAAAAAAAAAAAAAAABAAAAAAAAAAEAAAAA5IVbm6A8mbgc/apAizxmBf4zZmqbedR3Ke+MTa7pjVYAAAAAAAAAAAvrwgAAAAAAAAAAAfwmKjcAAABAh3M6y9LXiWD0GB1KCkgNS5H1Lnyr1wS1BsfzoM1/v0muzobwNkJinV+RcWyC8VfeKqOjKBOANJnEusl+sHkcAg==",
-				).Return(horizonResponse, nil).Once()
+					mock.AnythingOfType("*string"),
+					"SDWLS4G3XCNIYPKXJWWGGJT6UDY63WV6PEFTWP7JZMQB4RE7EUJQN5XM",
+					mock.AnythingOfType("build.PaymentBuilder"),
+					nil,
+				).Run(func(args mock.Arguments) {
+					operation, ok := args.Get(2).(build.PaymentBuilder)
+					assert.True(t, ok, "Invalid conversion")
+					assert.Equal(t, "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632", operation.P.Destination.Address())
+					assert.Equal(t, int64(200000000), int64(operation.P.Amount))
+					assert.Equal(t, xdr.AssetTypeAssetTypeNative, operation.P.Asset.Type)
+				}).Return(horizonResponse, nil).Once()
 
 				Convey("it should return success", func() {
 					statusCode, response := net.GetResponse(testServer, validParams)
@@ -266,17 +263,6 @@ func TestRequestHandlerPayment(t *testing.T) {
 					"GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632",
 				).Return(horizon.AccountResponse{}, nil).Once()
 
-				// Loading sequence number
-				mockHorizon.On(
-					"LoadAccount",
-					"GCF3WVYTHF75PEG6622G5G6KU26GOSDQPDHSCJ3DQD7VONH4EYVDOGKJ",
-				).Return(
-					horizon.AccountResponse{
-						SequenceNumber: "100",
-					},
-					nil,
-				).Once()
-
 				var ledger uint64
 				ledger = 1988728
 				horizonResponse := horizon.SubmitTransactionResponse{
@@ -285,10 +271,23 @@ func TestRequestHandlerPayment(t *testing.T) {
 					Extras: nil,
 				}
 
-				mockHorizon.On(
+				mockTransactionSubmitter.On(
 					"SubmitTransaction",
-					"AAAAAIu7VxM5f9eQ3va0bpvKprxnSHB4zyEnY4D/VzT8Jio3AAAAZAAAAAAAAABlAAAAAAAAAAEAAAADMTI1AAAAAAEAAAAAAAAAAQAAAADkhVuboDyZuBz9qkCLPGYF/jNmapt51Hcp74xNrumNVgAAAAAAAAAAC+vCAAAAAAAAAAAB/CYqNwAAAEAjnc8Wf31VxgBXXhEmZfLo6c4YJtROVy5MTLsWFSx7TCkoQzCskBVcC30DrjQq7Vzm0zwg+mBmSGI5wFbctKgB",
-				).Return(horizonResponse, nil).Once()
+					mock.AnythingOfType("*string"),
+					"SDWLS4G3XCNIYPKXJWWGGJT6UDY63WV6PEFTWP7JZMQB4RE7EUJQN5XM",
+					mock.AnythingOfType("build.PaymentBuilder"),
+					mock.AnythingOfType("build.MemoText"),
+				).Run(func(args mock.Arguments) {
+					operation, ok := args.Get(2).(build.PaymentBuilder)
+					assert.True(t, ok, "Invalid conversion")
+					assert.Equal(t, "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632", operation.P.Destination.Address())
+					assert.Equal(t, int64(200000000), int64(operation.P.Amount))
+					assert.Equal(t, xdr.AssetTypeAssetTypeNative, operation.P.Asset.Type)
+
+					memo, ok := args.Get(3).(build.MemoText)
+					assert.True(t, ok, "Invalid conversion")
+					assert.Equal(t, "125", memo.Value)
+				}).Return(horizonResponse, nil).Once()
 
 				Convey("it should return success", func() {
 					statusCode, response := net.GetResponse(testServer, validParams)
@@ -329,7 +328,7 @@ func TestRequestHandlerPayment(t *testing.T) {
   "code": "invalid_parameter",
   "message": "Invalid parameter.",
   "data": {
-    "name": "asset_issuer"
+    "name": "asset"
   }
 }`)
 				assert.Equal(t, expected, test.StringToJSONMap(responseString, "more_info"))
@@ -379,7 +378,7 @@ func TestRequestHandlerPayment(t *testing.T) {
   "code": "invalid_parameter",
   "message": "Invalid parameter.",
   "data": {
-    "name": "asset_code"
+    "name": "asset"
   }
 }`)
 				assert.Equal(t, expected, test.StringToJSONMap(responseString, "more_info"))
@@ -453,17 +452,6 @@ func TestRequestHandlerPayment(t *testing.T) {
 				nil,
 			).Once()
 
-			// Loading sequence number
-			mockHorizon.On(
-				"LoadAccount",
-				"GAHA6GRCLCCN7XE2NEEUDSIVOFBOQ6GLSYXVLYCJXJKLPMDR5XB5XZZJ",
-			).Return(
-				horizon.AccountResponse{
-					SequenceNumber: "100",
-				},
-				nil,
-			).Once()
-
 			var ledger uint64
 			ledger = 1988728
 			horizonResponse := horizon.SubmitTransactionResponse{
@@ -472,10 +460,20 @@ func TestRequestHandlerPayment(t *testing.T) {
 				Extras: nil,
 			}
 
-			mockHorizon.On(
+			mockTransactionSubmitter.On(
 				"SubmitTransaction",
-				"AAAAAA4PGiJYhN/cmmkJQckVcULoeMuWL1XgSbpUt7Bx7cPbAAAAZAAAAAAAAABlAAAAAAAAAAAAAAABAAAAAAAAAAEAAAAA5IVbm6A8mbgc/apAizxmBf4zZmqbedR3Ke+MTa7pjVYAAAABVVNEAAAAAADkhVuboDyZuBz9qkCLPGYF/jNmapt51Hcp74xNrumNVgAAAAAL68IAAAAAAAAAAAFx7cPbAAAAQM79l7Zvi+elYIZ09aELJbBDYVeAwx9lqpNYXpvZ+3MHe5fftO0EQN1IlzQUPgXKNfpo/eJWWHuCEdOyWSSTOwE=",
-			).Return(horizonResponse, nil).Once()
+				mock.AnythingOfType("*string"),
+				"SBKKWO3ZVDDEHDJILGHPHCJCFD2GNUAYIUDMRAS326HLUEQ7ZFXWIGQK",
+				mock.AnythingOfType("build.PaymentBuilder"),
+				nil,
+			).Run(func(args mock.Arguments) {
+				operation, ok := args.Get(2).(build.PaymentBuilder)
+				assert.True(t, ok, "Invalid conversion")
+				assert.Equal(t, "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632", operation.P.Destination.Address())
+				assert.Equal(t, int64(200000000), int64(operation.P.Amount))
+				assert.Equal(t, xdr.AssetTypeAssetTypeCreditAlphanum4, operation.P.Asset.Type)
+				// assert.Equal(t, "USD", operation.P.Asset.Code)
+			}).Return(horizonResponse, nil).Once()
 
 			Convey("it should return success", func() {
 				statusCode, response := net.GetResponse(testServer, validParams)
@@ -572,16 +570,6 @@ func TestRequestHandlerPayment(t *testing.T) {
 				})
 
 				Convey("memo is attached to the transaction", func() {
-					mockHorizon.On(
-						"LoadAccount",
-						"GCF3WVYTHF75PEG6622G5G6KU26GOSDQPDHSCJ3DQD7VONH4EYVDOGKJ",
-					).Return(
-						horizon.AccountResponse{
-							SequenceNumber: "100",
-						},
-						nil,
-					).Once()
-
 					var ledger uint64
 					ledger = 1988727
 					horizonResponse := horizon.SubmitTransactionResponse{
@@ -590,10 +578,24 @@ func TestRequestHandlerPayment(t *testing.T) {
 						Extras: nil,
 					}
 
-					mockHorizon.On(
+					mockTransactionSubmitter.On(
 						"SubmitTransaction",
-						"AAAAAIu7VxM5f9eQ3va0bpvKprxnSHB4zyEnY4D/VzT8Jio3AAAAZAAAAAAAAABlAAAAAAAAAAIAAAAAAAAAewAAAAEAAAAAAAAAAQAAAADkhVuboDyZuBz9qkCLPGYF/jNmapt51Hcp74xNrumNVgAAAAFVU0QAAAAAAOSFW5ugPJm4HP2qQIs8ZgX+M2Zqm3nUdynvjE2u6Y1WAAAAAAvrwgAAAAAAAAAAAfwmKjcAAABADsRVwB27jfr3OthAWlRMSrxAIDPENw1dOfga5/cahnIneJQ5NPS5g96Rp8Y5xTsOU3Y9JmBDKB8g8lXFCXdwCA==",
-					).Return(horizonResponse, nil).Once()
+						mock.AnythingOfType("*string"),
+						"SDWLS4G3XCNIYPKXJWWGGJT6UDY63WV6PEFTWP7JZMQB4RE7EUJQN5XM",
+						mock.AnythingOfType("build.PaymentBuilder"),
+						mock.AnythingOfType("build.MemoID"),
+					).Run(func(args mock.Arguments) {
+						operation, ok := args.Get(2).(build.PaymentBuilder)
+						assert.True(t, ok, "Invalid conversion")
+						assert.Equal(t, "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632", operation.P.Destination.Address())
+						assert.Equal(t, int64(200000000), int64(operation.P.Amount))
+						assert.Equal(t, xdr.AssetTypeAssetTypeCreditAlphanum4, operation.P.Asset.Type)
+						// assert.Equal(t, "USD", operation.P.Asset.Code)
+
+						memo, ok := args.Get(3).(build.MemoID)
+						assert.True(t, ok, "Invalid conversion")
+						assert.Equal(t, uint64(123), memo.Value)
+					}).Return(horizonResponse, nil).Once()
 
 					validParams.Add("memo_type", "id")
 					validParams.Add("memo", "123")
@@ -627,13 +629,27 @@ func TestRequestHandlerPayment(t *testing.T) {
 						Extras: nil,
 					}
 
-					mockHorizon.On(
+					mockTransactionSubmitter.On(
 						"SubmitTransaction",
-						"AAAAAIu7VxM5f9eQ3va0bpvKprxnSHB4zyEnY4D/VzT8Jio3AAAAZAAAAAAAAABlAAAAAAAAAAMCADrUIHRM3rjlJN62XzjLUJXTDQAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAQAAAADkhVuboDyZuBz9qkCLPGYF/jNmapt51Hcp74xNrumNVgAAAAFVU0QAAAAAAOSFW5ugPJm4HP2qQIs8ZgX+M2Zqm3nUdynvjE2u6Y1WAAAAAAvrwgAAAAAAAAAAAfwmKjcAAABAEV6Lzok4i4C1jJA3PVVARGx2+yfVw8odprnnnG0hqkUUwKnvVQcd59UJwbfzTG7oxR5DvxflV4aQ6RmZsIcmDQ==",
-					).Return(horizonResponse, nil).Once()
+						mock.AnythingOfType("*string"),
+						"SDWLS4G3XCNIYPKXJWWGGJT6UDY63WV6PEFTWP7JZMQB4RE7EUJQN5XM",
+						mock.AnythingOfType("build.PaymentBuilder"),
+						mock.AnythingOfType("build.MemoHash"),
+					).Run(func(args mock.Arguments) {
+						operation, ok := args.Get(2).(build.PaymentBuilder)
+						assert.True(t, ok, "Invalid conversion")
+						assert.Equal(t, "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632", operation.P.Destination.Address())
+						assert.Equal(t, int64(200000000), int64(operation.P.Amount))
+						assert.Equal(t, xdr.AssetTypeAssetTypeCreditAlphanum4, operation.P.Asset.Type)
+						// assert.Equal(t, "USD", operation.P.Asset.Code)
+
+						memo, ok := args.Get(3).(build.MemoHash)
+						assert.True(t, ok, "Invalid conversion")
+						assert.Equal(t, "02003ad420744cdeb8e524deb65f38cb5095d30d000000000000000000000000", hex.EncodeToString([]byte(memo.Value[:])))
+					}).Return(horizonResponse, nil).Once()
 
 					validParams.Add("memo_type", "hash")
-					validParams.Add("memo", "02003AD420744CDEB8E524DEB65F38CB5095D30D000000000000000000000000")
+					validParams.Add("memo", "02003ad420744cdeb8e524deb65f38cb5095d30d000000000000000000000000")
 					statusCode, response := net.GetResponse(testServer, validParams)
 					responseString := strings.TrimSpace(string(response))
 
@@ -646,35 +662,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 				})
 			})
 
-			Convey("source account does not exist", func() {
-				mockHorizon.On(
-					"LoadAccount",
-					"GCF3WVYTHF75PEG6622G5G6KU26GOSDQPDHSCJ3DQD7VONH4EYVDOGKJ",
-				).Return(horizon.AccountResponse{}, errors.New("Not found")).Once()
-
-				Convey("it should return error", func() {
-					statusCode, response := net.GetResponse(testServer, validParams)
-					responseString := strings.TrimSpace(string(response))
-					assert.Equal(t, 400, statusCode)
-					expected := test.StringToJSONMap(`{
-  "code": "source_not_exist",
-  "message": "Source account does not exist."
-}`)
-					assert.Equal(t, expected, test.StringToJSONMap(responseString))
-				})
-			})
-
 			Convey("transaction failed in horizon", func() {
-				mockHorizon.On(
-					"LoadAccount",
-					"GCF3WVYTHF75PEG6622G5G6KU26GOSDQPDHSCJ3DQD7VONH4EYVDOGKJ",
-				).Return(
-					horizon.AccountResponse{
-						SequenceNumber: "100",
-					},
-					nil,
-				).Once()
-
 				horizonResponse := horizon.SubmitTransactionResponse{
 					Ledger: nil,
 					Extras: &horizon.SubmitTransactionResponseExtras{
@@ -683,9 +671,12 @@ func TestRequestHandlerPayment(t *testing.T) {
 					},
 				}
 
-				mockHorizon.On(
+				mockTransactionSubmitter.On(
 					"SubmitTransaction",
+					mock.AnythingOfType("*string"),
 					mock.AnythingOfType("string"),
+					mock.AnythingOfType("build.PaymentBuilder"),
+					nil,
 				).Return(horizonResponse, nil).Once()
 
 				Convey("it should return error", func() {
@@ -715,17 +706,6 @@ func TestRequestHandlerPayment(t *testing.T) {
 					"GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632",
 				).Return(horizon.AccountResponse{}, nil).Once()
 
-				// Loading sequence number
-				mockHorizon.On(
-					"LoadAccount",
-					"GCF3WVYTHF75PEG6622G5G6KU26GOSDQPDHSCJ3DQD7VONH4EYVDOGKJ",
-				).Return(
-					horizon.AccountResponse{
-						SequenceNumber: "100",
-					},
-					nil,
-				).Once()
-
 				var ledger uint64
 				ledger = 1988727
 				horizonResponse := horizon.SubmitTransactionResponse{
@@ -734,10 +714,19 @@ func TestRequestHandlerPayment(t *testing.T) {
 					Extras: nil,
 				}
 
-				mockHorizon.On(
+				mockTransactionSubmitter.On(
 					"SubmitTransaction",
-					"AAAAAIu7VxM5f9eQ3va0bpvKprxnSHB4zyEnY4D/VzT8Jio3AAAAZAAAAAAAAABlAAAAAAAAAAAAAAABAAAAAAAAAAEAAAAA5IVbm6A8mbgc/apAizxmBf4zZmqbedR3Ke+MTa7pjVYAAAAAAAAAAAvrwgAAAAAAAAAAAfwmKjcAAABAh3M6y9LXiWD0GB1KCkgNS5H1Lnyr1wS1BsfzoM1/v0muzobwNkJinV+RcWyC8VfeKqOjKBOANJnEusl+sHkcAg==",
-				).Return(horizonResponse, nil).Once()
+					mock.AnythingOfType("*string"),
+					"SDWLS4G3XCNIYPKXJWWGGJT6UDY63WV6PEFTWP7JZMQB4RE7EUJQN5XM",
+					mock.AnythingOfType("build.PaymentBuilder"),
+					nil,
+				).Run(func(args mock.Arguments) {
+					operation, ok := args.Get(2).(build.PaymentBuilder)
+					assert.True(t, ok, "Invalid conversion")
+					assert.Equal(t, "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632", operation.P.Destination.Address())
+					assert.Equal(t, int64(200000000), int64(operation.P.Amount))
+					assert.Equal(t, xdr.AssetTypeAssetTypeNative, operation.P.Asset.Type)
+				}).Return(horizonResponse, nil).Once()
 
 				Convey("it should return success", func() {
 					statusCode, response := net.GetResponse(testServer, validParams)
@@ -746,43 +735,6 @@ func TestRequestHandlerPayment(t *testing.T) {
 					assert.Equal(t, 200, statusCode)
 					expected := test.StringToJSONMap(`{
 					  "hash": "6a0049b44e0d0341bd52f131c74383e6ccd2b74b92c829c990994d24bbfcfa7a",
-					  "ledger": 1988727
-					}`)
-					assert.Equal(t, expected, test.StringToJSONMap(responseString))
-				})
-			})
-
-			Convey("transaction success (credit)", func() {
-				mockHorizon.On(
-					"LoadAccount",
-					"GCF3WVYTHF75PEG6622G5G6KU26GOSDQPDHSCJ3DQD7VONH4EYVDOGKJ",
-				).Return(
-					horizon.AccountResponse{
-						SequenceNumber: "100",
-					},
-					nil,
-				).Once()
-
-				var ledger uint64
-				ledger = 1988727
-				horizonResponse := horizon.SubmitTransactionResponse{
-					Hash:   "4c8ddbc990381d5f7fe5142be0ac70fb282e7c54347734cdd7f19716fa18930b",
-					Ledger: &ledger,
-					Extras: nil,
-				}
-
-				mockHorizon.On(
-					"SubmitTransaction",
-					"AAAAAIu7VxM5f9eQ3va0bpvKprxnSHB4zyEnY4D/VzT8Jio3AAAAZAAAAAAAAABlAAAAAAAAAAAAAAABAAAAAAAAAAEAAAAA5IVbm6A8mbgc/apAizxmBf4zZmqbedR3Ke+MTa7pjVYAAAABVVNEAAAAAADkhVuboDyZuBz9qkCLPGYF/jNmapt51Hcp74xNrumNVgAAAAAL68IAAAAAAAAAAAH8Jio3AAAAQHbXpCBe/lDG5rWhwNpdH+DnrkYKONvMyPJDFik5mC/gcIL9xHx3FfB+u1Ik7N9gJxi8AlRRqXo+/yCyOoQQ3Ac=",
-				).Return(horizonResponse, nil).Once()
-
-				Convey("it should return success", func() {
-					statusCode, response := net.GetResponse(testServer, validParams)
-					responseString := strings.TrimSpace(string(response))
-
-					assert.Equal(t, 200, statusCode)
-					expected := test.StringToJSONMap(`{
-					  "hash": "4c8ddbc990381d5f7fe5142be0ac70fb282e7c54347734cdd7f19716fa18930b",
 					  "ledger": 1988727
 					}`)
 					assert.Equal(t, expected, test.StringToJSONMap(responseString))
@@ -801,33 +753,12 @@ func TestRequestHandlerPayment(t *testing.T) {
 				"send_max":     {"100"},
 			}
 
-			// Source
-			mockHorizon.On(
-				"LoadAccount",
-				"GCF3WVYTHF75PEG6622G5G6KU26GOSDQPDHSCJ3DQD7VONH4EYVDOGKJ",
-			).Return(
-				horizon.AccountResponse{
-					SequenceNumber: "100",
-				},
-				nil,
-			).Once()
-
 			// Destination
 			mockFederationResolver.On(
 				"LookupByAddress",
 				"GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632",
 			).Return(
 				&federation.NameResponse{AccountID: "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632"},
-				nil,
-			).Once()
-
-			mockHorizon.On(
-				"LoadAccount",
-				"GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632",
-			).Return(
-				horizon.AccountResponse{
-					SequenceNumber: "100",
-				},
 				nil,
 			).Once()
 
@@ -840,10 +771,21 @@ func TestRequestHandlerPayment(t *testing.T) {
 					Extras: nil,
 				}
 
-				mockHorizon.On(
+				mockTransactionSubmitter.On(
 					"SubmitTransaction",
-					"AAAAAIu7VxM5f9eQ3va0bpvKprxnSHB4zyEnY4D/VzT8Jio3AAAAZAAAAAAAAABlAAAAAAAAAAAAAAABAAAAAAAAAAIAAAAAAAAAADuaygAAAAAA5IVbm6A8mbgc/apAizxmBf4zZmqbedR3Ke+MTa7pjVYAAAABVVNEAAAAAADkhVuboDyZuBz9qkCLPGYF/jNmapt51Hcp74xNrumNVgAAAAAL68IAAAAAAAAAAAAAAAAB/CYqNwAAAECx9I76SOIjCL3pgwZdmFj9KWFzvNL82dt3+Laokh6Zm2v0o1UNq1mQsrqrv0mXM6uNcA96NbkfbogtXauHmwML",
-				).Return(horizonResponse, nil).Once()
+					mock.AnythingOfType("*string"),
+					"SDWLS4G3XCNIYPKXJWWGGJT6UDY63WV6PEFTWP7JZMQB4RE7EUJQN5XM",
+					mock.AnythingOfType("build.PaymentBuilder"),
+					nil,
+				).Run(func(args mock.Arguments) {
+					operation, ok := args.Get(2).(build.PaymentBuilder)
+					assert.True(t, ok, "Invalid conversion")
+					assert.Equal(t, "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632", operation.PP.Destination.Address())
+					assert.Equal(t, int64(1000000000), int64(operation.PP.SendMax))
+					assert.Equal(t, int64(200000000), int64(operation.PP.DestAmount))
+					assert.Equal(t, xdr.AssetTypeAssetTypeNative, operation.PP.SendAsset.Type)
+					assert.Equal(t, xdr.AssetTypeAssetTypeCreditAlphanum4, operation.PP.DestAsset.Type)
+				}).Return(horizonResponse, nil).Once()
 
 				Convey("it should return success", func() {
 					statusCode, response := net.GetResponse(testServer, validParams)
@@ -870,10 +812,21 @@ func TestRequestHandlerPayment(t *testing.T) {
 					Extras: nil,
 				}
 
-				mockHorizon.On(
+				mockTransactionSubmitter.On(
 					"SubmitTransaction",
-					"AAAAAIu7VxM5f9eQ3va0bpvKprxnSHB4zyEnY4D/VzT8Jio3AAAAZAAAAAAAAABlAAAAAAAAAAAAAAABAAAAAAAAAAIAAAABVVNEAAAAAABG6Ttq4mZpWTJB7gcVAWAAGrN4VsqPVS9SDnZ31wFRQQAAAAA7msoAAAAAAOSFW5ugPJm4HP2qQIs8ZgX+M2Zqm3nUdynvjE2u6Y1WAAAAAVVTRAAAAAAA5IVbm6A8mbgc/apAizxmBf4zZmqbedR3Ke+MTa7pjVYAAAAAC+vCAAAAAAAAAAAAAAAAAfwmKjcAAABA3rQOu+r9DvUhGDSOVaD05RWgzvzMJt49opYNfGLLOSo7/29rUkPIyw5PgV/1arrTwj90HRnzmVjHJK2xy+MfBQ==",
-				).Return(horizonResponse, nil).Once()
+					mock.AnythingOfType("*string"),
+					"SDWLS4G3XCNIYPKXJWWGGJT6UDY63WV6PEFTWP7JZMQB4RE7EUJQN5XM",
+					mock.AnythingOfType("build.PaymentBuilder"),
+					nil,
+				).Run(func(args mock.Arguments) {
+					operation, ok := args.Get(2).(build.PaymentBuilder)
+					assert.True(t, ok, "Invalid conversion")
+					assert.Equal(t, "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632", operation.PP.Destination.Address())
+					assert.Equal(t, int64(1000000000), int64(operation.PP.SendMax))
+					assert.Equal(t, int64(200000000), int64(operation.PP.DestAmount))
+					assert.Equal(t, xdr.AssetTypeAssetTypeCreditAlphanum4, operation.PP.SendAsset.Type)
+					assert.Equal(t, xdr.AssetTypeAssetTypeCreditAlphanum4, operation.PP.DestAsset.Type)
+				}).Return(horizonResponse, nil).Once()
 
 				Convey("it should return success", func() {
 					statusCode, response := net.GetResponse(testServer, validParams)
@@ -909,10 +862,25 @@ func TestRequestHandlerPayment(t *testing.T) {
 					Extras:    nil,
 				}
 
-				mockHorizon.On(
+				mockTransactionSubmitter.On(
 					"SubmitTransaction",
-					"AAAAAIu7VxM5f9eQ3va0bpvKprxnSHB4zyEnY4D/VzT8Jio3AAAAZAAAAAAAAABlAAAAAAAAAAAAAAABAAAAAAAAAAIAAAABVVNEAAAAAABG6Ttq4mZpWTJB7gcVAWAAGrN4VsqPVS9SDnZ31wFRQQAAAAA7msoAAAAAAOSFW5ugPJm4HP2qQIs8ZgX+M2Zqm3nUdynvjE2u6Y1WAAAAAVVTRAAAAAAA5IVbm6A8mbgc/apAizxmBf4zZmqbedR3Ke+MTa7pjVYAAAAAC+vCAAAAAAIAAAAAAAAAAUVVUgAAAAAAC7eEsFn79TyCbw0THp1tM7vdWMWW6YURSwODvoGwGooAAAAAAAAAAfwmKjcAAABAyO0YxnfaIdY51J9BaPyZYNxsBY2AhWCZpK6FRlaE+ZbdmznZ9cio2G7+fJgl3hWZUrQknQHElmzAZdgsqNnZAQ==",
-				).Return(horizonResponse, nil).Once()
+					mock.AnythingOfType("*string"),
+					"SDWLS4G3XCNIYPKXJWWGGJT6UDY63WV6PEFTWP7JZMQB4RE7EUJQN5XM",
+					mock.AnythingOfType("build.PaymentBuilder"),
+					nil,
+				).Run(func(args mock.Arguments) {
+					operation, ok := args.Get(2).(build.PaymentBuilder)
+					assert.True(t, ok, "Invalid conversion")
+					assert.Equal(t, "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632", operation.PP.Destination.Address())
+					assert.Equal(t, int64(1000000000), int64(operation.PP.SendMax))
+					assert.Equal(t, int64(200000000), int64(operation.PP.DestAmount))
+					assert.Equal(t, xdr.AssetTypeAssetTypeCreditAlphanum4, operation.PP.SendAsset.Type)
+					assert.Equal(t, xdr.AssetTypeAssetTypeCreditAlphanum4, operation.PP.DestAsset.Type)
+					// Path
+					assert.Equal(t, xdr.AssetTypeAssetTypeNative, operation.PP.Path[0].Type)
+					assert.Equal(t, xdr.AssetTypeAssetTypeCreditAlphanum4, operation.PP.Path[1].Type)
+					assert.Equal(t, "GAF3PBFQLH57KPECN4GRGHU5NUZ3XXKYYWLOTBIRJMBYHPUBWANIUCZU", operation.PP.Path[1].AlphaNum4.Issuer.Address())
+				}).Return(horizonResponse, nil).Once()
 
 				Convey("it should return success", func() {
 					statusCode, response := net.GetResponse(testServer, validParams)
@@ -953,7 +921,8 @@ func TestRequestHandlerPayment(t *testing.T) {
 					net.BuildHTTPResponse(400, "error"),
 					nil,
 				).Run(func(args mock.Arguments) {
-					values := args.Get(1).(url.Values)
+					values, ok := args.Get(1).(url.Values)
+					assert.True(t, ok, "Invalid conversion")
 					// bridge server does not send source seed to compliance
 					assert.Equal(t, []string{"GAW77Z6GPWXSODJOMF5L5BMX6VMYGEJRKUNBC2CZ725JTQZORK74HQQD"}, values["source"])
 					values.Del("source")
@@ -980,7 +949,8 @@ func TestRequestHandlerPayment(t *testing.T) {
 					net.BuildHTTPResponse(200, "{\"auth_response\": {\"tx_status\": \"denied\"}}"),
 					nil,
 				).Run(func(args mock.Arguments) {
-					values := args.Get(1).(url.Values)
+					values, ok := args.Get(1).(url.Values)
+					assert.True(t, ok, "Invalid conversion")
 					// bridge server does not send source seed to compliance
 					assert.Equal(t, []string{"GAW77Z6GPWXSODJOMF5L5BMX6VMYGEJRKUNBC2CZ725JTQZORK74HQQD"}, values["source"])
 					values.Del("source")
@@ -1007,7 +977,8 @@ func TestRequestHandlerPayment(t *testing.T) {
 					net.BuildHTTPResponse(200, "{\"auth_response\": {\"info_status\": \"pending\", \"pending\": 3600}}"),
 					nil,
 				).Run(func(args mock.Arguments) {
-					values := args.Get(1).(url.Values)
+					values, ok := args.Get(1).(url.Values)
+					assert.True(t, ok, "Invalid conversion")
 					// bridge server does not send source seed to compliance
 					assert.Equal(t, []string{"GAW77Z6GPWXSODJOMF5L5BMX6VMYGEJRKUNBC2CZ725JTQZORK74HQQD"}, values["source"])
 					values.Del("source")
@@ -1092,7 +1063,8 @@ func TestRequestHandlerPayment(t *testing.T) {
 					net.BuildHTTPResponse(200, string(complianceResponse.Marshal())),
 					nil,
 				).Run(func(args mock.Arguments) {
-					values := args.Get(1).(url.Values)
+					values, ok := args.Get(1).(url.Values)
+					assert.True(t, ok, "Invalid conversion")
 					assert.Equal(t, []string{"GAW77Z6GPWXSODJOMF5L5BMX6VMYGEJRKUNBC2CZ725JTQZORK74HQQD"}, values["source"])
 					values.Del("source")
 					params.Del("source")
@@ -1109,10 +1081,12 @@ func TestRequestHandlerPayment(t *testing.T) {
 
 				mockTransactionSubmitter.On(
 					"SignAndSubmitRawTransaction",
+					mock.AnythingOfType("*string"),
 					params.Get("source"),
 					mock.AnythingOfType("*xdr.Transaction"),
 				).Run(func(args mock.Arguments) {
-					tx := args.Get(1).(*xdr.Transaction)
+					tx, ok := args.Get(2).(*xdr.Transaction)
+					assert.True(t, ok, "Invalid conversion")
 					assert.Equal(t, *tx, *expectedTx)
 				}).Return(horizonResponse, nil).Once()
 
@@ -1142,6 +1116,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 
 				mockTransactionSubmitter.On(
 					"SignAndSubmitRawTransaction",
+					mock.AnythingOfType("*string"),
 					mock.AnythingOfType("string"),
 					mock.AnythingOfType("*xdr.Transaction"),
 				).Return(

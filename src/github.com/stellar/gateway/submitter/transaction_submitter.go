@@ -21,14 +21,15 @@ import (
 
 // TransactionSubmitterInterface helps mocking TransactionSubmitter
 type TransactionSubmitterInterface interface {
-	SubmitTransaction(seed string, operation, memo interface{}) (response horizon.SubmitTransactionResponse, err error)
-	SignAndSubmitRawTransaction(seed string, tx *xdr.Transaction) (response horizon.SubmitTransactionResponse, err error)
+	SubmitTransaction(paymentID *string, seed string, operation, memo interface{}) (response horizon.SubmitTransactionResponse, err error)
+	SignAndSubmitRawTransaction(paymentID *string, seed string, tx *xdr.Transaction) (response horizon.SubmitTransactionResponse, err error)
 }
 
 // TransactionSubmitter submits transactions to Stellar Network
 type TransactionSubmitter struct {
 	Horizon       horizon.HorizonInterface
 	Accounts      map[string]*Account // seed => *Account
+	AccountsMutex sync.Mutex
 	EntityManager db.EntityManagerInterface
 	Network       build.Network
 	log           *logrus.Entry
@@ -61,38 +62,48 @@ func NewTransactionSubmitter(
 	return
 }
 
-// LoadAccount loads currect state of Stellar account
-func (ts *TransactionSubmitter) LoadAccount(seed string) (account *Account, err error) {
-	account = &Account{}
-	account.Keypair, err = keypair.Parse(seed)
+// LoadAccount loads current state of Stellar account and creates a map entry if it didn't exist
+func (ts *TransactionSubmitter) LoadAccount(seed string) (*Account, error) {
+	ts.AccountsMutex.Lock()
+
+	account, exist := ts.Accounts[seed]
+	if exist {
+		ts.AccountsMutex.Unlock()
+		return account, nil
+	}
+
+	kp, err := keypair.Parse(seed)
 	if err != nil {
 		ts.log.Print("Invalid seed")
-		return
+		ts.AccountsMutex.Unlock()
+		return nil, err
 	}
 
-	accountResponse, err := ts.Horizon.LoadAccount(account.Keypair.Address())
+	ts.Accounts[seed] = &Account{
+		Seed:    seed,
+		Keypair: kp,
+	}
+	ts.AccountsMutex.Unlock()
+
+	ts.Accounts[seed].Mutex.Lock()
+	defer ts.Accounts[seed].Mutex.Unlock()
+
+	accountResponse, err := ts.Horizon.LoadAccount(ts.Accounts[seed].Keypair.Address())
 	if err != nil {
-		return
+		return nil, err
 	}
 
-	account.Seed = seed
-	account.SequenceNumber, err = strconv.ParseUint(accountResponse.SequenceNumber, 10, 64)
-	return
+	ts.Accounts[seed].SequenceNumber, err = strconv.ParseUint(accountResponse.SequenceNumber, 10, 64)
+	if err != nil {
+		return nil, err
+	}
+
+	return ts.Accounts[seed], nil
 }
 
 // InitAccount loads an account and returns error if it fails
 func (ts *TransactionSubmitter) InitAccount(seed string) (err error) {
-	_, err = ts.GetAccount(seed)
-	return
-}
-
-// GetAccount returns an account by a given seed
-func (ts *TransactionSubmitter) GetAccount(seed string) (account *Account, err error) {
-	account, exist := ts.Accounts[seed]
-	if !exist {
-		account, err = ts.LoadAccount(seed)
-		ts.Accounts[seed] = account
-	}
+	_, err = ts.LoadAccount(seed)
 	return
 }
 
@@ -100,8 +111,8 @@ func (ts *TransactionSubmitter) GetAccount(seed string) (account *Account, err e
 // - update sequence number of the transaction to the current one,
 // - sign it,
 // - submit it to the network.
-func (ts *TransactionSubmitter) SignAndSubmitRawTransaction(seed string, tx *xdr.Transaction) (response horizon.SubmitTransactionResponse, err error) {
-	account, err := ts.GetAccount(seed)
+func (ts *TransactionSubmitter) SignAndSubmitRawTransaction(paymentID *string, seed string, tx *xdr.Transaction) (response horizon.SubmitTransactionResponse, err error) {
+	account, err := ts.LoadAccount(seed)
 	if err != nil {
 		return
 	}
@@ -141,6 +152,7 @@ func (ts *TransactionSubmitter) SignAndSubmitRawTransaction(seed string, tx *xdr
 	}
 
 	sentTransaction := &entities.SentTransaction{
+		PaymentID:     paymentID,
 		TransactionID: hex.EncodeToString(transactionHashBytes[:]),
 		Status:        entities.SentTransactionStatusSending,
 		Source:        account.Keypair.Address(),
@@ -190,8 +202,8 @@ func (ts *TransactionSubmitter) SignAndSubmitRawTransaction(seed string, tx *xdr
 }
 
 // SubmitTransaction builds and submits transaction to Stellar network
-func (ts *TransactionSubmitter) SubmitTransaction(seed string, operation, memo interface{}) (response horizon.SubmitTransactionResponse, err error) {
-	account, err := ts.GetAccount(seed)
+func (ts *TransactionSubmitter) SubmitTransaction(paymentID *string, seed string, operation, memo interface{}) (response horizon.SubmitTransactionResponse, err error) {
+	account, err := ts.LoadAccount(seed)
 	if err != nil {
 		return
 	}
@@ -221,7 +233,12 @@ func (ts *TransactionSubmitter) SubmitTransaction(seed string, operation, memo i
 
 	txBuilder := build.Transaction(mutators...)
 
-	return ts.SignAndSubmitRawTransaction(seed, txBuilder.TX)
+	if txBuilder.Err != nil {
+		err = txBuilder.Err
+		return
+	}
+
+	return ts.SignAndSubmitRawTransaction(paymentID, seed, txBuilder.TX)
 }
 
 // BuildTransaction is used in compliance server. The sequence number in built transaction will be equal 0!

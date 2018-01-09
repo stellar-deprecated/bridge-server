@@ -64,7 +64,7 @@ func (h *Horizon) LoadAccount(accountID string) (response AccountResponse, err e
 	if resp.StatusCode != 200 {
 		h.log.WithFields(logrus.Fields{
 			"accountID": accountID,
-		}).Error("Account does not exist")
+		}).Info("Account does not exist")
 		err = fmt.Errorf("StatusCode indicates error: %s", body)
 		return
 	}

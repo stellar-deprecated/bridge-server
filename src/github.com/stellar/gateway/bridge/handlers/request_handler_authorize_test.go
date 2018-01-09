@@ -90,6 +90,7 @@ func TestRequestHandlerAuthorize(t *testing.T) {
 			Convey("transaction fails", func() {
 				mockTransactionSubmitter.On(
 					"SubmitTransaction",
+					(*string)(nil),
 					config.Accounts.AuthorizingSeed,
 					operation,
 					nil,
@@ -121,6 +122,7 @@ func TestRequestHandlerAuthorize(t *testing.T) {
 
 				mockTransactionSubmitter.On(
 					"SubmitTransaction",
+					(*string)(nil),
 					config.Accounts.AuthorizingSeed,
 					operation,
 					nil,
