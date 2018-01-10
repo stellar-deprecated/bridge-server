@@ -34,7 +34,7 @@ type Horizon struct {
 	log       *logrus.Entry
 }
 
-const submitTimeout = 30 * time.Second
+const submitTimeout = 60 * time.Second
 
 // New creates a new Horizon instance
 func New(serverURL string) (horizon Horizon) {
@@ -221,7 +221,7 @@ func (h *Horizon) SubmitTransaction(txeBase64 string) (response SubmitTransactio
 
 	if response.Ledger != nil {
 		h.log.WithFields(logrus.Fields{
-			"ledger": response.Ledger,
+			"ledger": *response.Ledger,
 		}).Info("Success response from horizon")
 	} else {
 		h.log.WithFields(logrus.Fields{

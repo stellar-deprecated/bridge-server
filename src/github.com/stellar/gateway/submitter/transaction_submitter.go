@@ -85,8 +85,13 @@ func (ts *TransactionSubmitter) LoadAccount(seed string) (*Account, error) {
 	}
 	ts.AccountsMutex.Unlock()
 
+	// Load account sequence number
 	ts.Accounts[seed].Mutex.Lock()
 	defer ts.Accounts[seed].Mutex.Unlock()
+
+	if ts.Accounts[seed].SequenceNumber != 0 {
+		return ts.Accounts[seed], nil
+	}
 
 	accountResponse, err := ts.Horizon.LoadAccount(ts.Accounts[seed].Keypair.Address())
 	if err != nil {
@@ -141,7 +146,7 @@ func (ts *TransactionSubmitter) SignAndSubmitRawTransaction(paymentID *string, s
 
 	txeB64, err := xdr.MarshalBase64(envelopeXdr)
 	if err != nil {
-		ts.log.Print("Cannot encode transaction envelope")
+		ts.log.WithFields(logrus.Fields{"err": err}).Error("Cannot encode transaction envelope")
 		return
 	}
 
@@ -164,6 +169,7 @@ func (ts *TransactionSubmitter) SignAndSubmitRawTransaction(paymentID *string, s
 		return
 	}
 
+	ts.log.WithFields(logrus.Fields{"tx": txeB64}).Info("Submitting transaction")
 	response, err = ts.Horizon.SubmitTransaction(txeB64)
 	if err != nil {
 		ts.log.Error("Error submitting transaction ", err)
