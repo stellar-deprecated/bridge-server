@@ -11,6 +11,7 @@ import (
 
 	. "github.com/smartystreets/goconvey/convey"
 	"github.com/stellar/gateway/bridge/config"
+	"github.com/stellar/gateway/db/entities"
 	"github.com/stellar/gateway/horizon"
 	"github.com/stellar/gateway/mocks"
 	"github.com/stellar/gateway/net"
@@ -21,6 +22,7 @@ import (
 	"github.com/stellar/go/xdr"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 )
 
 func TestRequestHandlerPayment(t *testing.T) {
@@ -33,6 +35,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 		},
 	}
 	mockHorizon := new(mocks.MockHorizon)
+	mockRepository := new(mocks.MockRepository)
 	mockHTTPClient := new(mocks.MockHTTPClient)
 	mockTransactionSubmitter := new(mocks.MockTransactionSubmitter)
 	mockFederationResolver := new(mocks.MockFederationResolver)
@@ -42,6 +45,7 @@ func TestRequestHandlerPayment(t *testing.T) {
 		Config:               c,
 		Client:               mockHTTPClient,
 		Horizon:              mockHorizon,
+		Repository:           mockRepository,
 		TransactionSubmitter: mockTransactionSubmitter,
 		FederationResolver:   mockFederationResolver,
 		StellarTomlResolver:  mockStellartomlResolver,
@@ -778,6 +782,10 @@ func TestRequestHandlerPayment(t *testing.T) {
 					mock.AnythingOfType("build.PaymentBuilder"),
 					nil,
 				).Run(func(args mock.Arguments) {
+					paymentID, ok := args.Get(0).(*string)
+					assert.True(t, ok, "Invalid conversion")
+					assert.Nil(t, paymentID)
+
 					operation, ok := args.Get(2).(build.PaymentBuilder)
 					assert.True(t, ok, "Invalid conversion")
 					assert.Equal(t, "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632", operation.PP.Destination.Address())
@@ -788,6 +796,82 @@ func TestRequestHandlerPayment(t *testing.T) {
 				}).Return(horizonResponse, nil).Once()
 
 				Convey("it should return success", func() {
+					statusCode, response := net.GetResponse(testServer, validParams)
+					responseString := strings.TrimSpace(string(response))
+
+					assert.Equal(t, 200, statusCode)
+					expected := test.StringToJSONMap(`{
+					  "hash": "88214f536658717d5a7d96e449d2fbd96277ce16f3d88dea023e5f20bd37325d",
+					  "ledger": 1988727
+					}`)
+					assert.Equal(t, expected, test.StringToJSONMap(responseString))
+				})
+			})
+
+			Convey("transaction success (id set)", func() {
+				validParams["id"] = []string{"payment123"}
+
+				var ledger uint64
+				ledger = 1988727
+				horizonResponse := horizon.SubmitTransactionResponse{
+					Hash:   "88214f536658717d5a7d96e449d2fbd96277ce16f3d88dea023e5f20bd37325d",
+					Ledger: &ledger,
+					Extras: nil,
+				}
+
+				Convey("id not used", func() {
+					mockRepository.On(
+						"GetSentTransactionByPaymentID",
+						validParams["id"][0],
+					).Return(nil, nil).Once()
+
+					mockTransactionSubmitter.On(
+						"SubmitTransaction",
+						mock.AnythingOfType("*string"),
+						"SDWLS4G3XCNIYPKXJWWGGJT6UDY63WV6PEFTWP7JZMQB4RE7EUJQN5XM",
+						mock.AnythingOfType("build.PaymentBuilder"),
+						nil,
+					).Run(func(args mock.Arguments) {
+						paymentID, ok := args.Get(0).(*string)
+						assert.True(t, ok, "Invalid conversion")
+						require.NotNil(t, paymentID)
+						assert.Equal(t, validParams["id"][0], *paymentID)
+
+						operation, ok := args.Get(2).(build.PaymentBuilder)
+						require.True(t, ok, "Invalid conversion")
+						assert.Equal(t, "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632", operation.PP.Destination.Address())
+						assert.Equal(t, int64(1000000000), int64(operation.PP.SendMax))
+						assert.Equal(t, int64(200000000), int64(operation.PP.DestAmount))
+						assert.Equal(t, xdr.AssetTypeAssetTypeNative, operation.PP.SendAsset.Type)
+						assert.Equal(t, xdr.AssetTypeAssetTypeCreditAlphanum4, operation.PP.DestAsset.Type)
+					}).Return(horizonResponse, nil).Once()
+
+					statusCode, response := net.GetResponse(testServer, validParams)
+					responseString := strings.TrimSpace(string(response))
+
+					assert.Equal(t, 200, statusCode)
+					expected := test.StringToJSONMap(`{
+					  "hash": "88214f536658717d5a7d96e449d2fbd96277ce16f3d88dea023e5f20bd37325d",
+					  "ledger": 1988727
+					}`)
+					assert.Equal(t, expected, test.StringToJSONMap(responseString))
+				})
+
+				Convey("id already used", func() {
+					sentTransaction := &entities.SentTransaction{
+						PaymentID:   &validParams["id"][0],
+						EnvelopeXdr: "envelope_xdr",
+					}
+
+					mockRepository.On(
+						"GetSentTransactionByPaymentID",
+						validParams["id"][0],
+					).Return(sentTransaction, nil).Once()
+
+					mockHorizon.
+						On("SubmitTransaction", sentTransaction.EnvelopeXdr).
+						Return(horizonResponse, nil).Once()
+
 					statusCode, response := net.GetResponse(testServer, validParams)
 					responseString := strings.TrimSpace(string(response))
 
