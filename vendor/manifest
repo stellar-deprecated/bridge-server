@@ -4,7 +4,7 @@
 		{
 			"importpath": "github.com/BurntSushi/toml",
 			"repository": "https://github.com/BurntSushi/toml",
-			"revision": "5c4df71dfe9ac89ef6287afc05e4c1b16ae65a1e",
+			"revision": "a368813c5e648fee92e5f6c30e3944ff9d5e8895",
 			"branch": "master"
 		},
 		{
@@ -12,19 +12,6 @@
 			"repository": "https://github.com/Masterminds/squirrel",
 			"revision": "20f192218cf52a73397fa2df45bdda720f3e47c8",
 			"branch": "v1"
-		},
-		{
-			"importpath": "github.com/sirupsen/logrus",
-			"repository": "https://github.com/sirupsen/logrus",
-			"revision": "68cec9f21fbf3ea8d8f98c044bc6ce05f17b267a",
-			"branch": "master"
-		},
-		{
-			"importpath": "github.com/sirupsen/logrus/hooks/test",
-			"repository": "https://github.com/sirupsen/logrus",
-			"revision": "68cec9f21fbf3ea8d8f98c044bc6ce05f17b267a",
-			"branch": "master",
-			"path": "/hooks/test"
 		},
 		{
 			"importpath": "github.com/agl/ed25519",
@@ -430,6 +417,19 @@
 			"repository": "https://github.com/shurcooL/sanitized_anchor_name",
 			"revision": "10ef21a441db47d8b13ebcc5fd2310f636973c77",
 			"branch": "master"
+		},
+		{
+			"importpath": "github.com/sirupsen/logrus",
+			"repository": "https://github.com/sirupsen/logrus",
+			"revision": "68cec9f21fbf3ea8d8f98c044bc6ce05f17b267a",
+			"branch": "master"
+		},
+		{
+			"importpath": "github.com/sirupsen/logrus/hooks/test",
+			"repository": "https://github.com/sirupsen/logrus",
+			"revision": "68cec9f21fbf3ea8d8f98c044bc6ce05f17b267a",
+			"branch": "master",
+			"path": "/hooks/test"
 		},
 		{
 			"importpath": "github.com/smartystreets/assertions",
