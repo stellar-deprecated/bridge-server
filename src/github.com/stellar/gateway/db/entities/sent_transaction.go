@@ -39,6 +39,7 @@ const (
 type SentTransaction struct {
 	exists        bool
 	ID            *int64                `db:"id" json:"id"`
+	PaymentID     *string               `db:"payment_id" json:"payment_id"`
 	TransactionID string                `db:"transaction_id" json:"transaction_id"`
 	Status        SentTransactionStatus `db:"status" json:"status"` // sending/success/failure
 	Source        string                `db:"source" json:"source"`

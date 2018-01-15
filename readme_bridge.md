@@ -267,12 +267,19 @@ In case of error it will return one of the following errors:
 
 Builds and submits a transaction with a single [`payment`](https://www.stellar.org/developers/learn/concepts/list-of-operations.html#payment), [`path_payment`](https://www.stellar.org/developers/learn/concepts/list-of-operations.html#path-payment) or [`create_account`](https://www.stellar.org/developers/learn/concepts/list-of-operations.html#create-account) (when sending native asset to account that does not exist) operation built from following parameters.
 
+#### Safe transaction resubmittion
+
+It’s possible that you will not receive a response from Bridge server due to a bug, network conditions, etc. In such situation it’s impossible to determine the status of your transaction and sending the same request to the Bridge server may result in "double-spend" of the funds. That’s why you should always send a request with `id` parameter set. Then when you resubmit a transaction with the same `id` the previously used [sequence number](https://www.stellar.org/developers/guides/concepts/transactions.html) will be reused.
+
+If the transaction has already been successfully applied to the ledger, Horizon server will simply return the saved result and not attempt to submit the transaction again. Only in cases where a transaction’s status is unknown (and thus will have a chance of being included into a ledger) will a resubmission to the network occur.
+
 #### Request Parameters
 
 Every request must contain required parameters from the following list. Additionally, depending on a type of payment, every request must contain required parameters for equivalent operation type.
 
 name |  | description
 --- | --- | ---
+`id` | optional | Unique ID of the payment. If you send another request with the same `id` previously sent transaction will be resubmitted to the network.
 `source` | optional | Secret seed of transaction source account. If ommitted it will use the `base_seed` specified in the config file.
 `sender` | optional | Payment address (ex. `bob*stellar.org`) of payment sender account. Required for when sending using Compliance protocol.
 `destination` | required | Account ID or payment address (ex. `bob*stellar.org`) of payment destination account

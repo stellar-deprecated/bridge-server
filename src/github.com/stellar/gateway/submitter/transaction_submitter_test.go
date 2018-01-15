@@ -138,7 +138,7 @@ func TestTransactionSubmitter(t *testing.T) {
 						nil,
 					).Once()
 
-					_, err = transactionSubmitter.SubmitTransaction(seed, operation, nil)
+					_, err = transactionSubmitter.SubmitTransaction((*string)(nil), seed, operation, nil)
 					assert.Nil(t, err)
 					mockHorizon.AssertExpectations(t)
 				})
@@ -215,7 +215,7 @@ func TestTransactionSubmitter(t *testing.T) {
 						nil,
 					).Once()
 
-					_, err = transactionSubmitter.SubmitTransaction(seed, operation, nil)
+					_, err = transactionSubmitter.SubmitTransaction((*string)(nil), seed, operation, nil)
 					assert.Nil(t, err)
 					assert.Equal(t, uint64(100), transactionSubmitter.Accounts[seed].SequenceNumber)
 					mockHorizon.AssertExpectations(t)
@@ -277,7 +277,7 @@ func TestTransactionSubmitter(t *testing.T) {
 						nil,
 					).Once()
 
-					response, err := transactionSubmitter.SubmitTransaction(seed, operation, nil)
+					response, err := transactionSubmitter.SubmitTransaction((*string)(nil), seed, operation, nil)
 					assert.Nil(t, err)
 					assert.Equal(t, *response.Ledger, ledger)
 					assert.Equal(t, uint64(10372672437354497), transactionSubmitter.Accounts[seed].SequenceNumber)
@@ -349,7 +349,7 @@ func TestTransactionSubmitter(t *testing.T) {
 						nil,
 					).Once()
 
-					response, err := transactionSubmitter.SubmitTransaction(seed, operation, memo)
+					response, err := transactionSubmitter.SubmitTransaction((*string)(nil), seed, operation, memo)
 					assert.Nil(t, err)
 					assert.Equal(t, *response.Ledger, ledger)
 					assert.Equal(t, uint64(10372672437354497), transactionSubmitter.Accounts[seed].SequenceNumber)

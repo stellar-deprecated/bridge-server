@@ -35,6 +35,7 @@ func (rh *RequestHandler) Authorize(w http.ResponseWriter, r *http.Request) {
 	)
 
 	submitResponse, err := rh.TransactionSubmitter.SubmitTransaction(
+		nil,
 		rh.Config.Accounts.AuthorizingSeed,
 		operationMutator,
 		nil,

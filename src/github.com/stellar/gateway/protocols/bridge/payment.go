@@ -59,6 +59,8 @@ var (
 
 // PaymentRequest represents request made to /payment endpoint of the bridge server
 type PaymentRequest struct {
+	// Payment ID
+	ID string `name:"id"`
 	// Source account secret
 	Source string `name:"source"`
 	// Sender address (like alice*stellar.org)
@@ -134,6 +136,16 @@ func (request *PaymentRequest) Validate() error {
 		}
 	}
 
+	if !protocols.IsValidAmount(request.Amount) {
+		return protocols.NewInvalidParameterError("amount", request.Amount, "Invalid amount.")
+	}
+
+	if request.SendMax != "" {
+		if !protocols.IsValidAmount(request.SendMax) {
+			return protocols.NewInvalidParameterError("send_max", request.SendMax, "Invalid amount.")
+		}
+	}
+
 	// Memo
 	if request.MemoType == "" && request.Memo != "" {
 		return protocols.NewMissingParameter("memo_type")
@@ -152,6 +164,15 @@ func (request *PaymentRequest) Validate() error {
 		return protocols.NewMissingParameter("asset_issuer")
 	}
 
+	destinationAsset := protocols.Asset{
+		Code:   request.AssetCode,
+		Issuer: request.AssetIssuer,
+	}
+
+	if !destinationAsset.Validate() {
+		return protocols.NewInvalidParameterError("asset", destinationAsset.String(), "Invalid asset.")
+	}
+
 	if request.AssetIssuer != "" {
 		if !protocols.IsValidAccountID(request.AssetIssuer) {
 			return protocols.NewInvalidParameterError("asset_issuer", request.AssetIssuer, "Asset issuer must be a public key (starting with `G`).")
@@ -165,6 +186,15 @@ func (request *PaymentRequest) Validate() error {
 
 	if request.SendAssetCode != "" && request.SendAssetIssuer == "" {
 		return protocols.NewMissingParameter("send_asset_issuer")
+	}
+
+	sendAsset := protocols.Asset{
+		Code:   request.AssetCode,
+		Issuer: request.AssetIssuer,
+	}
+
+	if !sendAsset.Validate() {
+		return protocols.NewInvalidParameterError("asset", sendAsset.String(), "Invalid asset.")
 	}
 
 	if request.SendAssetIssuer != "" {

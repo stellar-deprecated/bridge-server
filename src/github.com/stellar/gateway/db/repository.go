@@ -12,6 +12,7 @@ import (
 type RepositoryInterface interface {
 	GetLastCursorValue() (cursor *string, err error)
 	GetAuthorizedTransactionByMemo(memo string) (*entities.AuthorizedTransaction, error)
+	GetSentTransactionByPaymentID(paymentID string) (*entities.SentTransaction, error)
 	GetAllowedFiByDomain(domain string) (*entities.AllowedFi, error)
 	GetAllowedUserByDomainAndUserID(domain, userID string) (*entities.AllowedUser, error)
 	GetReceivedPaymentByOperationID(operationID int64) (*entities.ReceivedPayment, error)
@@ -57,6 +58,29 @@ func (r Repository) GetAuthorizedTransactionByMemo(memo string) (*entities.Autho
 		&found,
 		"SELECT * FROM AuthorizedTransaction WHERE memo = ?",
 		memo,
+	)
+
+	if r.repo.NoRows(err) {
+		return nil, nil
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	found.SetExists()
+	return &found, nil
+}
+
+// GetSentTransactionByPaymentID returns sent transaction searching by payment ID
+func (r Repository) GetSentTransactionByPaymentID(paymentID string) (*entities.SentTransaction, error) {
+
+	var found entities.SentTransaction
+
+	err := r.repo.GetRaw(
+		&found,
+		"SELECT * FROM SentTransaction WHERE payment_id = ?",
+		paymentID,
 	)
 
 	if r.repo.NoRows(err) {

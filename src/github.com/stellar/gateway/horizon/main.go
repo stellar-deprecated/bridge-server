@@ -34,7 +34,7 @@ type Horizon struct {
 	log       *logrus.Entry
 }
 
-const submitTimeout = 30 * time.Second
+const submitTimeout = 60 * time.Second
 
 // New creates a new Horizon instance
 func New(serverURL string) (horizon Horizon) {
@@ -64,7 +64,7 @@ func (h *Horizon) LoadAccount(accountID string) (response AccountResponse, err e
 	if resp.StatusCode != 200 {
 		h.log.WithFields(logrus.Fields{
 			"accountID": accountID,
-		}).Error("Account does not exist")
+		}).Info("Account does not exist")
 		err = fmt.Errorf("StatusCode indicates error: %s", body)
 		return
 	}
@@ -221,7 +221,7 @@ func (h *Horizon) SubmitTransaction(txeBase64 string) (response SubmitTransactio
 
 	if response.Ledger != nil {
 		h.log.WithFields(logrus.Fields{
-			"ledger": response.Ledger,
+			"ledger": *response.Ledger,
 		}).Info("Success response from horizon")
 	} else {
 		h.log.WithFields(logrus.Fields{

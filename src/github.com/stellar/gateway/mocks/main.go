@@ -5,6 +5,7 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/stellar/gateway/db"
 	"github.com/stellar/gateway/db/entities"
 	"github.com/stellar/gateway/horizon"
 	"github.com/stellar/go/clients/stellartoml"
@@ -29,6 +30,8 @@ func (m *MockEntityManager) Persist(object entities.Entity) (err error) {
 	a := m.Called(object)
 	return a.Error(0)
 }
+
+var _ db.EntityManagerInterface = &MockEntityManager{}
 
 // MockFederationResolver ...
 type MockFederationResolver struct {
@@ -174,6 +177,16 @@ func (m *MockRepository) GetSentTransactions(page, limit int) ([]*entities.SentT
 	return a.Get(0).([]*entities.SentTransaction), a.Error(1)
 }
 
+func (m *MockRepository) GetSentTransactionByPaymentID(paymentID string) (*entities.SentTransaction, error) {
+	a := m.Called(paymentID)
+	if a.Get(0) == nil {
+		return nil, a.Error(1)
+	}
+	return a.Get(0).(*entities.SentTransaction), a.Error(1)
+}
+
+var _ db.RepositoryInterface = &MockRepository{}
+
 // MockSignerVerifier ...
 type MockSignerVerifier struct {
 	mock.Mock
@@ -215,14 +228,14 @@ type MockTransactionSubmitter struct {
 }
 
 // SubmitTransaction is a mocking a method
-func (ts *MockTransactionSubmitter) SubmitTransaction(seed string, operation, memo interface{}) (response horizon.SubmitTransactionResponse, err error) {
-	a := ts.Called(seed, operation, memo)
+func (ts *MockTransactionSubmitter) SubmitTransaction(paymentID *string, seed string, operation, memo interface{}) (response horizon.SubmitTransactionResponse, err error) {
+	a := ts.Called(paymentID, seed, operation, memo)
 	return a.Get(0).(horizon.SubmitTransactionResponse), a.Error(1)
 }
 
 // SignAndSubmitRawTransaction is a mocking a method
-func (ts *MockTransactionSubmitter) SignAndSubmitRawTransaction(seed string, tx *xdr.Transaction) (response horizon.SubmitTransactionResponse, err error) {
-	a := ts.Called(seed, tx)
+func (ts *MockTransactionSubmitter) SignAndSubmitRawTransaction(paymentID *string, seed string, tx *xdr.Transaction) (response horizon.SubmitTransactionResponse, err error) {
+	a := ts.Called(paymentID, seed, tx)
 	return a.Get(0).(horizon.SubmitTransactionResponse), a.Error(1)
 }
 
