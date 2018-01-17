@@ -2,7 +2,7 @@
 // sources:
 // migrations_gateway/01_init.sql
 // migrations_gateway/02_payment_id.sql
-// migrations_gateway/02_transaction_id.sql
+// migrations_gateway/03_transaction_id.sql
 // migrations_compliance/01_init.sql
 // DO NOT EDIT!
 
@@ -111,22 +111,22 @@ func migrations_gateway02_payment_idSql() (*asset, error) {
 	return a, nil
 }
 
-var _migrations_gateway02_transaction_idSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\xd2\xd5\x55\xd0\xce\xcd\x4c\x2f\x4a\x2c\x49\x55\x08\x2d\xe0\x72\xf4\x09\x71\x0d\x52\x08\x71\x74\xf2\x71\x55\x48\x08\x4a\x4d\x4e\xcd\x2c\x4b\x4d\x09\x48\xac\xcc\x4d\xcd\x2b\x49\x50\x70\x74\x71\x51\x48\x28\x29\x4a\xcc\x2b\x4e\x4c\x2e\xc9\xcc\xcf\x8b\xcf\x4c\x49\x50\x08\x73\x0c\x72\xf6\x70\x0c\xd2\x30\x33\xd1\x54\x70\x71\x75\x73\x0c\xf5\x09\x51\x50\xf7\xd3\x77\x54\xb7\xe6\xe2\x42\x36\xdd\x25\xbf\x3c\x8f\x80\xf9\x2e\x41\xfe\x01\x18\x16\x58\x73\x01\x02\x00\x00\xff\xff\xa5\x9e\xfe\x52\xa4\x00\x00\x00")
+var _migrations_gateway03_transaction_idSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\xd2\xd5\x55\xd0\xce\xcd\x4c\x2f\x4a\x2c\x49\x55\x08\x2d\xe0\x72\xf4\x09\x71\x0d\x52\x08\x71\x74\xf2\x71\x55\x08\x4a\x4d\x4e\xcd\x2c\x4b\x4d\x09\x48\xac\xcc\x4d\xcd\x2b\x51\x70\x74\x71\x51\x28\x29\x4a\xcc\x2b\x4e\x4c\x2e\xc9\xcc\xcf\x8b\xcf\x4c\x51\x08\x73\x0c\x72\xf6\x70\x0c\xd2\x30\x33\xd1\x54\x70\x71\x75\x73\x0c\xf5\x09\x51\x50\xf7\xd3\x77\x54\xb7\xe6\xe2\x42\x36\xd9\x25\xbf\x3c\x0f\xaf\xd9\x2e\x41\xfe\x01\x68\x86\x5b\x73\x01\x02\x00\x00\xff\xff\x95\xd0\x87\x98\x9c\x00\x00\x00")
 
-func migrations_gateway02_transaction_idSqlBytes() ([]byte, error) {
+func migrations_gateway03_transaction_idSqlBytes() ([]byte, error) {
 	return bindataRead(
-		_migrations_gateway02_transaction_idSql,
-		"migrations_gateway/02_transaction_id.sql",
+		_migrations_gateway03_transaction_idSql,
+		"migrations_gateway/03_transaction_id.sql",
 	)
 }
 
-func migrations_gateway02_transaction_idSql() (*asset, error) {
-	bytes, err := migrations_gateway02_transaction_idSqlBytes()
+func migrations_gateway03_transaction_idSql() (*asset, error) {
+	bytes, err := migrations_gateway03_transaction_idSqlBytes()
 	if err != nil {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "migrations_gateway/02_transaction_id.sql", size: 164, mode: os.FileMode(420), modTime: time.Unix(1516147358, 0)}
+	info := bindataFileInfo{name: "migrations_gateway/03_transaction_id.sql", size: 156, mode: os.FileMode(420), modTime: time.Unix(1516147543, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -205,7 +205,7 @@ func AssetNames() []string {
 var _bindata = map[string]func() (*asset, error){
 	"migrations_gateway/01_init.sql": migrations_gateway01_initSql,
 	"migrations_gateway/02_payment_id.sql": migrations_gateway02_payment_idSql,
-	"migrations_gateway/02_transaction_id.sql": migrations_gateway02_transaction_idSql,
+	"migrations_gateway/03_transaction_id.sql": migrations_gateway03_transaction_idSql,
 	"migrations_compliance/01_init.sql": migrations_compliance01_initSql,
 }
 
@@ -255,7 +255,7 @@ var _bintree = &bintree{nil, map[string]*bintree{
 	"migrations_gateway": &bintree{nil, map[string]*bintree{
 		"01_init.sql": &bintree{migrations_gateway01_initSql, map[string]*bintree{}},
 		"02_payment_id.sql": &bintree{migrations_gateway02_payment_idSql, map[string]*bintree{}},
-		"02_transaction_id.sql": &bintree{migrations_gateway02_transaction_idSql, map[string]*bintree{}},
+		"03_transaction_id.sql": &bintree{migrations_gateway03_transaction_idSql, map[string]*bintree{}},
 	}},
 }}
 
