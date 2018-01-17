@@ -10,6 +10,9 @@ type PaymentResponse struct {
 		Transaction struct {
 			Href string `json:"href"`
 		} `json:"transaction"`
+		Effects struct {
+			Href string `json:"href"`
+		} `json:"effects"`
 	} `json:"_links"`
 
 	// payment/path_payment fields
@@ -19,6 +22,10 @@ type PaymentResponse struct {
 	AssetCode   string `json:"asset_code"`
 	AssetIssuer string `json:"asset_issuer"`
 	Amount      string `json:"amount"`
+
+	// account_merge
+	Account string `json:"account"`
+	Into    string `json:"into"`
 
 	// transaction fields
 	Memo struct {

@@ -213,11 +213,15 @@ func (pl *PaymentListener) onPayment(payment horizon.PaymentResponse) (err error
 // shouldProcessPayment returns false and text status if payment should not be processed
 // (ex. asset is different than allowed assets).
 func (pl *PaymentListener) shouldProcessPayment(payment horizon.PaymentResponse) (bool, string) {
-	if payment.Type != "payment" && payment.Type != "path_payment" {
+	if payment.Type != "payment" && payment.Type != "path_payment" && payment.Type != "account_merge" {
 		return false, "Not a payment operation"
 	}
 
-	if payment.To != pl.config.Accounts.ReceivingAccountID {
+	if payment.Type == "account_merge" {
+		payment.AssetType = "native"
+	}
+
+	if payment.To != pl.config.Accounts.ReceivingAccountID && payment.Into != pl.config.Accounts.ReceivingAccountID {
 		return false, "Operation sent not received"
 	}
 
@@ -229,6 +233,17 @@ func (pl *PaymentListener) shouldProcessPayment(payment horizon.PaymentResponse)
 }
 
 func (pl *PaymentListener) process(payment horizon.PaymentResponse) error {
+	if payment.Type == "account_merge" {
+		payment.AssetType = "native"
+		payment.From = payment.Account
+		payment.To = payment.Into
+
+		err := pl.horizon.LoadAccountMergeAmount(&payment)
+		if err != nil {
+			return errors.Wrap(err, "Unable to load account_merge amount")
+		}
+	}
+
 	err := pl.horizon.LoadMemo(&payment)
 	if err != nil {
 		return errors.Wrap(err, "Unable to load transaction memo")

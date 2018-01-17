@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/stellar/go/support/errors"
 	"github.com/stellar/go/xdr"
 )
 
@@ -23,6 +24,7 @@ type PaymentHandler func(PaymentResponse) error
 type HorizonInterface interface {
 	LoadAccount(accountID string) (response AccountResponse, err error)
 	LoadMemo(p *PaymentResponse) (err error)
+	LoadAccountMergeAmount(p *PaymentResponse) error
 	LoadOperation(operationID string) (response PaymentResponse, err error)
 	StreamPayments(accountID string, cursor *string, onPaymentHandler PaymentHandler) (err error)
 	SubmitTransaction(txeBase64 string) (response SubmitTransactionResponse, err error)
@@ -123,6 +125,33 @@ func (h *Horizon) LoadMemo(p *PaymentResponse) (err error) {
 	}
 	defer res.Body.Close()
 	return json.NewDecoder(res.Body).Decode(&p.Memo)
+}
+
+// LoadAccountMergeAmount loads `account_merge` operation amount from it's effects
+func (h *Horizon) LoadAccountMergeAmount(p *PaymentResponse) error {
+	if p.Type != "account_merge" {
+		return errors.New("Not `account_merge` operation")
+	}
+
+	res, err := http.Get(p.Links.Effects.Href)
+	if err != nil {
+		return errors.Wrap(err, "Error getting effects for operation")
+	}
+	defer res.Body.Close()
+	var page EffectsPageResponse
+	err = json.NewDecoder(res.Body).Decode(&page)
+	if err != nil {
+		return errors.Wrap(err, "Error decoding effects page")
+	}
+
+	for _, effect := range page.Embedded.Records {
+		if effect.Type == "account_credited" {
+			p.Amount = effect.Amount
+			return nil
+		}
+	}
+
+	return errors.New("Could not find `account_credited` effect in `account_merge` operation effects")
 }
 
 // StreamPayments streams incoming payments
