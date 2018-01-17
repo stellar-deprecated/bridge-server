@@ -25,4 +25,6 @@ type PaymentResponse struct {
 		Type  string `json:"memo_type"`
 		Value string `json:"memo"`
 	} `json:"memo"`
+
+	TransactionID string `json:"transaction_hash"`
 }

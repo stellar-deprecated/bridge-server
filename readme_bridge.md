@@ -411,6 +411,7 @@ name | description
 `memo_type` | Type of the memo attached to the transaction. This field will be empty when no memo was attached.
 `memo` | Value of the memo attached. This field will be empty when no memo was attached.
 `data` | Value of the [AuthData](https://www.stellar.org/developers/learn/integration-guides/compliance-protocol.html). This field will be empty when compliance server is not connected.
+`transaction_id` | The transaction hash of the operation (ex. `c7597583ad4f7caef15ad19b0f84017466b69790ee91bcacbbf98b51c93b17bf`)
 
 #### Response
 
