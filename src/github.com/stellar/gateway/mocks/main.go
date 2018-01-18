@@ -102,6 +102,12 @@ func (m *MockHorizon) LoadMemo(p *horizon.PaymentResponse) (err error) {
 	return a.Error(0)
 }
 
+// LoadAccountMergeAmount is a mocking a method
+func (m *MockHorizon) LoadAccountMergeAmount(p *horizon.PaymentResponse) (err error) {
+	a := m.Called(p)
+	return a.Error(0)
+}
+
 // StreamPayments is a mocking a method
 func (m *MockHorizon) StreamPayments(accountID string, cursor *string, onPaymentHandler horizon.PaymentHandler) (err error) {
 	a := m.Called(accountID, cursor, onPaymentHandler)

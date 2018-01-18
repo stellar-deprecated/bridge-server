@@ -347,6 +347,60 @@ func TestPaymentListener(t *testing.T) {
 			})
 		})
 
+		Convey("When receive callback returns success (account_merge)", func() {
+			operation.Type = "account_merge"
+			operation.Account = "GBL27BKG2JSDU6KQ5YJKCDWTVIU24VTG4PLB63SF4K2DBZS5XZMWRPVU"
+			operation.Into = "GATKP6ZQM5CSLECPMTAC5226PE367QALCPM6AFHTSULPPZMT62OOPMQB"
+			operation.Amount = "100"
+			operation.Memo.Type = "text"
+			operation.Memo.Value = "testing"
+
+			// Updated in the listener
+			operation.From = "GBL27BKG2JSDU6KQ5YJKCDWTVIU24VTG4PLB63SF4K2DBZS5XZMWRPVU"
+			operation.To = "GATKP6ZQM5CSLECPMTAC5226PE367QALCPM6AFHTSULPPZMT62OOPMQB"
+			operation.AssetType = "native"
+
+			config.Assets[1].Code = "XLM"
+			config.Assets[1].Issuer = ""
+
+			mockRepository.On("GetReceivedPaymentByOperationID", int64(1)).Return(nil, nil).Once()
+			mockHorizon.On("LoadAccountMergeAmount", &operation).Return(nil).Once()
+			mockHorizon.On("LoadMemo", &operation).Return(nil).Once()
+
+			mockEntityManager.On("Persist", mock.AnythingOfType("*entities.ReceivedPayment")).
+				Run(ensurePaymentStatus(t, operation, "Processing...")).Return(nil).Once()
+
+			mockEntityManager.On("Persist", mock.AnythingOfType("*entities.ReceivedPayment")).
+				Run(ensurePaymentStatus(t, operation, "Success")).Return(nil).Once()
+
+			mockHTTPClient.On(
+				"Do",
+				mock.MatchedBy(func(req *http.Request) bool {
+					return req.URL.String() == "http://receive_callback"
+				}),
+			).Return(
+				net.BuildHTTPResponse(200, "ok"),
+				nil,
+			).Run(func(args mock.Arguments) {
+				req := args.Get(0).(*http.Request)
+
+				assert.Equal(t, operation.Account, req.PostFormValue("from"))
+				assert.Equal(t, operation.Amount, req.PostFormValue("amount"))
+				assert.Equal(t, operation.AssetCode, req.PostFormValue("asset_code"))
+				assert.Equal(t, operation.AssetIssuer, req.PostFormValue("asset_issuer"))
+				assert.Equal(t, operation.Memo.Type, req.PostFormValue("memo_type"))
+				assert.Equal(t, operation.Memo.Value, req.PostFormValue("memo"))
+			}).Once()
+
+			Convey("it should save the status", func() {
+				err := paymentListener.onPayment(operation)
+				assert.Nil(t, err)
+				mockHorizon.AssertExpectations(t)
+				mockEntityManager.AssertExpectations(t)
+				mockRepository.AssertExpectations(t)
+			})
+		})
+
 		Convey("When receive callback returns success (no memo)", func() {
 			operation.Type = "payment"
 			operation.To = "GATKP6ZQM5CSLECPMTAC5226PE367QALCPM6AFHTSULPPZMT62OOPMQB"
