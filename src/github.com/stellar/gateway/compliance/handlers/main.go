@@ -9,6 +9,7 @@ import (
 	"github.com/stellar/gateway/db"
 	"github.com/stellar/gateway/external"
 	"github.com/stellar/gateway/net"
+	"github.com/stellar/go/clients/federation"
 )
 
 // RequestHandler implements compliance server request handlers
@@ -19,7 +20,7 @@ type RequestHandler struct {
 	Repository              db.RepositoryInterface              `inject:""`
 	SignatureSignerVerifier crypto.SignerVerifierInterface      `inject:""`
 	StellarTomlResolver     external.StellarTomlClientInterface `inject:""`
-	FederationResolver      external.FederationClientInterface  `inject:""`
+	FederationResolver      federation.ClientInterface          `inject:""`
 	NonceGenerator          NonceGeneratorInterface             `inject:""`
 }
 

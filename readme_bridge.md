@@ -283,9 +283,12 @@ name |  | description
 `source` | optional | Secret seed of transaction source account. If ommitted it will use the `base_seed` specified in the config file.
 `sender` | optional | Payment address (ex. `bob*stellar.org`) of payment sender account. Required for when sending using Compliance protocol.
 `destination` | required | Account ID or payment address (ex. `bob*stellar.org`) of payment destination account
+`forward_destination[domain]` | required | Required when sending to Forward destination.
+`forward_destination[fields][name]` | required | Required when sending to Forward destination. Fields will be added to Federation request query string.
 `amount` | required | Amount that destination will receive
 `memo_type` | optional | Memo type, one of: `id`, `text`, `hash`, `extra`
 `memo` | optional | Memo value, `id` it must be uint64, when `hash` it must be 32 bytes hex value.
+`use_compliance` | optional | When `true` Bridge will use Compliance protocol even if `extra_memo` is empty.
 `extra_memo` | optional | You can include any info here and it will be included in the pre-image of the transaction's memo hash. See the [Stellar Memo Convention](https://github.com/stellar/stellar-protocol/issues/28). When set and compliance server is connected, `memo` and `memo_type` values will be ignored.
 `asset_code` | optional | Asset code (XLM when empty) destination will receive
 `asset_issuer` | optional | Account ID of asset issuer (XLM when empty) destination will receive
@@ -297,6 +300,20 @@ name |  | description
 `path[n+1][asset_code]` | optional | [path_payment] Asset code of `n+1`th asset on the path (XLM when empty, but empty parameter must be sent!)
 `path[n+1][asset_issuer]` | optional | [path_payment] Account ID of `n+1`th asset issuer (XLM when empty, but empty parameter must be sent!)
 ... | ... | _Up to 5 assets in the path..._
+
+##### Forward destination example
+
+The following request to `/payment`:
+
+```
+forward_destination[domain]=stellar.org&forward_destination[fields][forward_type]=bank_account&forward_destination[fields][swift]=BOPBPHMM&forward_destination[fields][acct]=2382376
+```
+
+will be translate to the following request:
+
+```
+https://FEDERATION_SERVER_READ_FROM_STELLAR_TOML/federation?type=forward&forward_type=bank_account&swift=BOPBPHMM&acct=2382376
+```
 
 #### Response
 

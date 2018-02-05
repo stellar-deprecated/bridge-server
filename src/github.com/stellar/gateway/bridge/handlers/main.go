@@ -8,6 +8,7 @@ import (
 	"github.com/stellar/gateway/listener"
 	"github.com/stellar/gateway/net"
 	"github.com/stellar/gateway/submitter"
+	"github.com/stellar/go/clients/federation"
 )
 
 // RequestHandler implements bridge server request handlers
@@ -18,7 +19,7 @@ type RequestHandler struct {
 	Driver               db.Driver                               `inject:""`
 	Repository           db.RepositoryInterface                  `inject:""`
 	StellarTomlResolver  external.StellarTomlClientInterface     `inject:""`
-	FederationResolver   external.FederationClientInterface      `inject:""`
+	FederationResolver   federation.ClientInterface              `inject:""`
 	TransactionSubmitter submitter.TransactionSubmitterInterface `inject:""`
 	PaymentListener      *listener.PaymentListener               `inject:""`
 }

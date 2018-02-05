@@ -354,6 +354,123 @@ func TestRequestHandlerSend(t *testing.T) {
 				}`)
 				assert.Equal(t, expected, test.StringToJSONMap(responseString))
 			})
+
+			Convey("it returns SendResponse when success (forward request)", func() {
+				params["destination"] = []string{""}
+				params["forward_destination[domain]"] = []string{"stellar.org"}
+				params["forward_destination[fields][federation_type]"] = []string{"bank_account"}
+				params["forward_destination[fields][swift]"] = []string{"BOPBPHMM"}
+				params["forward_destination[fields][acct]"] = []string{"2382376"}
+
+				authServer := "https://acme.com/auth"
+
+				mockFederationResolver.On(
+					"ForwardRequest",
+					"stellar.org",
+					url.Values{
+						"federation_type": []string{"bank_account"},
+						"swift":           []string{"BOPBPHMM"},
+						"acct":            []string{"2382376"},
+					},
+				).Return(&federation.NameResponse{
+					AccountID: "GAMVF7G4GJC4A7JMFJWLUAEIBFQD5RT3DCB5DC5TJDEKQBBACQ4JZVEE",
+					MemoType:  "text",
+					Memo:      federation.Memo{"bob"},
+				}, nil).Once()
+
+				mockStellartomlResolver.On(
+					"GetStellarToml",
+					"stellar.org",
+				).Return(&stellartoml.Response{AuthServer: authServer}, nil).Once()
+
+				attachment := compliance.Attachment{
+					Nonce: "nonce",
+					Transaction: compliance.Transaction{
+						Route:      "bob",
+						Note:       "",
+						SenderInfo: senderInfoMap,
+						Extra:      "hello world",
+					},
+				}
+
+				attachmentJSON, err := attachment.Marshal()
+				require.NoError(t, err)
+				attachHash, err := attachment.Hash()
+				require.NoError(t, err)
+
+				txBuilder := build.Transaction(
+					build.SourceAccount{"GAW77Z6GPWXSODJOMF5L5BMX6VMYGEJRKUNBC2CZ725JTQZORK74HQQD"},
+					build.Sequence{0},
+					build.TestNetwork,
+					build.MemoHash{attachHash},
+					build.Payment(
+						build.Destination{"GAMVF7G4GJC4A7JMFJWLUAEIBFQD5RT3DCB5DC5TJDEKQBBACQ4JZVEE"},
+						build.CreditAmount{"USD", "GAMVF7G4GJC4A7JMFJWLUAEIBFQD5RT3DCB5DC5TJDEKQBBACQ4JZVEE", "20"},
+					),
+				)
+
+				txB64, err := xdr.MarshalBase64(txBuilder.TX)
+				require.NoError(t, err)
+
+				authData := compliance.AuthData{
+					Sender:         "alice*stellar.org",
+					NeedInfo:       false,
+					Tx:             txB64,
+					AttachmentJSON: string(attachmentJSON),
+				}
+
+				authDataJSON, err := authData.Marshal()
+				require.NoError(t, err)
+
+				authRequest := compliance.AuthRequest{
+					DataJSON:  string(authDataJSON),
+					Signature: "YeMlOYWNysyGBfsAe40z9dGgpRsKSQrqFIGAEsyJQ8osnXlLPynvJ2WQDGcBq2n5AA96YZdABhQz5ymqvxfQDw==",
+				}
+
+				authResponse := compliance.AuthResponse{
+					InfoStatus: compliance.AuthStatusOk,
+					TxStatus:   compliance.AuthStatusOk,
+				}
+
+				authResponseJSON, err := authResponse.Marshal()
+				require.NoError(t, err)
+
+				mockHTTPClient.On(
+					"PostForm",
+					c.Callbacks.FetchInfo,
+					url.Values{"address": {"alice*stellar.org"}},
+				).Return(
+					net.BuildHTTPResponse(200, "{\"first_name\": \"John\", \"last_name\": \"Doe\"}"),
+					nil,
+				).Once()
+
+				mockHTTPClient.On(
+					"PostForm",
+					authServer,
+					authRequest.ToURLValues(),
+				).Return(
+					net.BuildHTTPResponse(200, string(authResponseJSON)),
+					nil,
+				).Once()
+
+				mockSignerVerifier.On(
+					"Sign",
+					c.Keys.SigningSeed,
+					[]byte(authRequest.DataJSON),
+				).Return(authRequest.Signature, nil).Once()
+
+				statusCode, response := net.GetResponse(testServer, params)
+				responseString := strings.TrimSpace(string(response))
+				assert.Equal(t, 200, statusCode)
+				expected := test.StringToJSONMap(`{
+				  "auth_response": {
+				    "info_status": "ok",
+				    "tx_status": "ok"
+				  },
+				  "transaction_xdr": "` + txB64 + `"
+				}`)
+				assert.Equal(t, expected, test.StringToJSONMap(responseString))
+			})
 		})
 	})
 }

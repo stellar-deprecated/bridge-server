@@ -155,12 +155,22 @@ func (rh *RequestHandler) complianceProtocolPayment(w http.ResponseWriter, reque
 
 func (rh *RequestHandler) standardPayment(w http.ResponseWriter, request *bridge.PaymentRequest, paymentID *string) {
 	destinationObject := &federation.NameResponse{}
+	var err error
 
-	_, _, err := address.Split(request.Destination)
-	if err != nil {
-		destinationObject.AccountID = request.Destination
+	if request.ForwardDestination == nil {
+		_, _, err = address.Split(request.Destination)
+		if err != nil {
+			destinationObject.AccountID = request.Destination
+		} else {
+			destinationObject, err = rh.FederationResolver.LookupByAddress(request.Destination)
+			if err != nil {
+				log.WithFields(log.Fields{"destination": request.Destination, "err": err}).Print("Cannot resolve address")
+				server.Write(w, bridge.PaymentCannotResolveDestination)
+				return
+			}
+		}
 	} else {
-		destinationObject, err = rh.FederationResolver.LookupByAddress(request.Destination)
+		destinationObject, err = rh.FederationResolver.ForwardRequest(request.ForwardDestination.Domain, request.ForwardDestination.Fields)
 		if err != nil {
 			log.WithFields(log.Fields{"destination": request.Destination, "err": err}).Print("Cannot resolve address")
 			server.Write(w, bridge.PaymentCannotResolveDestination)
