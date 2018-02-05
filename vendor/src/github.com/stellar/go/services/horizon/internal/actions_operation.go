@@ -12,6 +12,7 @@ import (
 	"github.com/stellar/go/services/horizon/internal/render/sse"
 	"github.com/stellar/go/services/horizon/internal/resource"
 	"github.com/stellar/go/services/horizon/internal/toid"
+	halRender "github.com/stellar/go/support/render/hal"
 )
 
 // This file contains the actions:
@@ -43,7 +44,7 @@ func (action *OperationIndexAction) JSON() {
 		action.loadLedgers,
 		action.loadPage)
 	action.Do(func() {
-		hal.Render(action.W, action.Page)
+		halRender.Render(action.W, action.Page)
 	})
 }
 
@@ -136,8 +137,7 @@ func (action *OperationIndexAction) loadPage() {
 		action.Page.Add(res)
 	}
 
-	action.Page.BaseURL = action.BaseURL()
-	action.Page.BasePath = action.Path()
+	action.Page.FullURL = action.FullURL()
 	action.Page.Limit = action.PagingParams.Limit
 	action.Page.Cursor = action.PagingParams.Cursor
 	action.Page.Order = action.PagingParams.Order
@@ -180,7 +180,7 @@ func (action *OperationShowAction) JSON() {
 		action.loadResource,
 	)
 	action.Do(func() {
-		hal.Render(action.W, action.Resource)
+		halRender.Render(action.W, action.Resource)
 	})
 }
 

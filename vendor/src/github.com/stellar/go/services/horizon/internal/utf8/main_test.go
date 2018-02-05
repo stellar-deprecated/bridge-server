@@ -1,8 +1,9 @@
 package utf8
 
 import (
-	"github.com/stellar/go/services/horizon/internal/test"
 	"testing"
+
+	"github.com/stellar/go/services/horizon/internal/test"
 )
 
 func TestScrub(t *testing.T) {

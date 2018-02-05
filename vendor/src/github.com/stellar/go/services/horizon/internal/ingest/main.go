@@ -8,8 +8,9 @@ import (
 
 	sq "github.com/Masterminds/squirrel"
 	metrics "github.com/rcrowley/go-metrics"
-	"github.com/stellar/go/support/db"
 	"github.com/stellar/go/services/horizon/internal/db2/core"
+	"github.com/stellar/go/support/db"
+	"github.com/stellar/go/xdr"
 )
 
 const (
@@ -21,7 +22,7 @@ const (
 	// Scripts, that have yet to be ported to this codebase can then be leveraged
 	// to re-ingest old data with the new algorithm, providing a seamless
 	// transition when the ingested data's structure changes.
-	CurrentVersion = 10
+	CurrentVersion = 11
 )
 
 // Cursor iterates through a stellar core database's ledgers
@@ -35,7 +36,8 @@ type Cursor struct {
 	// DB is the stellar-core db that data is ingested from.
 	DB *db.Session
 
-	Metrics *IngesterMetrics
+	Metrics        *IngesterMetrics
+	AssetsModified AssetsModified
 
 	// Err is the error that caused this iteration to fail, if any.
 	Err error
@@ -89,6 +91,11 @@ type System struct {
 	// stellar-core
 	SkipCursorUpdate bool
 
+	// HistoryRetentionCount is the desired minimum number of ledgers to
+	// keep in the history database, working backwards from the latest core
+	// ledger.  0 represents "all ledgers".
+	HistoryRetentionCount uint
+
 	lock    sync.Mutex
 	current *Session
 }
@@ -99,6 +106,9 @@ type IngesterMetrics struct {
 	IngestLedgerTimer metrics.Timer
 	LoadLedgerTimer   metrics.Timer
 }
+
+// AssetsModified tracks all the assets modified during a cycle of ingestion
+type AssetsModified map[string]xdr.Asset
 
 // Ingestion receives write requests from a Session
 type Ingestion struct {
@@ -114,6 +124,7 @@ type Ingestion struct {
 	effects                  sq.InsertBuilder
 	accounts                 sq.InsertBuilder
 	trades                   sq.InsertBuilder
+	assetStats               sq.InsertBuilder
 }
 
 // Session represents a single attempt at ingesting data into the history
@@ -168,20 +179,24 @@ func New(network string, coreURL string, core, horizon *db.Session) *System {
 	return i
 }
 
-// NewSession initialize a new ingestion session, from `first` to `last` using
-// `i`.
-func NewSession(first, last int32, i *System) *Session {
+// NewCursor initializes a new ingestion cursor
+func NewCursor(first, last int32, i *System) *Cursor {
+	return &Cursor{
+		FirstLedger:    first,
+		LastLedger:     last,
+		DB:             i.CoreDB,
+		Metrics:        &i.Metrics,
+		AssetsModified: AssetsModified(make(map[string]xdr.Asset)),
+	}
+}
+
+// NewSession initialize a new ingestion session
+func NewSession(i *System) *Session {
 	hdb := i.HorizonDB.Clone()
 
 	return &Session{
 		Ingestion: &Ingestion{
 			DB: hdb,
-		},
-		Cursor: &Cursor{
-			FirstLedger: first,
-			LastLedger:  last,
-			DB:          i.CoreDB,
-			Metrics:     &i.Metrics,
 		},
 		Network:          i.Network,
 		StellarCoreURL:   i.StellarCoreURL,

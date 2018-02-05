@@ -28,12 +28,21 @@ func StartHTTPTest(t *testing.T, scenario string) *HTTPT {
 	return ret
 }
 
-// Post delegates to the test's request helper
+// Get delegates to the test's request helper
 func (ht *HTTPT) Get(
 	path string,
 	fn ...func(*http.Request),
 ) *httptest.ResponseRecorder {
 	return ht.RH.Get(path, fn...)
+}
+
+// GetWithParams delegates to the test's request helper and encodes along with the query params
+func (ht *HTTPT) GetWithParams(
+	path string,
+	queryParams url.Values,
+	fn ...func(*http.Request),
+) *httptest.ResponseRecorder {
+	return ht.RH.Get(path+"?"+queryParams.Encode(), fn...)
 }
 
 // Finish closes the test app and finishes the test

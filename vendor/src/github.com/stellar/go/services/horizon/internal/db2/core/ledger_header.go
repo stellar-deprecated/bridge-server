@@ -2,7 +2,17 @@ package core
 
 import (
 	sq "github.com/Masterminds/squirrel"
+	"github.com/stellar/go/xdr"
 )
+
+// DataXDR returns the base64 encoded ledger header
+func (lh *LedgerHeader) DataXDR() string {
+	out, err := xdr.MarshalBase64(lh.Data)
+	if err != nil {
+		panic(err)
+	}
+	return out
+}
 
 // LedgerHeaderBySequence is a query that loads a single row from the
 // `ledgerheaders` table.

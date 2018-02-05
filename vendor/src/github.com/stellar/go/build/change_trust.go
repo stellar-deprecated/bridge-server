@@ -40,7 +40,7 @@ func (b *ChangeTrustBuilder) Mutate(muts ...interface{}) {
 		}
 
 		if err != nil {
-			b.Err = err
+			b.Err = errors.Wrap(err, "ChangeTrustBuilder error")
 			return
 		}
 	}

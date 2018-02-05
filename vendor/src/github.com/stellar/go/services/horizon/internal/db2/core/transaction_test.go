@@ -3,8 +3,8 @@ package core
 import (
 	"testing"
 
-	"github.com/stellar/go/xdr"
 	"github.com/stellar/go/services/horizon/internal/test"
+	"github.com/stellar/go/xdr"
 )
 
 func TestTransactionsQueries(t *testing.T) {
@@ -20,12 +20,18 @@ func TestTransactionsQueries(t *testing.T) {
 		tt.Assert.Len(txs, 3)
 	}
 
-	// Test TransactionByHash
+	// Test TransactionByHashAfterLedger
 	var tx Transaction
-	err = q.TransactionByHash(&tx, "cebb875a00ff6e1383aef0fd251a76f22c1f9ab2a2dffcb077855736ade2659a")
+	err = q.TransactionByHashAfterLedger(&tx, "cebb875a00ff6e1383aef0fd251a76f22c1f9ab2a2dffcb077855736ade2659a", 2)
 
 	if tt.Assert.NoError(err) {
 		tt.Assert.Equal(int32(3), tx.LedgerSequence)
+	}
+
+	err = q.TransactionByHashAfterLedger(&tx, "cebb875a00ff6e1383aef0fd251a76f22c1f9ab2a2dffcb077855736ade2659a", 3)
+
+	if tt.Assert.Error(err) {
+		tt.Assert.True(q.NoRows(err))
 	}
 }
 

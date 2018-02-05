@@ -1,13 +1,13 @@
 package txsub
 
 import (
+	"context"
 	"sync"
 	"time"
 
 	"github.com/rcrowley/go-metrics"
 	"github.com/stellar/go/services/horizon/internal/log"
 	"github.com/stellar/go/services/horizon/internal/txsub/sequence"
-	"golang.org/x/net/context"
 )
 
 // System represents a completely configured transaction submission system.

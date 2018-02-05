@@ -2,8 +2,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 9.6.5
--- Dumped by pg_dump version 9.6.5
+-- Dumped from database version 9.6.3
+-- Dumped by pg_dump version 9.6.3
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -14,9 +14,60 @@ SET client_min_messages = warning;
 
 SET search_path = public, pg_catalog;
 
+--
+-- Name: first_agg(anyelement, anyelement); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION first_agg(anyelement, anyelement) RETURNS anyelement
+    LANGUAGE sql IMMUTABLE STRICT
+    AS $_$ SELECT $1 $_$;
+
+
+--
+-- Name: last_agg(anyelement, anyelement); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION last_agg(anyelement, anyelement) RETURNS anyelement
+    LANGUAGE sql IMMUTABLE STRICT
+    AS $_$ SELECT $2 $_$;
+
+
+--
+-- Name: first(anyelement); Type: AGGREGATE; Schema: public; Owner: -
+--
+
+CREATE AGGREGATE first(anyelement) (
+    SFUNC = first_agg,
+    STYPE = anyelement
+);
+
+
+--
+-- Name: last(anyelement); Type: AGGREGATE; Schema: public; Owner: -
+--
+
+CREATE AGGREGATE last(anyelement) (
+    SFUNC = last_agg,
+    STYPE = anyelement
+);
+
+
 SET default_tablespace = '';
 
 SET default_with_oids = false;
+
+--
+-- Name: asset_stats; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE asset_stats (
+    id bigint NOT NULL,
+    amount bigint NOT NULL,
+    num_accounts integer NOT NULL,
+    flags smallint NOT NULL,
+    toml character varying(64) NOT NULL
+);
+
 
 --
 -- Name: gorp_migrations; Type: TABLE; Schema: public; Owner: -
@@ -114,7 +165,8 @@ CREATE TABLE history_ledgers (
     base_fee integer NOT NULL,
     base_reserve integer NOT NULL,
     max_tx_set_size integer NOT NULL,
-    protocol_version integer DEFAULT 0 NOT NULL
+    protocol_version integer DEFAULT 0 NOT NULL,
+    ledger_header text
 );
 
 
@@ -262,16 +314,25 @@ ALTER TABLE ONLY history_transaction_participants ALTER COLUMN id SET DEFAULT ne
 
 
 --
+-- Data for Name: asset_stats; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+
+
+--
 -- Data for Name: gorp_migrations; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-INSERT INTO gorp_migrations VALUES ('1_initial_schema.sql', '2017-10-25 12:02:41.355815-07');
-INSERT INTO gorp_migrations VALUES ('2_index_participants_by_toid.sql', '2017-10-25 12:02:41.35913-07');
-INSERT INTO gorp_migrations VALUES ('3_use_sequence_in_history_accounts.sql', '2017-10-25 12:02:41.361119-07');
-INSERT INTO gorp_migrations VALUES ('4_add_protocol_version.sql', '2017-10-25 12:02:41.365998-07');
-INSERT INTO gorp_migrations VALUES ('5_create_trades_table.sql', '2017-10-25 12:02:41.370443-07');
-INSERT INTO gorp_migrations VALUES ('6_create_assets_table.sql', '2017-10-25 12:02:41.373746-07');
-INSERT INTO gorp_migrations VALUES ('7_modify_trades_table.sql', '2017-10-25 12:02:41.381902-07');
+INSERT INTO gorp_migrations VALUES ('1_initial_schema.sql', '2017-12-15 13:25:00.27835-06');
+INSERT INTO gorp_migrations VALUES ('2_index_participants_by_toid.sql', '2017-12-15 13:25:00.284847-06');
+INSERT INTO gorp_migrations VALUES ('3_use_sequence_in_history_accounts.sql', '2017-12-15 13:25:00.287761-06');
+INSERT INTO gorp_migrations VALUES ('4_add_protocol_version.sql', '2017-12-15 13:25:00.296332-06');
+INSERT INTO gorp_migrations VALUES ('5_create_trades_table.sql', '2017-12-15 13:25:00.303579-06');
+INSERT INTO gorp_migrations VALUES ('6_create_assets_table.sql', '2017-12-15 13:25:00.308494-06');
+INSERT INTO gorp_migrations VALUES ('7_modify_trades_table.sql', '2017-12-15 13:25:00.315896-06');
+INSERT INTO gorp_migrations VALUES ('8_add_aggregators.sql', '2017-12-15 13:25:00.317593-06');
+INSERT INTO gorp_migrations VALUES ('8_create_asset_stats_table.sql', '2017-12-15 13:25:00.322275-06');
+INSERT INTO gorp_migrations VALUES ('9_add_header_xdr.sql', '2017-12-15 13:25:00.324723-06');
 
 
 --
@@ -357,6 +418,14 @@ SELECT pg_catalog.setval('history_transaction_participants_id_seq', 1, false);
 
 
 --
+-- Name: asset_stats asset_stats_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY asset_stats
+    ADD CONSTRAINT asset_stats_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: gorp_migrations gorp_migrations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -394,6 +463,13 @@ ALTER TABLE ONLY history_operation_participants
 
 ALTER TABLE ONLY history_transaction_participants
     ADD CONSTRAINT history_transaction_participants_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: asset_by_code; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX asset_by_code ON history_assets USING btree (asset_code);
 
 
 --
@@ -611,6 +687,14 @@ CREATE UNIQUE INDEX index_history_transactions_on_id ON history_transactions USI
 --
 
 CREATE INDEX trade_effects_by_order_book ON history_effects USING btree (((details ->> 'sold_asset_type'::text)), ((details ->> 'sold_asset_code'::text)), ((details ->> 'sold_asset_issuer'::text)), ((details ->> 'bought_asset_type'::text)), ((details ->> 'bought_asset_code'::text)), ((details ->> 'bought_asset_issuer'::text))) WHERE (type = 33);
+
+
+--
+-- Name: asset_stats asset_stats_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY asset_stats
+    ADD CONSTRAINT asset_stats_id_fkey FOREIGN KEY (id) REFERENCES history_assets(id) ON UPDATE RESTRICT ON DELETE CASCADE;
 
 
 --

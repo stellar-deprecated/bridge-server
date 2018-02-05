@@ -5,7 +5,7 @@ import (
 
 	gctx "github.com/goji/context"
 	"github.com/stellar/go/services/horizon/internal/errors"
-	"github.com/stellar/go/services/horizon/internal/render/problem"
+	"github.com/stellar/go/support/render/problem"
 	"github.com/zenazn/goji/web"
 )
 

@@ -40,7 +40,7 @@ func ExampleDecodeTransaction() {
 // intuitive to configure and sign a transaction.
 func ExampleBuildTransaction() {
 	source := "SA26PHIKZM6CXDGR472SSGUQQRYXM6S437ZNHZGRM6QA4FOPLLLFRGDX"
-	tx := b.Transaction(
+	tx, err := b.Transaction(
 		b.SourceAccount{source},
 		b.Sequence{1},
 		b.Payment(
@@ -48,10 +48,16 @@ func ExampleBuildTransaction() {
 			b.NativeAmount{"50.0"},
 		),
 	)
+	if err != nil {
+		panic(err)
+	}
 
-	txe := tx.Sign(source)
+	txe, err := tx.Sign(source)
+	if err != nil {
+		panic(err)
+	}
+
 	txeB64, err := txe.Base64()
-
 	if err != nil {
 		panic(err)
 	}

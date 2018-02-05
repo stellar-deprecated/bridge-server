@@ -45,7 +45,7 @@ func (b *ManageDataBuilder) Mutate(muts ...interface{}) {
 		}
 
 		if err != nil {
-			b.Err = err
+			b.Err = errors.Wrap(err, "ManageDataBuilder error")
 			return
 		}
 	}

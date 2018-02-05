@@ -121,6 +121,15 @@ type Asset struct {
 	Issuer string `db:"asset_issuer"`
 }
 
+// AssetStat is a row in the asset_stats table representing the stats per Asset
+type AssetStat struct {
+	ID          int64  `db:"id"`
+	Amount      int64  `db:"amount"`
+	NumAccounts int32  `db:"num_accounts"`
+	Flags       int8   `db:"flags"`
+	Toml        string `db:"toml"`
+}
+
 // Effect is a row of data from the `history_effects` table
 type Effect struct {
 	HistoryAccountID   int64       `db:"history_account_id"`
@@ -161,6 +170,7 @@ type Ledger struct {
 	BaseReserve        int32       `db:"base_reserve"`
 	MaxTxSetSize       int32       `db:"max_tx_set_size"`
 	ProtocolVersion    int32       `db:"protocol_version"`
+	LedgerHeaderXDR    null.String `db:"ledger_header"`
 }
 
 // LedgerCache is a helper struct to load ledger data related to a batch of
@@ -199,7 +209,7 @@ type OperationsQ struct {
 	sql    sq.SelectBuilder
 }
 
-// Q is a helper struct on which to hang common queries against a history
+// Q is a helper struct on which to hang common_trades queries against a history
 // portion of the horizon database.
 type Q struct {
 	*db.Session

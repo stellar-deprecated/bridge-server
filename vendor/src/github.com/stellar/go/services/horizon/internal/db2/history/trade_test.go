@@ -1,9 +1,10 @@
-package history
+package history_test
 
 import (
 	"testing"
 
 	"github.com/stellar/go/services/horizon/internal/db2"
+	. "github.com/stellar/go/services/horizon/internal/db2/history"
 	"github.com/stellar/go/services/horizon/internal/test"
 	"github.com/stellar/go/xdr"
 )
@@ -45,4 +46,12 @@ func TestTradeQueries(t *testing.T) {
 	tt.Assert.Equal(xdr.Int64(2000000000), trades[0].BaseAmount)
 	tt.Assert.Equal(xdr.Int64(1000000000), trades[0].CounterAmount)
 	tt.Assert.Equal(true, trades[0].BaseIsSeller)
+
+	// reverse assets
+	q.TradesForAssetPair(2, 1).Select(&trades)
+	tt.Assert.Len(trades, 1)
+
+	tt.Assert.Equal(xdr.Int64(1000000000), trades[0].BaseAmount)
+	tt.Assert.Equal(xdr.Int64(2000000000), trades[0].CounterAmount)
+	tt.Assert.Equal(false, trades[0].BaseIsSeller)
 }

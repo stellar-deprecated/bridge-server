@@ -75,15 +75,21 @@ func (rh *RequestHandler) Builder(w http.ResponseWriter, r *http.Request) {
 		mutators = append(mutators, operation.Body.ToTransactionMutator())
 	}
 
-	tx := b.Transaction(mutators...)
+	tx, err := b.Transaction(mutators...)
 
-	if tx.Err != nil {
+	if err != nil {
 		log.WithFields(log.Fields{"err": err, "request": request}).Error("TransactionBuilder returned error")
 		server.Write(w, protocols.InternalServerError)
 		return
 	}
 
-	txe := tx.Sign(request.Signers...)
+	txe, err := tx.Sign(request.Signers...)
+	if err != nil {
+		log.WithFields(log.Fields{"err": err, "request": request}).Error("Error signing transaction")
+		server.Write(w, protocols.InternalServerError)
+		return
+	}
+
 	txeB64, err := txe.Base64()
 	if err != nil {
 		log.WithFields(log.Fields{"err": err, "request": request}).Error("Error encoding transaction envelope")

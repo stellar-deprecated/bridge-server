@@ -18,7 +18,7 @@ import:
   version: c9d3cc542ad199f62c0264286be537f9bce6063c
   repo: https://github.com/getsentry/raven-go
 - package: github.com/segmentio/go-loggly
-  version: e78f6971ebca5835614673e2f5f6a47ca5f13501
+  version: eb91657e62b25699dd4e84d5562735440d4beace
   repo: https://github.com/segmentio/go-loggly
 - package: golang.org/x/net
   version: 9bc2a3340c92c17a20edcd0080e93851ed58f5d5
@@ -245,9 +245,6 @@ import:
 - package: github.com/valyala/fasthttp
   version: 0a7f0a797cd66b89588d0a7fdd670b706579a621
   repo: https://github.com/valyala/fasthttp
-- package: github.com/visionmedia/go-debug
-  version: ff4a55a20a86994118644bbddc6a216da193cc13
-  repo: https://github.com/visionmedia/go-debug
 - package: github.com/xeipuuv/gojsonpointer
   version: e0fe6f68307607d540ed8eac07a342c33fa1b54a
   repo: https://github.com/xeipuuv/gojsonpointer
@@ -286,3 +283,17 @@ import:
 - package: gopkg.in/yaml.v2
   version: 7ad95dd0798a40da1ccdff6dff35fd177b5edf40
   repo: https://gopkg.in/yaml.v2
+- package: github.com/go-chi/chi
+  version: ~3.1.5
+- package: github.com/tyler-smith/go-bip32
+- package: github.com/btcsuite/btcd
+  subpackages:
+  - rpcclient
+- package: github.com/btcsuite/btclog
+- package: github.com/btcsuite/btcutil
+- package: github.com/btcsuite/go-socks
+  subpackages:
+  - socks
+- package: github.com/btcsuite/websocket
+- package: github.com/bartekn/go-bip39
+  version: a05967ea095d81c8fe4833776774cfaff8e5036c

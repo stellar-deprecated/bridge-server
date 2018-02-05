@@ -111,7 +111,7 @@ func TestRequestHandlerAuth(t *testing.T) {
 
 			attachHash := sha256.Sum256([]byte("{}"))
 
-			txBuilder := build.Transaction(
+			txBuilder, err := build.Transaction(
 				build.SourceAccount{"GAW77Z6GPWXSODJOMF5L5BMX6VMYGEJRKUNBC2CZ725JTQZORK74HQQD"},
 				build.Sequence{0},
 				build.TestNetwork,
@@ -121,6 +121,7 @@ func TestRequestHandlerAuth(t *testing.T) {
 					build.CreditAmount{"USD", "GAMVF7G4GJC4A7JMFJWLUAEIBFQD5RT3DCB5DC5TJDEKQBBACQ4JZVEE", "20"},
 				),
 			)
+			require.NoError(t, err)
 
 			txB64, err := xdr.MarshalBase64(txBuilder.TX)
 			require.NoError(t, err)
@@ -167,7 +168,7 @@ func TestRequestHandlerAuth(t *testing.T) {
 			attachmentJSON, err := attachment.Marshal()
 			require.NoError(t, err)
 
-			txBuilder := build.Transaction(
+			txBuilder, err := build.Transaction(
 				build.SourceAccount{"GAW77Z6GPWXSODJOMF5L5BMX6VMYGEJRKUNBC2CZ725JTQZORK74HQQD"},
 				build.Sequence{0},
 				build.TestNetwork,
@@ -177,6 +178,7 @@ func TestRequestHandlerAuth(t *testing.T) {
 					build.CreditAmount{"USD", "GAMVF7G4GJC4A7JMFJWLUAEIBFQD5RT3DCB5DC5TJDEKQBBACQ4JZVEE", "20"},
 				),
 			)
+			require.NoError(t, err)
 
 			txB64, err := xdr.MarshalBase64(txBuilder.TX)
 			require.NoError(t, err)
@@ -224,7 +226,7 @@ func TestRequestHandlerAuth(t *testing.T) {
 			attachmentJSON, err := attachment.Marshal()
 			require.NoError(t, err)
 
-			txBuilder := build.Transaction(
+			txBuilder, err := build.Transaction(
 				build.SourceAccount{"GAW77Z6GPWXSODJOMF5L5BMX6VMYGEJRKUNBC2CZ725JTQZORK74HQQD"},
 				build.Sequence{0},
 				build.TestNetwork,
@@ -234,7 +236,7 @@ func TestRequestHandlerAuth(t *testing.T) {
 					build.CreditAmount{"USD", "GAMVF7G4GJC4A7JMFJWLUAEIBFQD5RT3DCB5DC5TJDEKQBBACQ4JZVEE", "20"},
 				),
 			)
-
+			require.NoError(t, err)
 			txB64, err := xdr.MarshalBase64(txBuilder.TX)
 			require.NoError(t, err)
 			txHash, err := txBuilder.HashHex()
@@ -325,7 +327,7 @@ func TestRequestHandlerAuth(t *testing.T) {
 		require.NoError(t, err)
 		attachHashB64 := base64.StdEncoding.EncodeToString(attachHash[:])
 
-		txBuilder := build.Transaction(
+		txBuilder, err := build.Transaction(
 			build.SourceAccount{"GAW77Z6GPWXSODJOMF5L5BMX6VMYGEJRKUNBC2CZ725JTQZORK74HQQD"},
 			build.Sequence{0},
 			build.TestNetwork,
@@ -335,7 +337,7 @@ func TestRequestHandlerAuth(t *testing.T) {
 				build.CreditAmount{"USD", "GAMVF7G4GJC4A7JMFJWLUAEIBFQD5RT3DCB5DC5TJDEKQBBACQ4JZVEE", "20"},
 			),
 		)
-
+		require.NoError(t, err)
 		txB64, _ := xdr.MarshalBase64(txBuilder.TX)
 		txHash, _ := txBuilder.HashHex()
 

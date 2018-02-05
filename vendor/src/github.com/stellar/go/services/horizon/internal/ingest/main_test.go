@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stellar/go/network"
+	"github.com/stellar/go/services/horizon/internal/ledger"
 	"github.com/stellar/go/services/horizon/internal/test"
 )
 
@@ -12,6 +13,7 @@ func TestIngest(t *testing.T) {
 	defer tt.Finish()
 
 	s := ingest(tt)
+
 	tt.Require.NoError(s.Err)
 	tt.Assert.Equal(57, s.Ingested)
 
@@ -45,7 +47,11 @@ func TestTick(t *testing.T) {
 
 func ingest(tt *test.T) *Session {
 	sys := sys(tt)
-	return sys.Tick()
+	s := NewSession(sys)
+	s.Cursor = NewCursor(1, ledger.CurrentState().CoreLatest, sys)
+	s.Run()
+
+	return s
 }
 
 func sys(tt *test.T) *System {

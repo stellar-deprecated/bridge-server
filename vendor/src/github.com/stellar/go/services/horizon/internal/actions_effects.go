@@ -9,6 +9,7 @@ import (
 	"github.com/stellar/go/services/horizon/internal/render/hal"
 	"github.com/stellar/go/services/horizon/internal/render/sse"
 	"github.com/stellar/go/services/horizon/internal/resource"
+	halRender "github.com/stellar/go/support/render/hal"
 )
 
 // This file contains the actions:
@@ -41,7 +42,7 @@ func (action *EffectIndexAction) JSON() {
 	)
 
 	action.Do(func() {
-		hal.Render(action.W, action.Page)
+		halRender.Render(action.W, action.Page)
 	})
 }
 
@@ -114,8 +115,7 @@ func (action *EffectIndexAction) loadPage() {
 		action.Page.Add(res)
 	}
 
-	action.Page.BaseURL = action.BaseURL()
-	action.Page.BasePath = action.Path()
+	action.Page.FullURL = action.FullURL()
 	action.Page.Limit = action.PagingParams.Limit
 	action.Page.Cursor = action.PagingParams.Cursor
 	action.Page.Order = action.PagingParams.Order

@@ -68,7 +68,7 @@ func (b *ManageOfferBuilder) Mutate(muts ...interface{}) {
 		}
 
 		if err != nil {
-			b.Err = err
+			b.Err = errors.Wrap(err, "ManageOfferBuilder error")
 			return
 		}
 	}

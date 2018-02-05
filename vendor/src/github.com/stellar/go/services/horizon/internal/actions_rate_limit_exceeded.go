@@ -5,7 +5,8 @@ import (
 
 	"github.com/zenazn/goji/web"
 
-	"github.com/stellar/go/services/horizon/internal/render/problem"
+	hProblem "github.com/stellar/go/services/horizon/internal/render/problem"
+	"github.com/stellar/go/support/render/problem"
 )
 
 // RateLimitExceededAction renders a 429 response
@@ -24,5 +25,5 @@ func (action RateLimitExceededAction) ServeHTTP(w http.ResponseWriter, r *http.R
 	}
 	ap.Prepare(c, w, r)
 	ap.App = action.App
-	problem.Render(action.Ctx, action.W, problem.RateLimitExceeded)
+	problem.Render(action.Ctx, action.W, hProblem.RateLimitExceeded)
 }

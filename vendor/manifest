@@ -148,6 +148,12 @@
 			"branch": "master"
 		},
 		{
+			"importpath": "github.com/go-errors/errors",
+			"repository": "https://github.com/go-errors/errors",
+			"revision": "3afebba5a48dbc89b574d890b6b34d9ee10b4785",
+			"branch": "master"
+		},
+		{
 			"importpath": "github.com/go-ini/ini",
 			"repository": "https://github.com/go-ini/ini",
 			"revision": "a2610b3a793cfa7fdf0b07038068af5ddc12aba1",
@@ -476,7 +482,7 @@
 		{
 			"importpath": "github.com/stellar/go",
 			"repository": "https://github.com/stellar/go",
-			"revision": "78d294bf7c2afe35e0cfef5c1e6e61aa38b1c04c",
+			"revision": "2dacfed8b9dc4ce7b42b606cd27857e99b03cc1e",
 			"branch": "master"
 		},
 		{

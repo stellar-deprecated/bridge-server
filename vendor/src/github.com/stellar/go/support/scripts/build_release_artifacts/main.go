@@ -181,6 +181,14 @@ func buildSnapshots() {
 
 		for _, cfg := range getBuildConfigs() {
 
+			//WARNING - DIRTY FILTHY HACK
+			//hardcode non-linux bifrost out of the snapshots build
+			//TODO: find alternative
+			if pkg=="services/bifrost" && !(cfg.OS=="linux" && cfg.Arch=="amd64"){
+				log.Info("ignoring biforst for non linux/amd64")
+				continue
+			}
+
 			dest := prepareDest(pkg, bin, "snapshot", cfg.OS, cfg.Arch)
 
 			build(

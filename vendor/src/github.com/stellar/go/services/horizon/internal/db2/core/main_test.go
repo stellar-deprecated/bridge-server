@@ -50,7 +50,7 @@ func TestElderLedger(t *testing.T) {
 		tt.Assert.Equal(elder, int32(10))
 	}
 
-	// a second gap is not considered for determining the elder ledger
+	// only the latest gap is considered for determining the elder ledger
 	_, err = tt.CoreDB.Exec(`
 		DELETE FROM ledgerheaders WHERE ledgerseq > 15 AND ledgerseq < 20
 	`)
@@ -58,6 +58,6 @@ func TestElderLedger(t *testing.T) {
 
 	err = q.ElderLedger(&elder)
 	if tt.Assert.NoError(err) {
-		tt.Assert.Equal(elder, int32(10))
+		tt.Assert.Equal(elder, int32(20))
 	}
 }

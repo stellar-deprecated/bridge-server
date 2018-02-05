@@ -54,7 +54,7 @@ func (bot *Bot) makeTx(address string) (string, error) {
 	bot.lock.Lock()
 	defer bot.lock.Unlock()
 
-	tx := Transaction(
+	tx, err := Transaction(
 		SourceAccount{bot.Secret},
 		Sequence{bot.sequence + 1},
 		Network{bot.Network},
@@ -64,13 +64,16 @@ func (bot *Bot) makeTx(address string) (string, error) {
 		),
 	)
 
-	if tx.Err != nil {
-		return "", tx.Err
+	if err != nil {
+		return "", err
 	}
 
 	bot.sequence++
 
-	txe := tx.Sign(bot.Secret)
+	txe, err := tx.Sign(bot.Secret)
+	if err != nil {
+		return "", err
+	}
 
 	return txe.Base64()
 }

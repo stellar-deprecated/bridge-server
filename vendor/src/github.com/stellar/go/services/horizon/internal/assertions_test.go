@@ -4,8 +4,11 @@ import (
 	"bytes"
 	"encoding/json"
 
-	"github.com/stellar/go/services/horizon/internal/render/problem"
+	"net/url"
+
+	hProblem "github.com/stellar/go/services/horizon/internal/render/problem"
 	"github.com/stellar/go/services/horizon/internal/test"
+	"github.com/stellar/go/support/render/problem"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -48,7 +51,7 @@ func (a *Assertions) Problem(body *bytes.Buffer, expected problem.P) bool {
 		return false
 	}
 
-	problem.Inflate(test.Context(), &expected)
+	hProblem.Inflate(test.Context(), &expected)
 
 	if expected.Type != "" && a.Equal(expected.Type, actual.Type, "problem type didn't match") {
 		return false
@@ -71,4 +74,26 @@ func (a *Assertions) ProblemType(body *bytes.Buffer, typ string) bool {
 	}
 
 	return a.Problem(body, problem.P{Type: typ})
+}
+
+// EqualUrlStrings asserts for equality between url strings, regardless of query params ordering
+func (a *Assertions) EqualUrlStrings(expected string, actual string) bool {
+
+	// this function generates a golang URL struct from
+	// each string and re-encodes the query params,
+	// which sorts and allows for a simple equality check
+
+	expectedU, err := url.Parse(expected)
+	if !a.NoError(err) {
+		return false
+	}
+	expectedU.RawQuery = expectedU.Query().Encode()
+
+	actualU, err := url.Parse(actual)
+	if !a.NoError(err) {
+		return false
+	}
+	actualU.RawQuery = actualU.Query().Encode()
+
+	return a.Equal(expectedU, actualU)
 }

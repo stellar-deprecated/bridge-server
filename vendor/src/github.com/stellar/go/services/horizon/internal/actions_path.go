@@ -4,6 +4,7 @@ import (
 	"github.com/stellar/go/services/horizon/internal/paths"
 	"github.com/stellar/go/services/horizon/internal/render/hal"
 	"github.com/stellar/go/services/horizon/internal/resource"
+	halRender "github.com/stellar/go/support/render/hal"
 )
 
 // PathIndexAction provides path finding
@@ -22,7 +23,7 @@ func (action *PathIndexAction) JSON() {
 		action.loadRecords,
 		action.loadPage,
 		func() {
-			hal.Render(action.W, action.Page)
+			halRender.Render(action.W, action.Page)
 		},
 	)
 }

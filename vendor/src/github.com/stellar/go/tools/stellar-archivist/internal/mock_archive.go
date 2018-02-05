@@ -6,10 +6,10 @@ package archivist
 
 import (
 	"bytes"
-	"strings"
+	"errors"
 	"io"
 	"io/ioutil"
-	"errors"
+	"strings"
 	"sync"
 )
 

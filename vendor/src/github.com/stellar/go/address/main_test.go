@@ -20,7 +20,7 @@ func TestNew(t *testing.T) {
 
 	for _, c := range cases {
 		actual := New(c.Name, c.Domain)
-		assert.Equal(t, actual, c.ExpectedAddress)
+		assert.Equal(t, c.ExpectedAddress, actual)
 	}
 }
 
@@ -43,10 +43,10 @@ func TestSplit(t *testing.T) {
 		name, domain, err := Split(c.Address)
 
 		if c.ExpectedError == nil {
-			assert.Equal(t, name, c.ExpectedName)
-			assert.Equal(t, domain, c.ExpectedDomain)
+			assert.Equal(t, c.ExpectedName, name)
+			assert.Equal(t, c.ExpectedDomain, domain)
 		} else {
-			assert.Equal(t, errors.Cause(err), c.ExpectedError)
+			assert.Equal(t, c.ExpectedError, errors.Cause(err))
 		}
 	}
 }

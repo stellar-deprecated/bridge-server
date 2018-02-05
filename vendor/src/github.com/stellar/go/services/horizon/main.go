@@ -30,10 +30,10 @@ func init() {
 	viper.BindEnv("db-url", "DATABASE_URL")
 	viper.BindEnv("stellar-core-db-url", "STELLAR_CORE_DATABASE_URL")
 	viper.BindEnv("stellar-core-url", "STELLAR_CORE_URL")
-	viper.BindEnv("friendbot-secret", "FRIENDBOT_SECRET")
 	viper.BindEnv("per-hour-rate-limit", "PER_HOUR_RATE_LIMIT")
 	viper.BindEnv("redis-url", "REDIS_URL")
 	viper.BindEnv("ruby-horizon-url", "RUBY_HORIZON_URL")
+	viper.BindEnv("friendbot-url", "FRIENDBOT_URL")
 	viper.BindEnv("log-level", "LOG_LEVEL")
 	viper.BindEnv("sentry-dsn", "SENTRY_DSN")
 	viper.BindEnv("loggly-token", "LOGGLY_TOKEN")
@@ -93,6 +93,12 @@ func init() {
 	)
 
 	rootCmd.Flags().String(
+		"friendbot-url",
+		"",
+		"friendbot service to redirect to",
+	)
+
+	rootCmd.Flags().String(
 		"log-level",
 		"info",
 		"Minimum log severity (debug, info, warn, error) to log",
@@ -114,12 +120,6 @@ func init() {
 		"loggly-host",
 		"",
 		"Hostname to be added to every loggly log event",
-	)
-
-	rootCmd.Flags().String(
-		"friendbot-secret",
-		"",
-		"Secret seed for friendbot functionality. When empty, friendbot will be disabled",
 	)
 
 	rootCmd.Flags().String(
@@ -211,11 +211,11 @@ func initConfig() {
 		Port:                   viper.GetInt("port"),
 		RateLimit:              throttled.PerHour(viper.GetInt("per-hour-rate-limit")),
 		RedisURL:               viper.GetString("redis-url"),
+		FriendbotURL:           viper.GetString("friendbot-url"),
 		LogLevel:               ll,
 		SentryDSN:              viper.GetString("sentry-dsn"),
 		LogglyToken:            viper.GetString("loggly-token"),
 		LogglyHost:             viper.GetString("loggly-host"),
-		FriendbotSecret:        viper.GetString("friendbot-secret"),
 		TLSCert:                cert,
 		TLSKey:                 key,
 		Ingest:                 viper.GetBool("ingest"),

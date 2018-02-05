@@ -6,10 +6,10 @@ import (
 	"time"
 
 	"github.com/stellar/go/services/horizon/internal/db2/history"
-	"github.com/stellar/go/services/horizon/internal/render/hal"
 	"github.com/stellar/go/services/horizon/internal/resource/base"
 	"github.com/stellar/go/services/horizon/internal/resource/effects"
 	"github.com/stellar/go/services/horizon/internal/resource/operations"
+	"github.com/stellar/go/services/horizon/internal/render/hal"
 	"github.com/stellar/go/strkey"
 	"github.com/stellar/go/support/errors"
 	"golang.org/x/net/context"
@@ -66,6 +66,19 @@ type AccountThresholds struct {
 // Asset represents a single asset
 type Asset base.Asset
 
+// AssetStat represents the statistics for a single Asset
+type AssetStat struct {
+	Links struct {
+		Toml hal.Link `json:"toml"`
+	} `json:"_links"`
+
+	base.Asset
+	PT          string       `json:"paging_token"`
+	Amount      string       `json:"amount"`
+	NumAccounts int32        `json:"num_accounts"`
+	Flags       AccountFlags `json:"flags"`
+}
+
 // Balance represents an account's holdings for a single currency type
 type Balance struct {
 	Balance string `json:"balance"`
@@ -100,10 +113,11 @@ type Ledger struct {
 	ClosedAt         time.Time `json:"closed_at"`
 	TotalCoins       string    `json:"total_coins"`
 	FeePool          string    `json:"fee_pool"`
-	BaseFee          int32     `json:"base_fee"`
-	BaseReserve      string    `json:"base_reserve"`
+	BaseFee          int32     `json:"base_fee_in_stroops"`
+	BaseReserve      int32     `json:"base_reserve_in_stroops"`
 	MaxTxSetSize     int32     `json:"max_tx_set_size"`
 	ProtocolVersion  int32     `json:"protocol_version"`
+	HeaderXDR        string    `json:"header_xdr"`
 }
 
 // Offer is the display form of an offer to trade currency.
@@ -159,6 +173,7 @@ type Root struct {
 	Links struct {
 		Account             hal.Link `json:"account"`
 		AccountTransactions hal.Link `json:"account_transactions"`
+		Assets              hal.Link `json:"assets"`
 		Friendbot           hal.Link `json:"friendbot"`
 		Metrics             hal.Link `json:"metrics"`
 		OrderBook           hal.Link `json:"order_book"`
@@ -172,7 +187,6 @@ type Root struct {
 	HorizonSequence      int32  `json:"history_latest_ledger"`
 	HistoryElderSequence int32  `json:"history_elder_ledger"`
 	CoreSequence         int32  `json:"core_latest_ledger"`
-	CoreElderSequence    int32  `json:"core_elder_ledger"`
 	NetworkPassphrase    string `json:"network_passphrase"`
 	ProtocolVersion      int32  `json:"protocol_version"`
 }
@@ -209,6 +223,47 @@ type Trade struct {
 	CounterAssetCode   string    `json:"counter_asset_code,omitempty"`
 	CounterAssetIssuer string    `json:"counter_asset_issuer,omitempty"`
 	BaseIsSeller       bool      `json:"base_is_seller"`
+}
+
+// TradeEffect represents a trade effect resource.  NOTE (scott, 2017-12-08):
+// this resource is being added back in temporarily to deal with a deploy snafu.
+// I didn't properly message the community that we were changing the response
+// format, and so we're adding this back in to allow transition.
+type TradeEffect struct {
+	Links struct {
+		Self      hal.Link `json:"self"`
+		Seller    hal.Link `json:"seller"`
+		Buyer     hal.Link `json:"buyer"`
+		Operation hal.Link `json:"operation"`
+	} `json:"_links"`
+
+	ID                string    `json:"id"`
+	PT                string    `json:"paging_token"`
+	OfferID           string    `json:"offer_id"`
+	Seller            string    `json:"seller"`
+	SoldAmount        string    `json:"sold_amount"`
+	SoldAssetType     string    `json:"sold_asset_type"`
+	SoldAssetCode     string    `json:"sold_asset_code,omitempty"`
+	SoldAssetIssuer   string    `json:"sold_asset_issuer,omitempty"`
+	Buyer             string    `json:"buyer"`
+	BoughtAmount      string    `json:"bought_amount"`
+	BoughtAssetType   string    `json:"bought_asset_type"`
+	BoughtAssetCode   string    `json:"bought_asset_code,omitempty"`
+	BoughtAssetIssuer string    `json:"bought_asset_issuer,omitempty"`
+	LedgerCloseTime   time.Time `json:"created_at"`
+}
+
+// Transaction represents trade data aggregation over a period of time
+type TradeAggregation struct {
+	Timestamp     int64  `json:"timestamp"`
+	TradeCount    int64  `json:"trade_count"`
+	BaseVolume    string `json:"base_volume"`
+	CounterVolume string `json:"counter_volume"`
+	Average       string `json:"avg"`
+	High          string `json:"high"`
+	Low           string `json:"low"`
+	Open          string `json:"open"`
+	Close         string `json:"close"`
 }
 
 // Transaction represents a single, successful transaction

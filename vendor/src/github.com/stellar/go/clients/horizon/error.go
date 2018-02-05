@@ -4,11 +4,29 @@ import (
 	"encoding/json"
 
 	"github.com/stellar/go/support/errors"
+	"github.com/stellar/go/support/render/problem"
 	"github.com/stellar/go/xdr"
 )
 
-func (herr *Error) Error() string {
+func (herr Error) Error() string {
 	return `Horizon error: "` + herr.Problem.Title + `". Check horizon.Error.Problem for more information.`
+}
+
+// ToProblem converts the Prolem to a problem.P
+func (prob Problem) ToProblem() problem.P {
+	extras := make(map[string]interface{})
+	for k, v := range prob.Extras {
+		extras[k] = v
+	}
+
+	return problem.P{
+		Type:     prob.Type,
+		Title:    prob.Title,
+		Status:   prob.Status,
+		Detail:   prob.Detail,
+		Instance: prob.Instance,
+		Extras:   extras,
+	}
 }
 
 // Envelope extracts the transaction envelope that triggered this error from the

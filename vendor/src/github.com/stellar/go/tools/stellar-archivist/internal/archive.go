@@ -5,16 +5,16 @@
 package archivist
 
 import (
+	"bytes"
+	"encoding/json"
+	"errors"
 	"io"
 	"io/ioutil"
+	"log"
+	"net/url"
 	"path"
-	"encoding/json"
 	"regexp"
 	"strconv"
-	"net/url"
-	"errors"
-	"log"
-	"bytes"
 	"sync"
 )
 
@@ -23,11 +23,11 @@ const rootHASPath = ".well-known/stellar-history.json"
 
 type CommandOptions struct {
 	Concurrency int
-	Range Range
-	DryRun bool
-	Force bool
-	Verify bool
-	Thorough bool
+	Range       Range
+	DryRun      bool
+	Force       bool
+	Verify      bool
+	Thorough    bool
 }
 
 type ConnectOptions struct {
@@ -42,25 +42,24 @@ type ArchiveBackend interface {
 	CanListFiles() bool
 }
 
-
 type Archive struct {
-	mutex sync.Mutex
-	checkpointFiles map[string](map[uint32]bool)
-	allBuckets map[Hash]bool
+	mutex             sync.Mutex
+	checkpointFiles   map[string](map[uint32]bool)
+	allBuckets        map[Hash]bool
 	referencedBuckets map[Hash]bool
 
-	expectLedgerHashes map[uint32]Hash
-	actualLedgerHashes map[uint32]Hash
-	expectTxSetHashes map[uint32]Hash
-	actualTxSetHashes map[uint32]Hash
+	expectLedgerHashes      map[uint32]Hash
+	actualLedgerHashes      map[uint32]Hash
+	expectTxSetHashes       map[uint32]Hash
+	actualTxSetHashes       map[uint32]Hash
 	expectTxResultSetHashes map[uint32]Hash
 	actualTxResultSetHashes map[uint32]Hash
 
 	missingBuckets int
 	invalidBuckets int
 
-	invalidLedgers int
-	invalidTxSets int
+	invalidLedgers      int
+	invalidTxSets       int
 	invalidTxResultSets int
 
 	backend ArchiveBackend
@@ -171,15 +170,15 @@ func (a *Archive) ListCategoryCheckpoints(cat string, pth string) (chan uint32, 
 
 func Connect(u string, opts *ConnectOptions) (*Archive, error) {
 	arch := Archive{
-		checkpointFiles:make(map[string](map[uint32]bool)),
-		allBuckets:make(map[Hash]bool),
-		referencedBuckets:make(map[Hash]bool),
-		expectLedgerHashes:make(map[uint32]Hash),
-		actualLedgerHashes:make(map[uint32]Hash),
-		expectTxSetHashes:make(map[uint32]Hash),
-		actualTxSetHashes:make(map[uint32]Hash),
-		expectTxResultSetHashes:make(map[uint32]Hash),
-		actualTxResultSetHashes:make(map[uint32]Hash),
+		checkpointFiles:         make(map[string](map[uint32]bool)),
+		allBuckets:              make(map[Hash]bool),
+		referencedBuckets:       make(map[Hash]bool),
+		expectLedgerHashes:      make(map[uint32]Hash),
+		actualLedgerHashes:      make(map[uint32]Hash),
+		expectTxSetHashes:       make(map[uint32]Hash),
+		actualTxSetHashes:       make(map[uint32]Hash),
+		expectTxResultSetHashes: make(map[uint32]Hash),
+		actualTxResultSetHashes: make(map[uint32]Hash),
 	}
 	if opts == nil {
 		opts = new(ConnectOptions)

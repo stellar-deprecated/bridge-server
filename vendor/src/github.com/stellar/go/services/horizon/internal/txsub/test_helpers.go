@@ -7,7 +7,7 @@ package txsub
 // txsub and use these mocks in their own tests
 
 import (
-	"golang.org/x/net/context"
+	"context"
 )
 
 // MockSubmitter is a test helper that simplements the Submitter interface

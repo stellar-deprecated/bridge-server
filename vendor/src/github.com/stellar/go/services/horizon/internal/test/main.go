@@ -44,21 +44,6 @@ func Context() context.Context {
 	return hlog.Set(context.Background(), testLogger)
 }
 
-// ContextWithLogBuffer returns a context and a buffer into which the new, bound
-// logger will write into.  This method allows you to inspect what data was
-// logged more easily in your tests.
-func ContextWithLogBuffer() (context.Context, *bytes.Buffer) {
-	output := new(bytes.Buffer)
-	l, _ := hlog.New()
-	l.Logger.Out = output
-	l.Logger.Formatter.(*logrus.TextFormatter).DisableColors = true
-	l.Logger.Level = logrus.DebugLevel
-
-	ctx := hlog.Set(context.Background(), l)
-	return ctx, output
-
-}
-
 // Database returns a connection to the horizon test database
 //
 // DEPRECATED:  use `Horizon()` from test/db package

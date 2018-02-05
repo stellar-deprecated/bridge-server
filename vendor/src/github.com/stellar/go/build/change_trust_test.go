@@ -74,7 +74,7 @@ var _ = Describe("ChangeTrustBuilder Mutators", func() {
 				})
 
 				It("failed", func() {
-					Expect(subject.Err).To(MatchError("Native asset not allowed"))
+					Expect(subject.Err.Error()).To(ContainSubstring("Native asset not allowed"))
 				})
 			})
 
@@ -84,7 +84,7 @@ var _ = Describe("ChangeTrustBuilder Mutators", func() {
 				})
 
 				It("failed", func() {
-					Expect(subject.Err).To(MatchError("Asset code length is invalid"))
+					Expect(subject.Err.Error()).To(ContainSubstring("Asset code length is invalid"))
 				})
 			})
 
@@ -94,7 +94,7 @@ var _ = Describe("ChangeTrustBuilder Mutators", func() {
 				})
 
 				It("failed", func() {
-					Expect(subject.Err).To(MatchError("Asset code length is invalid"))
+					Expect(subject.Err.Error()).To(ContainSubstring("Asset code length is invalid"))
 				})
 			})
 		})

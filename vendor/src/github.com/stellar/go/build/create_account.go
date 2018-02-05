@@ -41,7 +41,7 @@ func (b *CreateAccountBuilder) Mutate(muts ...interface{}) {
 		}
 
 		if err != nil {
-			b.Err = err
+			b.Err = errors.Wrap(err, "CreateAccountBuilder error")
 			return
 		}
 	}

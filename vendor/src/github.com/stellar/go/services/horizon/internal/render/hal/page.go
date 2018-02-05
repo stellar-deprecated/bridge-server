@@ -1,13 +1,15 @@
 package hal
 
 import (
+	sUrl "github.com/stellar/go/support/url"
 	"net/url"
+	"strconv"
 )
 
 // BasePage represents the simplest page: one with no links and only embedded records.
 // Can be used to build custom page-like resources
 type BasePage struct {
-	BaseURL  *url.URL `json:"-"`
+	FullURL *url.URL `json:"-"`
 	Embedded struct {
 		Records []Pageable `json:"records"`
 	} `json:"_embedded"`
@@ -26,18 +28,19 @@ func (p *BasePage) Init() {
 	}
 }
 
+// Links represents the Links in a Page
+type Links struct {
+	Self Link `json:"self"`
+	Next Link `json:"next"`
+	Prev Link `json:"prev"`
+}
+
 // Page represents the common page configuration (i.e. has self, next, and prev
 // links) and has a helper method `PopulateLinks` to automate their
 // initialization.
 type Page struct {
-	Links struct {
-		Self Link `json:"self"`
-		Next Link `json:"next"`
-		Prev Link `json:"prev"`
-	} `json:"_links"`
-
+	Links Links `json:"_links"`
 	BasePage
-	BasePath string `json:"-"`
 	Order    string `json:"-"`
 	Limit    uint64 `json:"-"`
 	Cursor   string `json:"-"`
@@ -46,19 +49,31 @@ type Page struct {
 // PopulateLinks sets the common links for a page.
 func (p *Page) PopulateLinks() {
 	p.Init()
-	fmts := p.BasePath + "?order=%s&limit=%d&cursor=%s"
-	lb := LinkBuilder{p.BaseURL}
 
-	p.Links.Self = lb.Linkf(fmts, p.Order, p.Limit, p.Cursor)
 	rec := p.Embedded.Records
 
+	//verify paging params
+	selfUrl := sUrl.URL(*p.FullURL).
+		SetParam("cursor", p.Cursor).
+		SetParam("order", p.Order).
+		SetParam("limit", strconv.FormatInt(int64(p.Limit), 10))
+
+	//self: re-encode existing query params
+	p.Links.Self = NewLink(selfUrl.String())
+
+	//next: update cursor to last record (if any)
+	nextUrl := selfUrl
 	if len(rec) > 0 {
-		p.Links.Next = lb.Linkf(fmts, p.Order, p.Limit, rec[len(rec)-1].PagingToken())
-		p.Links.Prev = lb.Linkf(fmts, p.InvertedOrder(), p.Limit, rec[0].PagingToken())
-	} else {
-		p.Links.Next = lb.Linkf(fmts, p.Order, p.Limit, p.Cursor)
-		p.Links.Prev = lb.Linkf(fmts, p.InvertedOrder(), p.Limit, p.Cursor)
+		nextUrl = nextUrl.SetParam("cursor", rec[len(rec)-1].PagingToken())
 	}
+	p.Links.Next = NewLink(nextUrl.String())
+
+	//prev: inverse order and update cursor to first record (if any)
+	prevUrl := selfUrl.SetParam("order", p.InvertedOrder())
+	if len(rec) > 0 {
+		prevUrl = prevUrl.SetParam("cursor", rec[0].PagingToken())
+	}
+	p.Links.Prev = NewLink(prevUrl.String())
 }
 
 // InvertedOrder returns the inversion of the page's current order. Used to

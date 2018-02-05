@@ -1,10 +1,11 @@
 package txsub
 
 import (
-	"github.com/go-errors/errors"
-	"golang.org/x/net/context"
+	"context"
 	"sync"
 	"time"
+
+	"github.com/go-errors/errors"
 )
 
 // NewDefaultSubmissionList returns a list that manages open submissions purely

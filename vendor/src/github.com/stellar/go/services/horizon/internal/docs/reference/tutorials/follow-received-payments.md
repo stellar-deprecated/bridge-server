@@ -53,7 +53,7 @@ var newAccount = Keypair.random();
 
 console.log("New key pair created!");
 console.log("  Account ID: " + newAccount.publicKey());
-console.log("  Seed: " + newAccount.secret());
+console.log("  Secret: " + newAccount.secret());
 ```
 
 Save the file and run it:
@@ -62,7 +62,7 @@ Save the file and run it:
 $ node make_account.js
 New key pair created!
   Account ID: GB7JFK56QXQ4DVJRNPDBXABNG3IVKIXWWJJRJICHRU22Z5R5PI65GAK3
-  Seed: SCU36VV2OYTUMDSSU4EIVX4UUHY3XC7N44VL4IJ26IOG6HVNC7DY5UJO
+  Secret: SCU36VV2OYTUMDSSU4EIVX4UUHY3XC7N44VL4IJ26IOG6HVNC7DY5UJO
 $
 ```
 
@@ -168,9 +168,11 @@ New payment:
 
 ## Testing it out
 
-We now know how to get a stream of transactions to an account. Let's check if our solution actually works and if new payments appear. Let's watch as we send a payment from our account to another account.
+We now know how to get a stream of transactions to an account. Let's check if our solution actually works and if new payments appear. Let's watch as we send a payment ([`create_account` operation](/developers/guides/concepts/list-of-operations.html#create-account)) from our account to another account.
 
-First, let's check our account sequence number so we can create a payment operation. To do this we send a request to horizon:
+We use the `create_account` operation because we are sending payment to a new, unfunded account. If we were sending payment to an account that is already funded, we would use the [`payment` operation](/developers/guides/concepts/list-of-operations.html#payment).
+
+First, let's check our account sequence number so we can create a payment transaction. To do this we send a request to horizon:
 
 ```bash
 $ curl "https://horizon-testnet.stellar.org/accounts/GB7JFK56QXQ4DVJRNPDBXABNG3IVKIXWWJJRJICHRU22Z5R5PI65GAK3"
@@ -182,20 +184,20 @@ Now, create `make_payment.js` file and paste the following code into it:
 
 ```js
 var StellarBase = require("stellar-base");
+StellarBase.Network.useTestNetwork();
 
 var keypair = StellarBase.Keypair.fromSecret('SCU36VV2OYTUMDSSU4EIVX4UUHY3XC7N44VL4IJ26IOG6HVNC7DY5UJO');
 var account = new StellarBase.Account(keypair.publicKey(), "713226564141056");
 
-var asset = StellarBase.Asset.native();
 var amount = "100";
 var transaction = new StellarBase.TransactionBuilder(account)
-  .addOperation(StellarBase.Operation.payment({
+  .addOperation(StellarBase.Operation.createAccount({
     destination: StellarBase.Keypair.random().publicKey(),
-    asset: asset,
-    amount: amount
+    startingBalance: amount
   }))
-  .addSigner(keypair)
   .build();
+
+transaction.sign(keypair);
 
 console.log(transaction.toEnvelope().toXDR().toString("base64"));
 ```

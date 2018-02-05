@@ -5,8 +5,8 @@
 package archivist
 
 import (
-	"testing"
 	"encoding/json"
+	"testing"
 )
 
 func TestUnmarshalState(t *testing.T) {

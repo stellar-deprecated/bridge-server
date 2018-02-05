@@ -8,6 +8,7 @@ import (
 	"github.com/stellar/go/services/horizon/internal/render/problem"
 	"github.com/stellar/go/services/horizon/internal/render/sse"
 	"github.com/stellar/go/services/horizon/internal/resource"
+	halRender "github.com/stellar/go/support/render/hal"
 )
 
 // This file contains the actions:
@@ -32,7 +33,7 @@ func (action *LedgerIndexAction) JSON() {
 		action.ValidateCursorWithinHistory,
 		action.loadRecords,
 		action.loadPage,
-		func() { hal.Render(action.W, action.Page) },
+		func() { halRender.Render(action.W, action.Page) },
 	)
 }
 
@@ -76,8 +77,7 @@ func (action *LedgerIndexAction) loadPage() {
 		action.Page.Add(res)
 	}
 
-	action.Page.BaseURL = action.BaseURL()
-	action.Page.BasePath = action.Path()
+	action.Page.FullURL = action.FullURL()
 	action.Page.Limit = action.PagingParams.Limit
 	action.Page.Cursor = action.PagingParams.Cursor
 	action.Page.Order = action.PagingParams.Order
@@ -101,7 +101,7 @@ func (action *LedgerShowAction) JSON() {
 		func() {
 			var res resource.Ledger
 			res.Populate(action.Ctx, action.Record)
-			hal.Render(action.W, res)
+			halRender.Render(action.W, res)
 		},
 	)
 }

@@ -6,6 +6,7 @@ package archivist
 
 import (
 	"testing"
+
 	"github.com/stretchr/testify/assert"
 )
 
@@ -39,4 +40,3 @@ func TestFmtRangeList(t *testing.T) {
 		"[0x0000003f-0x0000007f], 0x000000ff, [0x0000017f-0x000001bf]",
 		fmtRangeList([]uint32{0x3f, 0x7f, 0xff, 0x17f, 0x1bf}))
 }
-

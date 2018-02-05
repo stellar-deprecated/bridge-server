@@ -158,7 +158,7 @@ func TestRequestHandlerSend(t *testing.T) {
 				attachHash, err := attachment.Hash()
 				require.NoError(t, err)
 
-				txBuilder := build.Transaction(
+				txBuilder, err := build.Transaction(
 					build.SourceAccount{"GAW77Z6GPWXSODJOMF5L5BMX6VMYGEJRKUNBC2CZ725JTQZORK74HQQD"},
 					build.Sequence{0},
 					build.TestNetwork,
@@ -168,7 +168,7 @@ func TestRequestHandlerSend(t *testing.T) {
 						build.CreditAmount{"USD", "GAMVF7G4GJC4A7JMFJWLUAEIBFQD5RT3DCB5DC5TJDEKQBBACQ4JZVEE", "20"},
 					),
 				)
-
+				require.NoError(t, err)
 				txB64, err := xdr.MarshalBase64(txBuilder.TX)
 				require.NoError(t, err)
 
@@ -275,7 +275,7 @@ func TestRequestHandlerSend(t *testing.T) {
 				attachHash, err := attachment.Hash()
 				require.NoError(t, err)
 
-				txBuilder := build.Transaction(
+				txBuilder, err := build.Transaction(
 					build.SourceAccount{"GAW77Z6GPWXSODJOMF5L5BMX6VMYGEJRKUNBC2CZ725JTQZORK74HQQD"},
 					build.Sequence{0},
 					build.TestNetwork,
@@ -292,6 +292,7 @@ func TestRequestHandlerSend(t *testing.T) {
 							},
 						}),
 				)
+				require.NoError(t, err)
 
 				txB64, _ := xdr.MarshalBase64(txBuilder.TX)
 
@@ -398,7 +399,7 @@ func TestRequestHandlerSend(t *testing.T) {
 				attachHash, err := attachment.Hash()
 				require.NoError(t, err)
 
-				txBuilder := build.Transaction(
+				txBuilder, err := build.Transaction(
 					build.SourceAccount{"GAW77Z6GPWXSODJOMF5L5BMX6VMYGEJRKUNBC2CZ725JTQZORK74HQQD"},
 					build.Sequence{0},
 					build.TestNetwork,
@@ -408,7 +409,7 @@ func TestRequestHandlerSend(t *testing.T) {
 						build.CreditAmount{"USD", "GAMVF7G4GJC4A7JMFJWLUAEIBFQD5RT3DCB5DC5TJDEKQBBACQ4JZVEE", "20"},
 					),
 				)
-
+				require.NoError(t, err)
 				txB64, err := xdr.MarshalBase64(txBuilder.TX)
 				require.NoError(t, err)
 

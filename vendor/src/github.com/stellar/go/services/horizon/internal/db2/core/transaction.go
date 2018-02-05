@@ -8,9 +8,9 @@ import (
 
 	sq "github.com/Masterminds/squirrel"
 	"github.com/guregu/null"
+	"github.com/stellar/go/services/horizon/internal/utf8"
 	"github.com/stellar/go/strkey"
 	"github.com/stellar/go/xdr"
-	"github.com/stellar/go/services/horizon/internal/utf8"
 )
 
 // Base64Signatures returns a slice of strings where each element is a base64
@@ -127,12 +127,17 @@ func (tx *Transaction) SourceAddress() string {
 	return strkey.MustEncode(strkey.VersionByteAccountID, raw)
 }
 
-// TransactionByHash is a query that loads a single row from the `txhistory`.
-func (q *Q) TransactionByHash(dest interface{}, hash string) error {
+// TransactionByHashAfterLedger is a query that loads a single row from the `txhistory`.
+func (q *Q) TransactionByHashAfterLedger(
+	dest interface{},
+	hash string,
+	ledger int32,
+) error {
 	sql := sq.Select("ctxh.*").
 		From("txhistory ctxh").
 		Limit(1).
-		Where("ctxh.txid = ?", hash)
+		Where("ctxh.txid = ?", hash).
+		Where("ctxh.ledgerseq > ?", ledger)
 
 	return q.Get(dest, sql)
 }

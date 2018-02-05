@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 
 	"github.com/stellar/go/support/errors"
 	"github.com/stellar/go/xdr"
@@ -24,9 +25,28 @@ func (c *Client) HomeDomainForAccount(aid string) (string, error) {
 	return a.HomeDomain, nil
 }
 
+// fixURL removes trailing slash from Client.URL. This will prevent situation when
+// http.Client does not follow redirects.
+func (c *Client) fixURL() {
+	c.URL = strings.TrimRight(c.URL, "/")
+}
+
+// Root loads the root endpoint of horizon
+func (c *Client) Root() (root Root, err error) {
+	c.fixURLOnce.Do(c.fixURL)
+	resp, err := c.HTTP.Get(c.URL)
+	if err != nil {
+		return
+	}
+
+	err = decodeResponse(resp, &root)
+	return
+}
+
 // LoadAccount loads the account state from horizon. err can be either error
 // object or horizon.Error object.
 func (c *Client) LoadAccount(accountID string) (account Account, err error) {
+	c.fixURLOnce.Do(c.fixURL)
 	resp, err := c.HTTP.Get(c.URL + "/accounts/" + accountID)
 	if err != nil {
 		return
@@ -39,7 +59,7 @@ func (c *Client) LoadAccount(accountID string) (account Account, err error) {
 // LoadAccountOffers loads the account offers from horizon. err can be either
 // error object or horizon.Error object.
 func (c *Client) LoadAccountOffers(accountID string, params ...interface{}) (offers OffersPage, err error) {
-
+	c.fixURLOnce.Do(c.fixURL)
 	endpoint := ""
 	query := url.Values{}
 
@@ -115,6 +135,7 @@ func (c *Client) SequenceForAccount(
 
 // LoadOrderBook loads order book for given selling and buying assets.
 func (c *Client) LoadOrderBook(selling Asset, buying Asset, params ...interface{}) (orderBook OrderBookSummary, err error) {
+	c.fixURLOnce.Do(c.fixURL)
 	query := url.Values{}
 
 	query.Add("selling_asset_type", selling.Type)
@@ -232,13 +253,12 @@ func (c *Client) stream(ctx context.Context, baseURL string, cursor *Cursor, han
 			return err
 		}
 	}
-
-	return nil
 }
 
 // StreamLedgers streams incoming ledgers. Use context.WithCancel to stop streaming or
 // context.Background() if you want to stream indefinitely.
 func (c *Client) StreamLedgers(ctx context.Context, cursor *Cursor, handler LedgerHandler) (err error) {
+	c.fixURLOnce.Do(c.fixURL)
 	url := fmt.Sprintf("%s/ledgers", c.URL)
 	return c.stream(ctx, url, cursor, func(data []byte) error {
 		var ledger Ledger
@@ -254,6 +274,7 @@ func (c *Client) StreamLedgers(ctx context.Context, cursor *Cursor, handler Ledg
 // StreamPayments streams incoming payments. Use context.WithCancel to stop streaming or
 // context.Background() if you want to stream indefinitely.
 func (c *Client) StreamPayments(ctx context.Context, accountID string, cursor *Cursor, handler PaymentHandler) (err error) {
+	c.fixURLOnce.Do(c.fixURL)
 	url := fmt.Sprintf("%s/accounts/%s/payments", c.URL, accountID)
 	return c.stream(ctx, url, cursor, func(data []byte) error {
 		var payment Payment
@@ -269,6 +290,7 @@ func (c *Client) StreamPayments(ctx context.Context, accountID string, cursor *C
 // StreamTransactions streams incoming transactions. Use context.WithCancel to stop streaming or
 // context.Background() if you want to stream indefinitely.
 func (c *Client) StreamTransactions(ctx context.Context, accountID string, cursor *Cursor, handler TransactionHandler) (err error) {
+	c.fixURLOnce.Do(c.fixURL)
 	url := fmt.Sprintf("%s/accounts/%s/transactions", c.URL, accountID)
 	return c.stream(ctx, url, cursor, func(data []byte) error {
 		var transaction Transaction
@@ -282,9 +304,8 @@ func (c *Client) StreamTransactions(ctx context.Context, accountID string, curso
 }
 
 // SubmitTransaction submits a transaction to the network. err can be either error object or horizon.Error object.
-func (c *Client) SubmitTransaction(
-	transactionEnvelopeXdr string,
-) (response TransactionSuccess, err error) {
+func (c *Client) SubmitTransaction(transactionEnvelopeXdr string) (response TransactionSuccess, err error) {
+	c.fixURLOnce.Do(c.fixURL)
 	v := url.Values{}
 	v.Set("tx", transactionEnvelopeXdr)
 
@@ -296,6 +317,13 @@ func (c *Client) SubmitTransaction(
 
 	err = decodeResponse(resp, &response)
 	if err != nil {
+		return
+	}
+
+	// WARNING! Do not remove this code. If you include two trailing slashes (`//`) at the end of Client.URL
+	// and developers changed Client.HTTP to not follow redirects, this will return empty response and no error!
+	if resp.StatusCode != http.StatusOK {
+		err = errors.New("Invalid response code")
 		return
 	}
 

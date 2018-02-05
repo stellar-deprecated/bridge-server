@@ -41,8 +41,8 @@ links between documents.  Let's look at a simple example:
   "closed_at": "0001-01-01T00:00:00Z",
   "total_coins": "100000000000.0000000",
   "fee_pool": "0.0000000",
-  "base_fee": 100,
-  "base_reserve": "10.0000000",
+  "base_fee_in_stroops": 100,
+  "base_reserve_in_stroops": 100000000,
   "max_tx_set_size": 50
 }
 ```

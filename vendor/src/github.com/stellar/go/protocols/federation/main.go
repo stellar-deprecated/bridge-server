@@ -26,17 +26,12 @@ type Memo struct {
 }
 
 func (m Memo) MarshalJSON() ([]byte, error) {
-	// Attempt to ParseUint. If this marshal m.Value
-	// and return JSON string.
-	_, err := strconv.ParseUint(m.Value, 10, 64)
+	// Memo after marshalling should always be a string
+	value, err := json.Marshal(m.Value)
 	if err != nil {
-		jsonString, err := json.Marshal(m.Value)
-		if err != nil {
-			return []byte{}, err
-		}
-		return jsonString, nil
+		return []byte{}, err
 	}
-	return []byte(m.Value), nil
+	return value, nil
 }
 
 func (m *Memo) UnmarshalJSON(value []byte) error {

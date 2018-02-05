@@ -68,7 +68,7 @@ func TestAsset_ToXDR(t *testing.T) {
 		actual, err := kase.Asset.ToXDR()
 
 		if kase.ExpectedErr != "" {
-			if assert.Error(t, err, "no expected error in case: %s", kase.Name) {
+			if assert.Error(t, err, ("no expected error in case: " + kase.Name)) {
 				assert.EqualError(t, err, kase.ExpectedErr)
 			}
 			continue

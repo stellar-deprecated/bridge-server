@@ -4,13 +4,14 @@ package results
 
 import (
 	"bytes"
+	"context"
 	"encoding/base64"
 
-	"github.com/stellar/go/xdr"
 	"github.com/stellar/go/services/horizon/internal/db2/core"
 	"github.com/stellar/go/services/horizon/internal/db2/history"
+	"github.com/stellar/go/services/horizon/internal/ledger"
 	"github.com/stellar/go/services/horizon/internal/txsub"
-	"golang.org/x/net/context"
+	"github.com/stellar/go/xdr"
 )
 
 // DB provides transactio submission results by querying the
@@ -19,6 +20,8 @@ type DB struct {
 	Core    *core.Q
 	History *history.Q
 }
+
+var _ txsub.ResultProvider = &DB{}
 
 // ResultByHash implements txsub.ResultProvider
 func (rp *DB) ResultByHash(ctx context.Context, hash string) txsub.Result {
@@ -35,7 +38,7 @@ func (rp *DB) ResultByHash(ctx context.Context, hash string) txsub.Result {
 
 	// query core database
 	var cr core.Transaction
-	err = rp.Core.TransactionByHash(&cr, hash)
+	err = rp.Core.TransactionByHashAfterLedger(&cr, hash, ledger.CurrentState().HistoryLatest)
 	if err == nil {
 		return txResultFromCore(cr)
 	}

@@ -13,12 +13,21 @@ func TestMarshal(t *testing.T) {
 	m = Memo{"123"}
 	value, err := json.Marshal(m)
 	assert.NoError(t, err)
-	assert.Equal(t, "123", string(value))
+	assert.Equal(t, `"123"`, string(value))
 
 	m = Memo{"Test"}
 	value, err = json.Marshal(m)
 	assert.NoError(t, err)
 	assert.Equal(t, `"Test"`, string(value))
+
+	resp := NameResponse{
+		AccountID: "GCQ4MQ4ZOS6P6RON4HH6FNWNABCLZUCNBSDE3QXFZOX5VYJDDKRQDQOJ",
+		MemoType:  "id",
+		Memo:      Memo{"123"},
+	}
+	value, err = json.Marshal(resp)
+	assert.NoError(t, err)
+	assert.Equal(t, `{"account_id":"GCQ4MQ4ZOS6P6RON4HH6FNWNABCLZUCNBSDE3QXFZOX5VYJDDKRQDQOJ","memo_type":"id","memo":"123"}`, string(value))
 }
 
 func TestUnmarshal(t *testing.T) {
