@@ -1,26 +1,32 @@
 package ingest
 
 import (
+	"context"
 	"encoding/base64"
 	"fmt"
-	"io/ioutil"
-	"net/http"
-	"net/url"
-	"path"
-	"strings"
 	"time"
+
+	"github.com/stellar/go/clients/stellarcore"
 
 	"github.com/stellar/go/amount"
 	"github.com/stellar/go/keypair"
 	"github.com/stellar/go/meta"
-	"github.com/stellar/go/xdr"
+	"github.com/stellar/go/services/horizon/internal/db2/core"
 	"github.com/stellar/go/services/horizon/internal/db2/history"
 	"github.com/stellar/go/services/horizon/internal/ingest/participants"
+	"github.com/stellar/go/support/errors"
+	sTime "github.com/stellar/go/support/time"
+	"github.com/stellar/go/xdr"
 )
 
 // Run starts an attempt to ingest the range of ledgers specified in this
 // session.
 func (is *Session) Run() {
+	if is.Cursor == nil {
+		is.Err = errors.New("no cursor set on session")
+		return
+	}
+
 	is.Err = is.Ingestion.Start()
 	if is.Err != nil {
 		return
@@ -29,6 +35,7 @@ func (is *Session) Run() {
 	defer is.Ingestion.Rollback()
 
 	for is.Cursor.NextLedger() {
+		is.validateLedger()
 		is.clearLedger()
 		is.ingestLedger()
 		is.flush()
@@ -37,6 +44,7 @@ func (is *Session) Run() {
 			break
 		}
 	}
+	is.Cursor.AssetsModified.UpdateAssetStats(is)
 
 	if is.Err != nil {
 		is.Ingestion.Rollback()
@@ -355,6 +363,12 @@ func (is *Session) ingestOperation() {
 	is.ingestOperationParticipants()
 	is.ingestEffects()
 	is.ingestTrades()
+	is.Err = is.Cursor.AssetsModified.IngestOperation(
+		is.Err,
+		is.Cursor.Operation(),
+		&is.Cursor.Transaction().Envelope.Tx.SourceAccount,
+		&core.Q{Session: is.Ingestion.DB},
+	)
 }
 
 func (is *Session) ingestOperationParticipants() {
@@ -384,6 +398,12 @@ func (is *Session) ingestSignerEffects(effects *EffectIngestion, op xdr.SetOptio
 	be, ae, err := is.Cursor.BeforeAndAfter(source.LedgerKey())
 	if err != nil {
 		is.Err = err
+		return
+	}
+
+	// HACK (scott) 2017-11-27:  Prevent crashes when BeforeAndAfter fails to
+	// correctly work.
+	if be == nil || ae == nil {
 		return
 	}
 
@@ -451,6 +471,7 @@ func (is *Session) ingestTrades() {
 		}
 	}
 
+	q := history.Q{Session: is.Ingestion.DB}
 	for i, trade := range trades {
 		// stellar-core will opportunisticly garbage collect invalid offers (in the
 		// event that a trader spends down their balance).  These garbage collected
@@ -462,12 +483,12 @@ func (is *Session) ingestTrades() {
 			continue
 		}
 
-		is.Err = is.Ingestion.Trade(
+		is.Err = q.InsertTrade(
 			is.Cursor.OperationID(),
 			int32(i),
 			buyer,
 			trade,
-			is.Cursor.Ledger().CloseTime,
+			sTime.MillisFromSeconds(is.Cursor.Ledger().CloseTime),
 		)
 		if is.Err != nil {
 			return
@@ -743,8 +764,6 @@ func (is *Session) operationFlagDetails(result map[string]interface{}, f int32, 
 // allows stellar-core to free that storage when next it runs its own
 // maintenance.
 func (is *Session) reportCursorState() error {
-	// TODO(scott): with the introduction of
-	// SkipCursorUpdate, this should probably be removed.
 	if is.StellarCoreURL == "" {
 		return nil
 	}
@@ -753,33 +772,30 @@ func (is *Session) reportCursorState() error {
 		return nil
 	}
 
-	u, err := url.Parse(is.StellarCoreURL)
+	core := &stellarcore.Client{URL: is.StellarCoreURL}
+
+	err := core.SetCursor(context.Background(), "HORIZON", is.Cursor.LastLedger)
+
 	if err != nil {
-		return err
-	}
-
-	u.Path = path.Join(u.Path, "setcursor")
-	q := u.Query()
-	q.Set("id", "HORIZON")
-	q.Set("cursor", fmt.Sprintf("%d", is.Cursor.LastLedger))
-	u.RawQuery = q.Encode()
-	url := u.String()
-
-	resp, err := http.Get(url)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	raw, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return err
-	}
-
-	body := strings.TrimSpace(string(raw))
-	if body != "Done" {
-		return fmt.Errorf("failed to set cursor on stellar-core: %s", body)
+		return errors.Wrap(err, "SetCursor failed")
 	}
 
 	return nil
+}
+
+// validate ledger
+func (is *Session) validateLedger() {
+	if is.Err != nil {
+		return
+	}
+
+	// TODO: if the cursor is running forward, load the previous legder and
+	// validate.  if reverse, load the next ledger and validate.
+
+	// if we can find no ledger where one should be, emit a warning because we
+	// cannot validate.  The normal scenario for this to occur is an empty history
+	// databse.
+
+	// if hashes mistmatch, return an error
+
 }

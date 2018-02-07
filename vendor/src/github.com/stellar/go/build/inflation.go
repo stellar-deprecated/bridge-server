@@ -29,7 +29,7 @@ func (b *InflationBuilder) Mutate(muts ...interface{}) {
 		}
 
 		if err != nil {
-			b.Err = err
+			b.Err = errors.Wrap(err, "InflationBuilder error")
 			return
 		}
 	}

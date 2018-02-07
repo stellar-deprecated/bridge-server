@@ -2,10 +2,11 @@ package toid
 
 import (
 	"fmt"
-	_ "github.com/lib/pq"
-	. "github.com/smartystreets/goconvey/convey"
 	"math"
 	"testing"
+
+	_ "github.com/lib/pq"
+	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestTotalOrderID(t *testing.T) {

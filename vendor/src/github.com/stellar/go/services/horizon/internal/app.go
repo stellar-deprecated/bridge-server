@@ -1,13 +1,13 @@
 package horizon
 
 import (
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"runtime"
 	"sync"
 	"time"
+
+	"github.com/stellar/go/clients/stellarcore"
 
 	"github.com/stellar/go/support/app"
 
@@ -16,14 +16,13 @@ import (
 	"github.com/stellar/go/build"
 	"github.com/stellar/go/services/horizon/internal/db2/core"
 	"github.com/stellar/go/services/horizon/internal/db2/history"
-	"github.com/stellar/go/services/horizon/internal/friendbot"
 	"github.com/stellar/go/services/horizon/internal/ingest"
 	"github.com/stellar/go/services/horizon/internal/ledger"
 	"github.com/stellar/go/services/horizon/internal/log"
 	"github.com/stellar/go/services/horizon/internal/paths"
 	"github.com/stellar/go/services/horizon/internal/reap"
-	"github.com/stellar/go/services/horizon/internal/render/sse"
 	"github.com/stellar/go/services/horizon/internal/txsub"
+	"github.com/stellar/go/services/horizon/internal/render/sse"
 	"github.com/stellar/go/support/db"
 	"golang.org/x/net/context"
 	"golang.org/x/net/http2"
@@ -45,7 +44,6 @@ type App struct {
 	protocolVersion   int32
 	submitter         *txsub.System
 	paths             paths.Finder
-	friendbot         *friendbot.Bot
 	ingester          *ingest.System
 	reaper            *reap.System
 	ticks             *time.Ticker
@@ -56,7 +54,6 @@ type App struct {
 	historyElderLedgerGauge  metrics.Gauge
 	horizonConnGauge         metrics.Gauge
 	coreLatestLedgerGauge    metrics.Gauge
-	coreElderLedgerGauge     metrics.Gauge
 	coreConnGauge            metrics.Gauge
 	goroutineGauge           metrics.Gauge
 }
@@ -97,7 +94,7 @@ func (a *App) Serve() {
 
 	http2.ConfigureServer(srv.Server, nil)
 
-	log.Infof("Starting horizon on %s", addr)
+	log.Infof("Starting horizon on %s (ingest: %v)", addr, a.config.Ingest)
 
 	go a.run()
 
@@ -170,11 +167,6 @@ func (a *App) UpdateLedgerState() {
 		goto Failed
 	}
 
-	err = a.CoreQ().ElderLedger(&next.CoreElder)
-	if err != nil {
-		goto Failed
-	}
-
 	err = a.HistoryQ().LatestLedger(&next.HistoryLatest)
 	if err != nil {
 		goto Failed
@@ -206,38 +198,20 @@ func (a *App) UpdateStellarCoreInfo() {
 		log.Warnf("could not load stellar-core info: %s", err)
 	}
 
-	resp, err := http.Get(fmt.Sprint(a.config.StellarCoreURL, "/info"))
+	core := &stellarcore.Client{
+		URL: a.config.StellarCoreURL,
+	}
+
+	resp, err := core.Info(context.Background())
 
 	if err != nil {
 		fail(err)
 		return
 	}
 
-	defer resp.Body.Close()
-	contents, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		fail(err)
-		return
-	}
-
-	var responseJSON map[string]*json.RawMessage
-	err = json.Unmarshal(contents, &responseJSON)
-	if err != nil {
-		fail(err)
-		return
-	}
-
-	var serverInfo map[string]interface{}
-	err = json.Unmarshal(*responseJSON["info"], &serverInfo)
-	if err != nil {
-		fail(err)
-		return
-	}
-
-	// TODO: make resilient to changes in stellar-core's info output
-	a.coreVersion = serverInfo["build"].(string)
-	a.networkPassphrase = serverInfo["network"].(string)
-	a.protocolVersion = int32(serverInfo["protocol_version"].(float64))
+	a.coreVersion = resp.Info.Build
+	a.networkPassphrase = resp.Info.Network
+	a.protocolVersion = int32(resp.Info.ProtocolVersion)
 }
 
 // UpdateMetrics triggers a refresh of several metrics gauges, such as open
@@ -248,7 +222,6 @@ func (a *App) UpdateMetrics() {
 	a.historyLatestLedgerGauge.Update(int64(ls.HistoryLatest))
 	a.historyElderLedgerGauge.Update(int64(ls.HistoryElder))
 	a.coreLatestLedgerGauge.Update(int64(ls.CoreLatest))
-	a.coreElderLedgerGauge.Update(int64(ls.CoreElder))
 
 	a.horizonConnGauge.Update(int64(a.historyQ.Session.DB.Stats().OpenConnections))
 	a.coreConnGauge.Update(int64(a.coreQ.Session.DB.Stats().OpenConnections))

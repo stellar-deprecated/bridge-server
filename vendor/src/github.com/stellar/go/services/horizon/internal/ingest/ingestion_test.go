@@ -3,12 +3,13 @@ package ingest
 import (
 	"testing"
 
+	sq "github.com/Masterminds/squirrel"
+	"github.com/stellar/go/services/horizon/internal/db2/core"
+	"github.com/stellar/go/services/horizon/internal/db2/history"
+	"github.com/stellar/go/services/horizon/internal/test"
+	testDB "github.com/stellar/go/services/horizon/internal/test/db"
 	"github.com/stellar/go/support/db"
 	"github.com/stellar/go/xdr"
-	"github.com/stellar/go/services/horizon/internal/db2/core"
-	testDB "github.com/stellar/go/services/horizon/internal/test/db"
-	"github.com/stellar/go/services/horizon/internal/test"
-	"github.com/stellar/go/services/horizon/internal/db2/history"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -58,17 +59,104 @@ func TestAssetIngest(t *testing.T) {
 	tt := test.Start(t).ScenarioWithoutHorizon("kahuna")
 	defer tt.Finish()
 	s := ingest(tt)
+	tt.Require.NoError(s.Err)
 	q := history.Q{Session: s.Ingestion.DB}
 
 	expectedAsset := history.Asset{
-		ID     : 4,
-		Type   : "credit_alphanum4",
-		Code   : "USD",
-		Issuer : "GB2QIYT2IAUFMRXKLSLLPRECC6OCOGJMADSPTRK7TGNT2SFR2YGWDARD",
+		ID:     4,
+		Type:   "credit_alphanum4",
+		Code:   "USD",
+		Issuer: "GB2QIYT2IAUFMRXKLSLLPRECC6OCOGJMADSPTRK7TGNT2SFR2YGWDARD",
 	}
 
 	actualAsset := history.Asset{}
 	err := q.GetAssetByID(&actualAsset, 4)
 	tt.Require.NoError(err)
 	tt.Assert.Equal(expectedAsset, actualAsset)
+}
+
+func TestAssetStatsIngest(t *testing.T) {
+	tt := test.Start(t).ScenarioWithoutHorizon("ingest_asset_stats")
+	defer tt.Finish()
+	s := ingest(tt)
+	tt.Require.NoError(s.Err)
+	q := history.Q{Session: s.Ingestion.DB}
+
+	type AssetStatResult struct {
+		Type        string `db:"asset_type"`
+		Code        string `db:"asset_code"`
+		Issuer      string `db:"asset_issuer"`
+		Amount      int64  `db:"amount"`
+		NumAccounts int32  `db:"num_accounts"`
+		Flags       int8   `db:"flags"`
+		Toml        string `db:"toml"`
+	}
+	assetStats := []AssetStatResult{}
+	err := q.Select(
+		&assetStats,
+		sq.
+			Select(
+				"hist.asset_type",
+				"hist.asset_code",
+				"hist.asset_issuer",
+				"stats.amount",
+				"stats.num_accounts",
+				"stats.flags",
+				"stats.toml",
+			).
+			From("history_assets hist").
+			Join("asset_stats stats ON hist.id = stats.id").
+			OrderBy("hist.asset_code ASC", "hist.asset_issuer ASC"),
+	)
+	tt.Require.NoError(err)
+	tt.Assert.Equal(3, len(assetStats))
+
+	tt.Assert.Equal(AssetStatResult{
+		Type:        "credit_alphanum4",
+		Code:        "BTC",
+		Issuer:      "GC23QF2HUE52AMXUFUH3AYJAXXGXXV2VHXYYR6EYXETPKDXZSAW67XO4",
+		Amount:      1009876000,
+		NumAccounts: 1,
+		Flags:       1,
+		Toml:        "https://test.com/.well-known/stellar.toml",
+	}, assetStats[0])
+
+	tt.Assert.Equal(AssetStatResult{
+		Type:        "credit_alphanum4",
+		Code:        "SCOT",
+		Issuer:      "GCXKG6RN4ONIEPCMNFB732A436Z5PNDSRLGWK7GBLCMQLIFO4S7EYWVU",
+		Amount:      10000000000,
+		NumAccounts: 1,
+		Flags:       2,
+		Toml:        "",
+	}, assetStats[1])
+
+	tt.Assert.Equal(AssetStatResult{
+		Type:        "credit_alphanum4",
+		Code:        "USD",
+		Issuer:      "GC23QF2HUE52AMXUFUH3AYJAXXGXXV2VHXYYR6EYXETPKDXZSAW67XO4",
+		Amount:      3000010434000,
+		NumAccounts: 2,
+		Flags:       1,
+		Toml:        "https://test.com/.well-known/stellar.toml",
+	}, assetStats[2])
+}
+
+func TestTradeIngestTimestamp(t *testing.T) {
+	//ingest trade scenario and verify that the trade timestamp
+	//matches the appropriate ledger's timestamp
+	tt := test.Start(t).ScenarioWithoutHorizon("trades")
+	defer tt.Finish()
+	s := ingest(tt)
+	q := history.Q{Session: s.Ingestion.DB}
+
+	var ledgers []history.Ledger
+	err := q.Ledgers().Select(&ledgers)
+	tt.Require.NoError(err)
+
+	var trades []history.Trade
+	err = q.Trades().Select(&trades)
+	tt.Require.NoError(err)
+
+	tt.Require.Equal(trades[len(trades)-1].LedgerCloseTime, ledgers[len(ledgers)-1].ClosedAt)
 }

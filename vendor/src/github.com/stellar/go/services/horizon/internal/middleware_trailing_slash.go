@@ -1,8 +1,9 @@
 package horizon
 
 import (
-	"github.com/zenazn/goji/web"
 	"net/http"
+
+	"github.com/zenazn/goji/web"
 )
 
 func stripTrailingSlashMiddleware() func(c *web.C, next http.Handler) http.Handler {

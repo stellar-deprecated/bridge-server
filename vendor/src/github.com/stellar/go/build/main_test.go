@@ -19,7 +19,7 @@ func TestBuild(t *testing.T) {
 // It uses the transaction builder system
 func ExampleTransactionBuilder() {
 	seed := "SDOTALIMPAM2IV65IOZA7KZL7XWZI5BODFXTRVLIHLQZQCKK57PH5F3H"
-	tx := Transaction(
+	tx, err := Transaction(
 		SourceAccount{seed},
 		Sequence{1},
 		TestNetwork,
@@ -29,8 +29,23 @@ func ExampleTransactionBuilder() {
 		),
 	)
 
-	txe := tx.Sign(seed)
-	txeB64, _ := txe.Base64()
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	txe, err := tx.Sign(seed)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	txeB64, err := txe.Base64()
+
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 
 	fmt.Printf("tx base64: %s", txeB64)
 	// Output: tx base64: AAAAADZY/nWY0gx6beMpf4S8Ur0qHsjA8fbFtBzBx1cbQzHwAAAAZAAAAAAAAAABAAAAAAAAAAAAAAABAAAAAAAAAAEAAAAALSRpLtCLv2eboZlEiHDSGR6Hb+zZL92fbSdNpObeE0EAAAAAAAAAAB3NZQAAAAAAAAAAARtDMfAAAABA2oIeQxoJl53RMRWFeLB865zcky39f2gf2PmUubCuJYccEePRSrTC8QQrMOgGwD8a6oe8dgltvezdDsmmXBPyBw==
@@ -40,7 +55,7 @@ func ExampleTransactionBuilder() {
 // encodes it into a base64 string capable of being submitted to stellar-core.
 func ExamplePathPayment() {
 	seed := "SDOTALIMPAM2IV65IOZA7KZL7XWZI5BODFXTRVLIHLQZQCKK57PH5F3H"
-	tx := Transaction(
+	tx, err := Transaction(
 		SourceAccount{seed},
 		Sequence{1},
 		TestNetwork,
@@ -53,8 +68,23 @@ func ExamplePathPayment() {
 		),
 	)
 
-	txe := tx.Sign(seed)
-	txeB64, _ := txe.Base64()
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	txe, err := tx.Sign(seed)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	txeB64, err := txe.Base64()
+
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 
 	fmt.Printf("tx base64: %s", txeB64)
 	// Output: tx base64: AAAAADZY/nWY0gx6beMpf4S8Ur0qHsjA8fbFtBzBx1cbQzHwAAAAZAAAAAAAAAABAAAAAAAAAAAAAAABAAAAAAAAAAIAAAABRVVSAAAAAACflO2Jhs1DJkFfo7YvGZeKqpze+F4ENZde22bePZeubwAAAAA7msoAAAAAAEc9q5pbnyO0BDkT4FXgGhPGAj7kCKVbS4PDJS8D1pVCAAAAAVVTRAAAAAAALSRpLtCLv2eboZlEiHDSGR6Hb+zZL92fbSdNpObeE0EAAAAAHc1lAAAAAAIAAAAAAAAAAUJUQwAAAAAADpyeqirBMAJpPzwvuVrLqxHz5shND7/OFUvopGIhupYAAAAAAAAAARtDMfAAAABA5xuIJu/KGKQRuDrdkzNsR4HjT6wX464SHZ/yvYwVb/AkAyyfeMLDNhgKbBxQMWc3Uo5fTst1UHldC+jYNeAhCQ==
@@ -64,7 +94,7 @@ func ExamplePathPayment() {
 // encodes it into a base64 string capable of being submitted to stellar-core.
 func ExampleSetOptions() {
 	seed := "SDOTALIMPAM2IV65IOZA7KZL7XWZI5BODFXTRVLIHLQZQCKK57PH5F3H"
-	tx := Transaction(
+	tx, err := Transaction(
 		SourceAccount{seed},
 		Sequence{1},
 		TestNetwork,
@@ -83,8 +113,23 @@ func ExampleSetOptions() {
 		),
 	)
 
-	txe := tx.Sign(seed)
-	txeB64, _ := txe.Base64()
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	txe, err := tx.Sign(seed)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	txeB64, err := txe.Base64()
+
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 
 	fmt.Printf("tx base64: %s", txeB64)
 	// Output: tx base64: AAAAADZY/nWY0gx6beMpf4S8Ur0qHsjA8fbFtBzBx1cbQzHwAAAAZAAAAAAAAAABAAAAAAAAAAAAAAABAAAAAAAAAAUAAAABAAAAAKf5dCD2RflX5jEYTCZ2cHEwuB+QuJJh/0AIM3zwaiyoAAAAAQAAAAcAAAABAAAABwAAAAEAAAABAAAAAQAAAAIAAAABAAAAAwAAAAEAAAAEAAAAAQAAAAtzdGVsbGFyLm9yZwAAAAABAAAAALwxmfetrj7X13WT+tJjwj9VPrqIE2DUJ48+59etBKjTAAAABQAAAAAAAAABG0Mx8AAAAECZF17pOfZcyc7YJXMyx++PMydIvL6g2yZcPDY8h4+tmlz+3rsE6uuX0R6xfgNnuMntvK4YMmaOvp4DvaZMMNoA
@@ -94,7 +139,7 @@ func ExampleSetOptions() {
 // encodes it into a base64 string capable of being submitted to stellar-core.
 func ExampleSetOptions_manyOperations() {
 	seed := "SDOTALIMPAM2IV65IOZA7KZL7XWZI5BODFXTRVLIHLQZQCKK57PH5F3H"
-	tx := Transaction(
+	tx, err := Transaction(
 		SourceAccount{seed},
 		Sequence{1},
 		TestNetwork,
@@ -111,8 +156,23 @@ func ExampleSetOptions_manyOperations() {
 		RemoveSigner("GC6DDGPXVWXD5V6XOWJ7VUTDYI7VKPV2RAJWBVBHR47OPV5NASUNHTJW"),
 	)
 
-	txe := tx.Sign(seed)
-	txeB64, _ := txe.Base64()
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	txe, err := tx.Sign(seed)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	txeB64, err := txe.Base64()
+
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 
 	fmt.Printf("tx base64: %s", txeB64)
 	// Output: tx base64: AAAAADZY/nWY0gx6beMpf4S8Ur0qHsjA8fbFtBzBx1cbQzHwAAAETAAAAAAAAAABAAAAAAAAAAAAAAALAAAAAAAAAAUAAAABAAAAAKf5dCD2RflX5jEYTCZ2cHEwuB+QuJJh/0AIM3zwaiyoAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABQAAAAAAAAAAAAAAAQAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABQAAAAAAAAAAAAAAAQAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABQAAAAAAAAAAAAAAAQAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABQAAAAAAAAABAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABQAAAAAAAAABAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABQAAAAAAAAABAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABQAAAAAAAAAAAAAAAAAAAAEAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABQAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAgAAAAEAAAADAAAAAQAAAAQAAAAAAAAAAAAAAAAAAAAFAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAALc3RlbGxhci5vcmcAAAAAAAAAAAAAAAAFAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAALwxmfetrj7X13WT+tJjwj9VPrqIE2DUJ48+59etBKjTAAAAAAAAAAAAAAABG0Mx8AAAAEAOXsLbFo3e8fpqyeZEHGP9o/IrQDQRyof+DA1EeUkvUGbNhy57xXcpMhZpRtwXThWBYx4za4q+TRrnoZQtezgN
@@ -122,15 +182,30 @@ func ExampleSetOptions_manyOperations() {
 // encodes it into a base64 string capable of being submitted to stellar-core.
 func ExampleChangeTrust() {
 	seed := "SDOTALIMPAM2IV65IOZA7KZL7XWZI5BODFXTRVLIHLQZQCKK57PH5F3H"
-	tx := Transaction(
+	tx, err := Transaction(
 		SourceAccount{seed},
 		Sequence{1},
 		TestNetwork,
 		Trust("USD", "GAWSI2JO2CF36Z43UGMUJCDQ2IMR5B3P5TMS7XM7NUTU3JHG3YJUDQXA", Limit("100.25")),
 	)
 
-	txe := tx.Sign(seed)
-	txeB64, _ := txe.Base64()
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	txe, err := tx.Sign(seed)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	txeB64, err := txe.Base64()
+
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 
 	fmt.Printf("tx base64: %s", txeB64)
 	// Output: tx base64: AAAAADZY/nWY0gx6beMpf4S8Ur0qHsjA8fbFtBzBx1cbQzHwAAAAZAAAAAAAAAABAAAAAAAAAAAAAAABAAAAAAAAAAYAAAABVVNEAAAAAAAtJGku0Iu/Z5uhmUSIcNIZHodv7Nkv3Z9tJ02k5t4TQQAAAAA7wO+gAAAAAAAAAAEbQzHwAAAAQOIy19X38Y3jcFzvhDsmXu6iDzrzb4iwfS2NAq9GGAFiRJUGoFX85vKtlNcXzQppF4X8oIMNPEb74fuZE/N+GAE=
@@ -140,15 +215,30 @@ func ExampleChangeTrust() {
 // encodes it into a base64 string capable of being submitted to stellar-core.
 func ExampleChangeTrust_maxLimit() {
 	seed := "SDOTALIMPAM2IV65IOZA7KZL7XWZI5BODFXTRVLIHLQZQCKK57PH5F3H"
-	tx := Transaction(
+	tx, err := Transaction(
 		SourceAccount{seed},
 		Sequence{1},
 		TestNetwork,
 		Trust("USD", "GAWSI2JO2CF36Z43UGMUJCDQ2IMR5B3P5TMS7XM7NUTU3JHG3YJUDQXA"),
 	)
 
-	txe := tx.Sign(seed)
-	txeB64, _ := txe.Base64()
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	txe, err := tx.Sign(seed)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	txeB64, err := txe.Base64()
+
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 
 	fmt.Printf("tx base64: %s", txeB64)
 	// Output: tx base64: AAAAADZY/nWY0gx6beMpf4S8Ur0qHsjA8fbFtBzBx1cbQzHwAAAAZAAAAAAAAAABAAAAAAAAAAAAAAABAAAAAAAAAAYAAAABVVNEAAAAAAAtJGku0Iu/Z5uhmUSIcNIZHodv7Nkv3Z9tJ02k5t4TQX//////////AAAAAAAAAAEbQzHwAAAAQJQC6R3RqNaw5rOmaxqpAE0lD5onM/njn9I2RVlhtS2SGi2Z7xm65USYVWXTJFVqTCfTwwu+QXFcOuqgJjVtHAk=
@@ -159,7 +249,7 @@ func ExampleChangeTrust_maxLimit() {
 func ExampleRemoveTrust() {
 	seed := "SDOTALIMPAM2IV65IOZA7KZL7XWZI5BODFXTRVLIHLQZQCKK57PH5F3H"
 	operationSource := "GCVJCNUHSGKOTBBSXZJ7JJZNOSE2YDNGRLIDPMQDUEQWJQSE6QZSDPNU"
-	tx := Transaction(
+	tx, err := Transaction(
 		SourceAccount{seed},
 		Sequence{1},
 		TestNetwork,
@@ -170,8 +260,23 @@ func ExampleRemoveTrust() {
 		),
 	)
 
-	txe := tx.Sign(seed)
-	txeB64, _ := txe.Base64()
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	txe, err := tx.Sign(seed)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	txeB64, err := txe.Base64()
+
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 
 	fmt.Printf("tx base64: %s", txeB64)
 	// Output: tx base64: AAAAADZY/nWY0gx6beMpf4S8Ur0qHsjA8fbFtBzBx1cbQzHwAAAAZAAAAAAAAAABAAAAAAAAAAAAAAABAAAAAQAAAACqkTaHkZTphDK+U/SnLXSJrA2mitA3sgOhIWTCRPQzIQAAAAYAAAABVVNEAAAAAAAtJGku0Iu/Z5uhmUSIcNIZHodv7Nkv3Z9tJ02k5t4TQQAAAAAAAAAAAAAAAAAAAAEbQzHwAAAAQD5FeGBEwJyeauK+WKfcxYBeKw62EtCqvC0p9Z+1cY32fKQ+5Jz9uE1LaDsHW5NurtStKcUTiG5j2qNDf1QpYgw=
@@ -187,7 +292,7 @@ func ExampleManageOffer() {
 	}
 
 	seed := "SDOTALIMPAM2IV65IOZA7KZL7XWZI5BODFXTRVLIHLQZQCKK57PH5F3H"
-	tx := Transaction(
+	tx, err := Transaction(
 		SourceAccount{seed},
 		Sequence{1},
 		TestNetwork,
@@ -196,8 +301,23 @@ func ExampleManageOffer() {
 		DeleteOffer(rate, OfferID(1)),
 	)
 
-	txe := tx.Sign(seed)
-	txeB64, _ := txe.Base64()
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	txe, err := tx.Sign(seed)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	txeB64, err := txe.Base64()
+
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 
 	fmt.Printf("tx base64: %s", txeB64)
 	// Output: tx base64: AAAAADZY/nWY0gx6beMpf4S8Ur0qHsjA8fbFtBzBx1cbQzHwAAABLAAAAAAAAAABAAAAAAAAAAAAAAADAAAAAAAAAAMAAAAAAAAAAVVTRAAAAAAALSRpLtCLv2eboZlEiHDSGR6Hb+zZL92fbSdNpObeE0EAAAAAC+vCAAAADDgAAAAZAAAAAAAAAAAAAAAAAAAAAwAAAAAAAAABVVNEAAAAAAAtJGku0Iu/Z5uhmUSIcNIZHodv7Nkv3Z9tJ02k5t4TQQAAAAAX14QAAAAMOAAAABkAAAAAAAAAAgAAAAAAAAADAAAAAAAAAAFVU0QAAAAAAC0kaS7Qi79nm6GZRIhw0hkeh2/s2S/dn20nTaTm3hNBAAAAAAAAAAAAAAw4AAAAGQAAAAAAAAABAAAAAAAAAAEbQzHwAAAAQBfosk+t8qpULHP4ppNX2xVPih8lmnbHFZdeuxSP6pgpCCX05S7zZ4PsjVQY2nOnLru6mBTc1r8So+vxHs3FXAc=
@@ -213,15 +333,30 @@ func ExampleCreatePassiveOffer() {
 	}
 
 	seed := "SDOTALIMPAM2IV65IOZA7KZL7XWZI5BODFXTRVLIHLQZQCKK57PH5F3H"
-	tx := Transaction(
+	tx, err := Transaction(
 		SourceAccount{seed},
 		Sequence{1},
 		TestNetwork,
 		CreatePassiveOffer(rate, "20"),
 	)
 
-	txe := tx.Sign(seed)
-	txeB64, _ := txe.Base64()
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	txe, err := tx.Sign(seed)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	txeB64, err := txe.Base64()
+
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 
 	fmt.Printf("tx base64: %s", txeB64)
 	// Output: tx base64: AAAAADZY/nWY0gx6beMpf4S8Ur0qHsjA8fbFtBzBx1cbQzHwAAAAZAAAAAAAAAABAAAAAAAAAAAAAAABAAAAAAAAAAQAAAAAAAAAAVVTRAAAAAAALSRpLtCLv2eboZlEiHDSGR6Hb+zZL92fbSdNpObeE0EAAAAAC+vCAAAADDgAAAAZAAAAAAAAAAEbQzHwAAAAQHv/1xLn+ArfIUoWjn3V0zVka6tulqMYx4zJZhGqdmTw8iCXY0ZtHS+y+7YGgR3vM1DpKOdvWTmhee+sCXIppQA=
@@ -231,7 +366,7 @@ func ExampleCreatePassiveOffer() {
 // encodes it into a base64 string capable of being submitted to stellar-core.
 func ExampleAccountMerge() {
 	seed := "SDOTALIMPAM2IV65IOZA7KZL7XWZI5BODFXTRVLIHLQZQCKK57PH5F3H"
-	tx := Transaction(
+	tx, err := Transaction(
 		SourceAccount{seed},
 		Sequence{1},
 		TestNetwork,
@@ -240,8 +375,23 @@ func ExampleAccountMerge() {
 		),
 	)
 
-	txe := tx.Sign(seed)
-	txeB64, _ := txe.Base64()
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	txe, err := tx.Sign(seed)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	txeB64, err := txe.Base64()
+
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 
 	fmt.Printf("tx base64: %s", txeB64)
 	// Output: tx base64: AAAAADZY/nWY0gx6beMpf4S8Ur0qHsjA8fbFtBzBx1cbQzHwAAAAZAAAAAAAAAABAAAAAAAAAAAAAAABAAAAAAAAAAgAAAAARz2rmlufI7QEORPgVeAaE8YCPuQIpVtLg8MlLwPWlUIAAAAAAAAAARtDMfAAAABAh3qZrP5T9Xg0LdzwOLx/eA/B7bzj+8j+s9eXNuu7/Ldch7I6kW5iYz6Vfy32FVnKNtoykToB7nQY2o2vo1tqAw==
@@ -251,15 +401,30 @@ func ExampleAccountMerge() {
 // encodes it into a base64 string capable of being submitted to stellar-core.
 func ExampleInflation() {
 	seed := "SDOTALIMPAM2IV65IOZA7KZL7XWZI5BODFXTRVLIHLQZQCKK57PH5F3H"
-	tx := Transaction(
+	tx, err := Transaction(
 		SourceAccount{seed},
 		Sequence{1},
 		TestNetwork,
 		Inflation(),
 	)
 
-	txe := tx.Sign(seed)
-	txeB64, _ := txe.Base64()
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	txe, err := tx.Sign(seed)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	txeB64, err := txe.Base64()
+
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 
 	fmt.Printf("tx base64: %s", txeB64)
 	// Output: tx base64: AAAAADZY/nWY0gx6beMpf4S8Ur0qHsjA8fbFtBzBx1cbQzHwAAAAZAAAAAAAAAABAAAAAAAAAAAAAAABAAAAAAAAAAkAAAAAAAAAARtDMfAAAABAzzDG4V7KzynWY0ER/V4HH0WgDvl3hrIizDcKW3qEQY4Ib3yXufVvdbzsET/Dj5js5dgDkcYgikHwRCpqi/J8BQ==

@@ -6,14 +6,16 @@ import (
 	"strconv"
 
 	"github.com/stellar/go/amount"
-	"github.com/stellar/go/strkey"
-	"github.com/stellar/go/support/errors"
-	"github.com/stellar/go/xdr"
 	"github.com/stellar/go/services/horizon/internal/assets"
 	"github.com/stellar/go/services/horizon/internal/db2"
 	"github.com/stellar/go/services/horizon/internal/ledger"
-	"github.com/stellar/go/services/horizon/internal/render/problem"
+	hProblem "github.com/stellar/go/services/horizon/internal/render/problem"
 	"github.com/stellar/go/services/horizon/internal/toid"
+	"github.com/stellar/go/strkey"
+	"github.com/stellar/go/support/errors"
+	"github.com/stellar/go/support/render/problem"
+	"github.com/stellar/go/support/time"
+	"github.com/stellar/go/xdr"
 )
 
 const (
@@ -303,7 +305,7 @@ func (base *Base) GetAsset(prefix string) (result xdr.Asset) {
 // MaybeGetAsset decodes an asset from the request fields as GetAsset does, but
 // only if type field is populated. returns an additional boolean reflecting whether
 // or not the decoding was performed
-func (base *Base) MaybeGetAsset(prefix string) (xdr.Asset, bool){
+func (base *Base) MaybeGetAsset(prefix string) (xdr.Asset, bool) {
 	if base.Err != nil {
 		return xdr.Asset{}, false
 	}
@@ -315,16 +317,33 @@ func (base *Base) MaybeGetAsset(prefix string) (xdr.Asset, bool){
 	return base.GetAsset(prefix), true
 }
 
+// GetTimeMillis retrieves a TimeMillis from the action parameter of the given name.
+// Populates err if the value is not a valid TimeMillis
+func (base *Base) GetTimeMillis(name string) (timeMillis time.Millis) {
+	if base.Err != nil {
+		return
+	}
+
+	asStr := base.GetString(name)
+
+	if asStr == "" {
+		return
+	}
+
+	timeMillis, err := time.MillisFromString(asStr)
+
+	if err != nil {
+		base.SetInvalidField(name, err)
+		return
+	}
+
+	return
+}
+
 // SetInvalidField establishes an error response triggered by an invalid
 // input field from the user.
 func (base *Base) SetInvalidField(name string, reason error) {
-	br := problem.BadRequest
-
-	br.Extras = map[string]interface{}{}
-	br.Extras["invalid_field"] = name
-	br.Extras["reason"] = reason.Error()
-
-	base.Err = &br
+	base.Err = problem.MakeInvalidFieldProblem(name, reason)
 }
 
 // Path returns the current action's path, as determined by the http.Request of
@@ -355,6 +374,6 @@ func (base *Base) ValidateBodyType() {
 	case mt == "multipart/form-data":
 		return
 	default:
-		base.Err = &problem.UnsupportedMediaType
+		base.Err = &hProblem.UnsupportedMediaType
 	}
 }

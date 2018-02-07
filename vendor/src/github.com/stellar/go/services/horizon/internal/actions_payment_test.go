@@ -47,6 +47,10 @@ func TestPaymentActions(t *testing.T) {
 	if ht.Assert.Equal(200, w.Code) {
 		ht.Assert.PageOf(1, w.Body)
 	}
+
+	// Regression: negative cursor
+	w = ht.Get("/accounts/GA5WBPYA5Y4WAEHXWR2UKO2UO4BUGHUQ74EUPKON2QHV4WRHOIRNKKH2/payments?cursor=-23667108046966785&order=asc&limit=100")
+	ht.Assert.Equal(400, w.Code)
 }
 
 func TestPayment_CreatedAt(t *testing.T) {

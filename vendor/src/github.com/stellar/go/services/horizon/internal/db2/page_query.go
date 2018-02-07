@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	sq "github.com/Masterminds/squirrel"
-	"github.com/go-errors/errors"
+	"github.com/stellar/go/support/errors"
 )
 
 const (
@@ -49,12 +49,22 @@ func (p PageQuery) ApplyTo(
 	sql sq.SelectBuilder,
 	col string,
 ) (sq.SelectBuilder, error) {
-	sql = sql.Limit(p.Limit)
-
 	cursor, err := p.CursorInt64()
 	if err != nil {
 		return sql, err
 	}
+
+	return p.ApplyToUsingCursor(sql, col, cursor)
+}
+
+// ApplyToUsingCursor returns a new SelectBuilder after applying the paging effects of
+// `p` to `sql`.  This method allows any type of cursor by a single column
+func (p PageQuery) ApplyToUsingCursor(
+	sql sq.SelectBuilder,
+	col string,
+	cursor interface{},
+) (sq.SelectBuilder, error) {
+	sql = sql.Limit(p.Limit)
 
 	switch p.Order {
 	case "asc":
@@ -99,12 +109,12 @@ func (p PageQuery) GetContinuations(records interface{}) (next PageQuery, prev P
 
 	first, ok := rv.Index(0).Interface().(Pageable)
 	if !ok {
-		err = errors.New(ErrNotPageable)
+		err = ErrNotPageable
 	}
 
 	last, ok := rv.Index(l - 1).Interface().(Pageable)
 	if !ok {
-		err = errors.New(ErrNotPageable)
+		err = ErrNotPageable
 	}
 
 	next.Cursor = last.PagingToken()
@@ -122,18 +132,18 @@ func (p PageQuery) CursorInt64() (int64, error) {
 		case OrderDescending:
 			return math.MaxInt64, nil
 		default:
-			return 0, errors.New(ErrInvalidOrder)
+			return 0, ErrInvalidOrder
 		}
 	}
 
 	i, err := strconv.ParseInt(p.Cursor, 10, 64)
 
 	if err != nil {
-		return 0, errors.New(ErrInvalidCursor)
+		return 0, ErrInvalidCursor
 	}
 
 	if i < 0 {
-		return 0, errors.New(ErrInvalidCursor)
+		return 0, ErrInvalidCursor
 	}
 
 	return i, nil
@@ -152,7 +162,7 @@ func (p PageQuery) CursorInt64Pair(sep string) (l int64, r int64, err error) {
 			l = math.MaxInt64
 			r = math.MaxInt64
 		default:
-			err = errors.New(ErrInvalidOrder)
+			err = ErrInvalidOrder
 		}
 		return
 	}
@@ -177,18 +187,18 @@ func (p PageQuery) CursorInt64Pair(sep string) (l int64, r int64, err error) {
 
 	l, err = strconv.ParseInt(parts[0], 10, 64)
 	if err != nil {
-		err = errors.Wrap(err, 1)
+		err = errors.Wrap(err, "first component unparseable")
 		return
 	}
 
 	r, err = strconv.ParseInt(parts[1], 10, 64)
 	if err != nil {
-		err = errors.Wrap(err, 1)
+		err = errors.Wrap(err, "second component unparseable")
 		return
 	}
 
 	if l < 0 || r < 0 {
-		err = errors.New(ErrInvalidCursor)
+		err = ErrInvalidCursor
 	}
 
 	return
@@ -209,7 +219,7 @@ func NewPageQuery(
 	case OrderAscending, OrderDescending:
 		result.Order = order
 	default:
-		err = errors.New(ErrInvalidOrder)
+		err = ErrInvalidOrder
 		return
 	}
 
@@ -218,10 +228,10 @@ func NewPageQuery(
 	// Set limit
 	switch {
 	case limit <= 0:
-		err = errors.New(ErrInvalidLimit)
+		err = ErrInvalidLimit
 		return
 	case limit > MaxPageSize:
-		err = errors.New(ErrInvalidLimit)
+		err = ErrInvalidLimit
 		return
 	default:
 		result.Limit = limit

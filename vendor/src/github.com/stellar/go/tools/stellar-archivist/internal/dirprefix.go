@@ -35,7 +35,7 @@ func CheckpointPrefix(seq uint32) DirPrefix {
 }
 
 func HashPrefix(h Hash) DirPrefix {
-	return DirPrefix{ h[0], h[1], h[2] }
+	return DirPrefix{h[0], h[1], h[2]}
 }
 
 // Returns an array of path prefixes to walk to enumerate all the
@@ -48,7 +48,7 @@ func RangePaths(r Range) []string {
 	for i, e := range lowpre {
 		diff = i
 		if highpre[i] != e {
-			break;
+			break
 		}
 	}
 	// log.Printf("prefix %s and %s differ at point %d",

@@ -66,7 +66,9 @@ type PaymentRequest struct {
 	// Sender address (like alice*stellar.org)
 	Sender string `name:"sender"`
 	// Destination address (like bob*stellar.org)
-	Destination string `name:"destination" required:""`
+	Destination string `name:"destination"`
+	// ForwardDestination
+	ForwardDestination *protocols.ForwardDestination `name:"forward_destination"`
 	// Memo type
 	MemoType string `name:"memo_type"`
 	// Memo value
@@ -108,17 +110,18 @@ func (request *PaymentRequest) ToComplianceSendRequest() callback.SendRequest {
 	sourceKeypair, _ := keypair.Parse(request.Source)
 	return callback.SendRequest{
 		// Compliance does not sign transaction, it just needs public key
-		Source:          sourceKeypair.Address(),
-		Sender:          request.Sender,
-		Destination:     request.Destination,
-		Amount:          request.Amount,
-		AssetCode:       request.AssetCode,
-		AssetIssuer:     request.AssetIssuer,
-		SendMax:         request.SendMax,
-		SendAssetCode:   request.SendAssetCode,
-		SendAssetIssuer: request.SendAssetIssuer,
-		Path:            request.Path,
-		ExtraMemo:       request.ExtraMemo,
+		Source:             sourceKeypair.Address(),
+		Sender:             request.Sender,
+		Destination:        request.Destination,
+		ForwardDestination: request.ForwardDestination,
+		Amount:             request.Amount,
+		AssetCode:          request.AssetCode,
+		AssetIssuer:        request.AssetIssuer,
+		SendMax:            request.SendMax,
+		SendAssetCode:      request.SendAssetCode,
+		SendAssetIssuer:    request.SendAssetIssuer,
+		Path:               request.Path,
+		ExtraMemo:          request.ExtraMemo,
 	}
 }
 
@@ -134,6 +137,10 @@ func (request *PaymentRequest) Validate() error {
 		if err != nil {
 			return protocols.NewInvalidParameterError("source", request.Source, "Source must be a public key (starting with `G`).")
 		}
+	}
+
+	if request.Destination == "" && request.ForwardDestination == nil {
+		return protocols.NewMissingParameter("destination")
 	}
 
 	if !protocols.IsValidAmount(request.Amount) {

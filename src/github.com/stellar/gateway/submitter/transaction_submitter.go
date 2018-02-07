@@ -237,10 +237,9 @@ func (ts *TransactionSubmitter) SubmitTransaction(paymentID *string, seed string
 		mutators = append(mutators, memoMutator)
 	}
 
-	txBuilder := build.Transaction(mutators...)
+	txBuilder, err := build.Transaction(mutators...)
 
-	if txBuilder.Err != nil {
-		err = txBuilder.Err
+	if err != nil {
 		return
 	}
 
@@ -271,9 +270,8 @@ func BuildTransaction(accountID, networkPassphrase string, operation, memo inter
 		mutators = append(mutators, memoMutator)
 	}
 
-	txBuilder := build.Transaction(mutators...)
-
-	return txBuilder.TX, txBuilder.Err
+	txBuilder, err := build.Transaction(mutators...)
+	return txBuilder.TX, err
 }
 
 // TransactionHash returns transaction hash for a given Transaction based on the network

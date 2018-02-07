@@ -40,7 +40,7 @@ func (b *AccountMergeBuilder) Mutate(muts ...interface{}) {
 		}
 
 		if err != nil {
-			b.Err = err
+			b.Err = errors.Wrap(err, "AccountMergeBuilder error")
 			return
 		}
 	}

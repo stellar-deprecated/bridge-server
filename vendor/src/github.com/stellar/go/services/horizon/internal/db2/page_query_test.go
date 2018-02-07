@@ -92,4 +92,8 @@ func TestPageQuery_CursorInt64(t *testing.T) {
 	_, _, err = p.CursorInt64Pair("-")
 	assert.Error(err)
 
+	// Regression: -23667108046966785
+	p = MustPageQuery("-23667108046966785", "asc", 100)
+	_, err = p.CursorInt64()
+	assert.Error(err)
 }

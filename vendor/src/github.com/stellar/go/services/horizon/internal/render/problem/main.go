@@ -1,153 +1,25 @@
 package problem
 
 import (
-	"encoding/json"
-	"fmt"
 	"net/http"
 
-	"github.com/go-errors/errors"
 	"github.com/stellar/go/services/horizon/internal/context/requestid"
-	"github.com/stellar/go/services/horizon/internal/log"
+	"github.com/stellar/go/support/render/problem"
 	"golang.org/x/net/context"
 )
 
-var (
-	errToProblemMap = map[error]P{}
-)
-
-// RegisterError records an error -> P mapping, allowing the app to register
-// specific errors that may occur in other packages to be rendered as a specific
-// P instance.
-//
-// For example, you might want to render any sql.ErrNoRows errors as a
-// problem.NotFound, and you would do so by calling:
-//
-// problem.RegisterError(sql.ErrNoRows, problem.NotFound) in you application
-// initialization sequence
-func RegisterError(err error, p P) {
-	errToProblemMap[err] = p
-}
-
-// HasProblem types can be transformed into a problem.
-// Implement it for custom errors.
-type HasProblem interface {
-	Problem() P
-}
-
-// P is a struct that represents an error response to be rendered to a connected
-// client.
-type P struct {
-	Type     string                 `json:"type"`
-	Title    string                 `json:"title"`
-	Status   int                    `json:"status"`
-	Detail   string                 `json:"detail,omitempty"`
-	Instance string                 `json:"instance,omitempty"`
-	Extras   map[string]interface{} `json:"extras,omitempty"`
-}
-
-func (p *P) Error() string {
-	return fmt.Sprintf("problem: %s", p.Type)
-}
-
-// Inflate expands a problem with contextal information.
+// Inflate expands a problem with contextal information, including setting basic info.
 // At present it adds the request's id as the problem's Instance, if available.
-func Inflate(ctx context.Context, p *P) {
-	//TODO: add requesting url to extra info
-
-	//TODO: make this prefix configurable
-	p.Type = "https://stellar.org/horizon-errors/" + p.Type
-
+func Inflate(ctx context.Context, p *problem.P) {
+	problem.Inflate(p)
 	p.Instance = requestid.FromContext(ctx)
-}
-
-// Render writes a http response to `w`, compliant with the "Problem
-// Details for HTTP APIs" RFC:
-//   https://tools.ietf.org/html/draft-ietf-appsawg-http-problem-00
-//
-// `p` is the problem, which may be either a concrete P struct, an implementor
-// of the `HasProblem` interface, or an error.  Any other value for `p` will
-// panic.
-func Render(ctx context.Context, w http.ResponseWriter, p interface{}) {
-	switch p := p.(type) {
-	case P:
-		render(ctx, w, p)
-	case *P:
-		render(ctx, w, *p)
-	case HasProblem:
-		render(ctx, w, p.Problem())
-	case error:
-		renderErr(ctx, w, p)
-	default:
-		panic(fmt.Sprintf("Invalid problem: %v+", p))
-	}
-}
-
-func render(ctx context.Context, w http.ResponseWriter, p P) {
-
-	Inflate(ctx, &p)
-
-	w.Header().Set("Content-Type", "application/problem+json; charset=utf-8")
-	js, err := json.MarshalIndent(p, "", "  ")
-
-	if err != nil {
-		err := errors.Wrap(err, 1)
-		log.Ctx(ctx).WithStack(err).Error(err)
-		http.Error(w, "error rendering problem", http.StatusInternalServerError)
-		return
-	}
-
-	w.WriteHeader(p.Status)
-	w.Write(js)
-}
-
-func renderErr(ctx context.Context, w http.ResponseWriter, err error) {
-	origErr := err
-
-	if err, ok := err.(*errors.Error); ok {
-		origErr = err.Err
-	}
-
-	p, ok := errToProblemMap[origErr]
-
-	// If this error is not a registered error
-	// log it and replace it with a 500 error
-	if !ok {
-		log.Ctx(ctx).WithStack(err).Error(err)
-		p = ServerError
-	}
-
-	render(ctx, w, p)
 }
 
 // Well-known and reused problems below:
 var (
-	// NotFound is a well-known problem type.  Use it as a shortcut
-	// in your actions.
-	NotFound = P{
-		Type:   "not_found",
-		Title:  "Resource Missing",
-		Status: http.StatusNotFound,
-		Detail: "The resource at the url requested was not found.  This is usually " +
-			"occurs for one of two reasons:  The url requested is not valid, or no " +
-			"data in our database could be found with the parameters provided.",
-	}
-
-	// ServerError is a well-known problem type.  Use it as a shortcut
-	// in your actions.
-	ServerError = P{
-		Type:   "server_error",
-		Title:  "Internal Server Error",
-		Status: http.StatusInternalServerError,
-		Detail: "An error occurred while processing this request.  This is usually due " +
-			"to a bug within the server software.  Trying this request again may " +
-			"succeed if the bug is transient, otherwise please report this issue " +
-			"to the issue tracker at: https://github.com/stellar/go/services/horizon/internal/issues." +
-			" Please include this response in your issue.",
-	}
-
 	// RateLimitExceeded is a well-known problem type.  Use it as a shortcut
 	// in your actions.
-	RateLimitExceeded = P{
+	RateLimitExceeded = problem.P{
 		Type:   "rate_limit_exceeded",
 		Title:  "Rate limit exceeded",
 		Status: 429,
@@ -159,7 +31,7 @@ var (
 
 	// NotImplemented is a well-known problem type.  Use it as a shortcut
 	// in your actions.
-	NotImplemented = P{
+	NotImplemented = problem.P{
 		Type:   "not_implemented",
 		Title:  "Resource Not Yet Implemented",
 		Status: http.StatusNotFound,
@@ -170,25 +42,16 @@ var (
 
 	// NotAcceptable is a well-known problem type.  Use it as a shortcut
 	// in your actions.
-	NotAcceptable = P{
+	NotAcceptable = problem.P{
 		Type: "not_acceptable",
 		Title: "An acceptable response content-type could not be provided for " +
 			"this request",
 		Status: http.StatusNotAcceptable,
 	}
 
-	// BadRequest is a well-known problem type.  Use it as a shortcut
-	// in your actions.
-	BadRequest = P{
-		Type:   "bad_request",
-		Title:  "Bad Request",
-		Status: http.StatusBadRequest,
-		Detail: "The request you sent was invalid in some way",
-	}
-
 	// ServerOverCapacity is a well-known problem type.  Use it as a shortcut
 	// in your actions.
-	ServerOverCapacity = P{
+	ServerOverCapacity = problem.P{
 		Type:   "server_over_capacity",
 		Title:  "Server Over Capacity",
 		Status: http.StatusServiceUnavailable,
@@ -198,7 +61,7 @@ var (
 
 	// Timeout is a well-known problem type.  Use it as a shortcut
 	// in your actions.
-	Timeout = P{
+	Timeout = problem.P{
 		Type:   "timeout",
 		Title:  "Timeout",
 		Status: http.StatusGatewayTimeout,
@@ -208,7 +71,7 @@ var (
 
 	// UnsupportedMediaType is a well-known problem type.  Use it as a shortcut
 	// in your actions.
-	UnsupportedMediaType = P{
+	UnsupportedMediaType = problem.P{
 		Type:   "unsupported_media_type",
 		Title:  "Unsupported Media Type",
 		Status: http.StatusUnsupportedMediaType,
@@ -218,7 +81,7 @@ var (
 
 	// BeforeHistory is a well-known problem type.  Use it as a shortcut
 	// in your actions.
-	BeforeHistory = P{
+	BeforeHistory = problem.P{
 		Type:   "before_history",
 		Title:  "Data Requested Is Before Recorded History",
 		Status: http.StatusGone,
@@ -230,7 +93,7 @@ var (
 
 	// StaleHistory is a well-known problem type.  Use it as a shortcut
 	// in your actions.
-	StaleHistory = P{
+	StaleHistory = problem.P{
 		Type:   "stale_history",
 		Title:  "Historical DB Is Too Stale",
 		Status: http.StatusServiceUnavailable,

@@ -13,6 +13,7 @@ import (
 	"github.com/stellar/go/address"
 	b "github.com/stellar/go/build"
 	"github.com/stellar/go/protocols/compliance"
+	"github.com/stellar/go/protocols/federation"
 	"github.com/stellar/go/xdr"
 	"github.com/zenazn/goji/web"
 )
@@ -35,24 +36,41 @@ func (rh *RequestHandler) HandlerSend(c web.C, w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	destinationObject, err := rh.FederationResolver.LookupByAddress(request.Destination)
-	if err != nil {
-		log.WithFields(log.Fields{
-			"destination": request.Destination,
-			"err":         err,
-		}).Print("Cannot resolve address")
-		server.Write(w, callback.CannotResolveDestination)
-		return
-	}
+	var domain string
+	var destinationObject *federation.NameResponse
 
-	_, domain, err := address.Split(request.Destination)
-	if err != nil {
-		log.WithFields(log.Fields{
-			"destination": request.Destination,
-			"err":         err,
-		}).Print("Cannot resolve address")
-		server.Write(w, callback.CannotResolveDestination)
-		return
+	if request.ForwardDestination == nil {
+		destinationObject, err = rh.FederationResolver.LookupByAddress(request.Destination)
+		if err != nil {
+			log.WithFields(log.Fields{
+				"destination": request.Destination,
+				"err":         err,
+			}).Print("Cannot resolve address")
+			server.Write(w, callback.CannotResolveDestination)
+			return
+		}
+
+		_, domain, err = address.Split(request.Destination)
+		if err != nil {
+			log.WithFields(log.Fields{
+				"destination": request.Destination,
+				"err":         err,
+			}).Print("Cannot resolve address")
+			server.Write(w, callback.CannotResolveDestination)
+			return
+		}
+	} else {
+		destinationObject, err = rh.FederationResolver.ForwardRequest(request.ForwardDestination.Domain, request.ForwardDestination.Fields)
+		if err != nil {
+			log.WithFields(log.Fields{
+				"destination": request.Destination,
+				"err":         err,
+			}).Print("Cannot resolve address")
+			server.Write(w, callback.CannotResolveDestination)
+			return
+		}
+
+		domain = request.ForwardDestination.Domain
 	}
 
 	stellarToml, err := rh.StellarTomlResolver.GetStellarToml(domain)

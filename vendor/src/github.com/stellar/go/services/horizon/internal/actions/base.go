@@ -6,8 +6,9 @@ import (
 	gctx "github.com/goji/context"
 
 	"github.com/stellar/go/services/horizon/internal/render"
-	"github.com/stellar/go/services/horizon/internal/render/problem"
+	hProblem "github.com/stellar/go/services/horizon/internal/render/problem"
 	"github.com/stellar/go/services/horizon/internal/render/sse"
+	"github.com/stellar/go/support/render/problem"
 	"github.com/zenazn/goji/web"
 	"golang.org/x/net/context"
 )
@@ -109,7 +110,7 @@ func (base *Base) Execute(action interface{}) {
 	return
 
 NotAcceptable:
-	problem.Render(base.Ctx, base.W, problem.NotAcceptable)
+	problem.Render(base.Ctx, base.W, hProblem.NotAcceptable)
 	return
 }
 

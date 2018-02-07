@@ -16,9 +16,11 @@ type SendRequest struct {
 	// Source account ID
 	Source string `name:"source" required:""`
 	// Sender address (like alice*stellar.org)
-	Sender string `name:"sender" required:""`
+	Sender string `name:"sender"`
 	// Destination address (like bob*stellar.org)
-	Destination string `name:"destination" required:""`
+	Destination string `name:"destination"`
+	// ForwardDestination
+	ForwardDestination *protocols.ForwardDestination `name:"forward_destination"`
 	// Amount destination should receive
 	Amount string `name:"amount" required:""`
 	// Code of the asset destination should receive
@@ -64,7 +66,11 @@ func (request *SendRequest) Validate() error {
 		return protocols.NewInvalidParameterError("sender", request.Sender, "Not a valid stellar address.")
 	}
 
-	if !validateStellarAddress(request.Destination) {
+	if request.Destination == "" && request.ForwardDestination == nil {
+		return protocols.NewMissingParameter("destination")
+	}
+
+	if request.Destination != "" && !validateStellarAddress(request.Destination) {
 		return protocols.NewInvalidParameterError("destination", request.Destination, "Not a valid stellar address.")
 	}
 

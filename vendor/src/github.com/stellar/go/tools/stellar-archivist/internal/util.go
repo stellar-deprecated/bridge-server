@@ -5,11 +5,11 @@
 package archivist
 
 import (
-	"path"
-	"log"
-	"fmt"
 	"bufio"
+	"fmt"
 	"io"
+	"log"
+	"path"
 )
 
 func makeTicker(onTick func(uint)) chan bool {
@@ -18,7 +18,7 @@ func makeTicker(onTick func(uint)) chan bool {
 		var k uint = 0
 		for range tick {
 			k++
-			if k & 0xfff == 0 {
+			if k&0xfff == 0 {
 				onTick(k)
 			}
 		}
@@ -52,7 +52,7 @@ func copyPath(src *Archive, dst *Archive, pth string, opts *CommandOptions) erro
 }
 
 func Categories() []string {
-	return []string{ "history", "ledger", "transactions", "results", "scp"}
+	return []string{"history", "ledger", "transactions", "results", "scp"}
 }
 
 func categoryExt(n string) string {
@@ -77,7 +77,6 @@ func BucketPath(bucket Hash) string {
 	pre := HashPrefix(bucket)
 	return path.Join("bucket", pre.Path(), fmt.Sprintf("bucket-%s.xdr.gz", bucket))
 }
-
 
 // Make a goroutine that unconditionally pulls an error channel into
 // (unbounded) local memory, and feeds it to a downstream consumer. This is

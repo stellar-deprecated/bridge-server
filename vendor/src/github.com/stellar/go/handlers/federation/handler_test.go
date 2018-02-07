@@ -222,7 +222,7 @@ func TestForwardHandler(t *testing.T) {
 		ContainsKey("memo_type").
 		ValueEqual("memo_type", "id").
 		ContainsKey("memo").
-		ValueEqual("memo", 1)
+		ValueEqual("memo", "1")
 
 		// Good forward request
 	server.GET("/federation").

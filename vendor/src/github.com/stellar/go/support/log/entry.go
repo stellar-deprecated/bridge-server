@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 
+	gerr "github.com/go-errors/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stellar/go/support/errors"
@@ -37,8 +38,10 @@ func (e *Entry) WithFields(fields F) *Entry {
 func (e *Entry) WithStack(stackProvider interface{}) *Entry {
 	stack := "unknown"
 
-	if stackProvider, ok := stackProvider.(errors.StackTracer); ok {
-		stack = fmt.Sprint(stackProvider.StackTrace())
+	if sp1, ok := stackProvider.(errors.StackTracer); ok {
+		stack = fmt.Sprint(sp1.StackTrace())
+	} else if sp2, ok := stackProvider.(*gerr.Error); ok {
+		stack = fmt.Sprint(sp2.ErrorStack())
 	}
 
 	return e.WithField("stack", stack)

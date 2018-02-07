@@ -11,22 +11,64 @@ var _ = Describe("Transaction Mutators:", func() {
 	var (
 		subject *TransactionBuilder
 		mut     TransactionMutator
+		err     error
 	)
 
 	BeforeEach(func() { subject = &TransactionBuilder{} })
-	JustBeforeEach(func() { subject.Mutate(mut) })
+	JustBeforeEach(func() { err = subject.Mutate(mut) })
 
 	Describe("Defaults", func() {
 		BeforeEach(func() {
 			subject.Mutate(Payment())
 			mut = Defaults{}
 		})
-		It("sets the fee", func() { Expect(subject.TX.Fee).To(BeEquivalentTo(100)) })
+		It("sets the fee", func() { Expect(subject.TX.Fee).To(BeEquivalentTo(DefaultBaseFee)) })
 		It("sets the network passphrase", func() { Expect(subject.NetworkPassphrase).To(Equal(DefaultNetwork.Passphrase)) })
 
 		Context("on a transaction with 2 operations", func() {
 			BeforeEach(func() { subject.Mutate(Payment()) })
 			It("sets the fee to 200", func() { Expect(subject.TX.Fee).To(BeEquivalentTo(200)) })
+		})
+	})
+
+	Describe("TransactionBuilder.BaseFee", func() {
+		BeforeEach(func() {
+			subject.Mutate(Payment())
+			mut = Defaults{}
+		})
+		It("sets the fee", func() { Expect(subject.TX.Fee).To(BeEquivalentTo(DefaultBaseFee)) })
+
+		Context("trying to change the base fee to 333", func() {
+			BeforeEach(func() {
+				subject.BaseFee = 333
+				subject.Mutate(Payment())
+			})
+			It(
+				"sets the fee to 333 * 2",
+				func() { Expect(subject.TX.Fee).To(BeEquivalentTo(333 * 2)) },
+			)
+		})
+	})
+
+	Describe("BaseFee Mutator", func() {
+		BeforeEach(func() {
+			subject.Mutate(BaseFee{Amount: 456}, Defaults{})
+		})
+		It(
+			"sets the base fee to 456",
+			func() { Expect(subject.BaseFee).To(BeEquivalentTo(456)) },
+		)
+
+		Context("on a transaction with 3 operations", func() {
+			BeforeEach(func() {
+				subject.Mutate(Payment())
+				subject.Mutate(Payment())
+				subject.Mutate(Payment())
+			})
+			It(
+				"sets the fee to 456 * 3",
+				func() { Expect(subject.TX.Fee).To(BeEquivalentTo(456 * 3)) },
+			)
 		})
 	})
 
@@ -64,7 +106,7 @@ var _ = Describe("Transaction Mutators:", func() {
 		Context("a string longer than 28 bytes", func() {
 			BeforeEach(func() { mut = MemoText{"12345678901234567890123456789"} })
 			It("sets an error", func() {
-				Expect(subject.Err).ToNot(BeNil())
+				Expect(err).ToNot(BeNil())
 			})
 		})
 	})
@@ -96,13 +138,13 @@ var _ = Describe("Transaction Mutators:", func() {
 
 		Context("with bad address", func() {
 			BeforeEach(func() { mut = SourceAccount{"foo"} })
-			It("fails", func() { Expect(subject.Err).To(HaveOccurred()) })
+			It("fails", func() { Expect(err).To(HaveOccurred()) })
 		})
 	})
 
 	Describe("Sequence", func() {
 		BeforeEach(func() { mut = Sequence{12345} })
-		It("succeeds", func() { Expect(subject.Err).NotTo(HaveOccurred()) })
+		It("succeeds", func() { Expect(err).NotTo(HaveOccurred()) })
 		It("sets the sequence", func() { Expect(subject.TX.SeqNum).To(BeEquivalentTo(12345)) })
 	})
 
@@ -118,7 +160,7 @@ var _ = Describe("Transaction Mutators:", func() {
 		})
 
 		Context("with no source account set", func() {
-			It("fails", func() { Expect(subject.Err).To(HaveOccurred()) })
+			It("fails", func() { Expect(err).To(HaveOccurred()) })
 		})
 
 		Context("with a source account set", func() {
@@ -128,7 +170,7 @@ var _ = Describe("Transaction Mutators:", func() {
 				})
 			})
 
-			It("succeeds", func() { Expect(subject.Err).NotTo(HaveOccurred()) })
+			It("succeeds", func() { Expect(err).NotTo(HaveOccurred()) })
 			It("sets the sequence", func() { Expect(subject.TX.SeqNum).To(BeEquivalentTo(3)) })
 		})
 	})

@@ -233,3 +233,8 @@ type Network struct {
 func (n *Network) ID() [32]byte {
 	return network.ID(n.Passphrase)
 }
+
+// BaseFee is a mutator capable of setting the base fee
+type BaseFee struct {
+	Amount uint64
+}

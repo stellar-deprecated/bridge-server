@@ -41,7 +41,6 @@ func MustDecodeHash(s string) Hash {
 	return h
 }
 
-
 func EmptyXdrArrayHash() Hash {
 	// This is the hash of [0,0,0,0], the value wire-entry you get when you write an
 	// XDR variable-length array with zero entries. This appears as a hash in a

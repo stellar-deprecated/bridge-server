@@ -3,10 +3,10 @@ package operations
 import (
 	"time"
 
-	"github.com/stellar/go/xdr"
 	"github.com/stellar/go/services/horizon/internal/db2/history"
-	"github.com/stellar/go/services/horizon/internal/render/hal"
 	"github.com/stellar/go/services/horizon/internal/resource/base"
+	"github.com/stellar/go/services/horizon/internal/render/hal"
+	"github.com/stellar/go/xdr"
 	"golang.org/x/net/context"
 )
 
@@ -167,7 +167,7 @@ type CreatePassiveOffer struct {
 // is ManageOffer.
 type ManageOffer struct {
 	CreatePassiveOffer
-	OfferID            int64      `json:"offer_id"`
+	OfferID int64 `json:"offer_id"`
 }
 
 // SetOptions is the json resource representing a single operation whose type is

@@ -4,17 +4,23 @@ import (
 	"encoding/hex"
 
 	"github.com/stellar/go/network"
-	"github.com/stellar/go/xdr"
 	"github.com/stellar/go/support/errors"
+	"github.com/stellar/go/xdr"
 )
 
 // Transaction groups the creation of a new TransactionBuilder with a call
 // to Mutate.
-func Transaction(muts ...TransactionMutator) (result *TransactionBuilder) {
-	result = &TransactionBuilder{}
-	result.Mutate(muts...)
-	result.Mutate(Defaults{})
-	return
+func Transaction(muts ...TransactionMutator) (*TransactionBuilder, error) {
+	result := &TransactionBuilder{}
+	err := result.Mutate(muts...)
+	if err != nil {
+		return nil, err
+	}
+	err = result.Mutate(Defaults{})
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
 }
 
 // TransactionMutator is a interface that wraps the
@@ -28,11 +34,11 @@ type TransactionMutator interface {
 type TransactionBuilder struct {
 	TX                *xdr.Transaction
 	NetworkPassphrase string
-	Err               error
+	BaseFee           uint64
 }
 
 // Mutate applies the provided TransactionMutators to this builder's transaction
-func (b *TransactionBuilder) Mutate(muts ...TransactionMutator) {
+func (b *TransactionBuilder) Mutate(muts ...TransactionMutator) error {
 	if b.TX == nil {
 		b.TX = &xdr.Transaction{}
 	}
@@ -40,10 +46,11 @@ func (b *TransactionBuilder) Mutate(muts ...TransactionMutator) {
 	for _, m := range muts {
 		err := m.MutateTransaction(b)
 		if err != nil {
-			b.Err = err
-			return
+			return err
 		}
 	}
+
+	return nil
 }
 
 // Hash returns the hash of this builder's transaction.
@@ -64,14 +71,21 @@ func (b *TransactionBuilder) HashHex() (string, error) {
 // Sign returns an new TransactionEnvelopeBuilder using this builder's
 // transaction as the basis and with signatures of that transaction from the
 // provided Signers.
-func (b *TransactionBuilder) Sign(signers ...string) (result TransactionEnvelopeBuilder) {
-	result.Mutate(b)
-
-	for _, s := range signers {
-		result.Mutate(Sign{s})
+func (b *TransactionBuilder) Sign(signers ...string) (TransactionEnvelopeBuilder, error) {
+	var result TransactionEnvelopeBuilder
+	err := result.Mutate(b)
+	if err != nil {
+		return result, err
 	}
 
-	return
+	for _, s := range signers {
+		err := result.Mutate(Sign{s})
+		if err != nil {
+			return result, err
+		}
+	}
+
+	return result, nil
 }
 
 // ------------------------------------------------------------
@@ -149,11 +163,17 @@ func (m CreateAccountBuilder) MutateTransaction(o *TransactionBuilder) error {
 	return m.Err
 }
 
+// DefaultBaseFee is used to calculate the transaction fee by default
+var DefaultBaseFee uint64 = 100
+
 // MutateTransaction for Defaults sets reasonable defaults on the transaction being built
 func (m Defaults) MutateTransaction(o *TransactionBuilder) error {
 
+	if o.BaseFee == 0 {
+		o.BaseFee = DefaultBaseFee
+	}
 	if o.TX.Fee == 0 {
-		o.TX.Fee = xdr.Uint32(100 * len(o.TX.Operations))
+		o.TX.Fee = xdr.Uint32(int(o.BaseFee) * len(o.TX.Operations))
 	}
 
 	if o.NetworkPassphrase == "" {
@@ -283,4 +303,11 @@ func (m Sequence) MutateTransaction(o *TransactionBuilder) error {
 // to the pubilic key for the address provided
 func (m SourceAccount) MutateTransaction(o *TransactionBuilder) error {
 	return setAccountId(m.AddressOrSeed, &o.TX.SourceAccount)
+}
+
+// MutateTransaction for BaseFee sets the base fee
+func (m BaseFee) MutateTransaction(o *TransactionBuilder) error {
+	o.BaseFee = m.Amount
+
+	return nil
 }

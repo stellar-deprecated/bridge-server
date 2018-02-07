@@ -5,8 +5,9 @@ import (
 
 	"encoding/json"
 
-	"github.com/stellar/go/support/db"
 	"github.com/stellar/go/services/horizon/internal/ledger"
+	"github.com/stellar/go/services/horizon/internal/render/hal"
+	"github.com/stellar/go/support/db"
 )
 
 // CoreSession returns a db.Session instance pointing at the stellar core test database
@@ -52,13 +53,17 @@ func (t *T) ScenarioWithoutHorizon(name string) *T {
 	return t
 }
 
-// UnmarshalPage populates dest with the records contained in the json-encoded
-// page in r.
-func (t *T) UnmarshalPage(r io.Reader, dest interface{}) {
+// UnmarshalPage populates dest with the records contained in the json-encoded page in r
+func (t *T) UnmarshalPage(r io.Reader, dest interface{}) hal.Links {
 	var env struct {
 		Embedded struct {
 			Records json.RawMessage `json:"records"`
 		} `json:"_embedded"`
+		Links struct {
+			Self hal.Link `json:"self"`
+			Next hal.Link `json:"next"`
+			Prev hal.Link `json:"prev"`
+		} `json:"_links"`
 	}
 
 	err := json.NewDecoder(r).Decode(&env)
@@ -66,6 +71,23 @@ func (t *T) UnmarshalPage(r io.Reader, dest interface{}) {
 
 	err = json.Unmarshal(env.Embedded.Records, dest)
 	t.Require.NoError(err, "failed to decode records")
+
+	return env.Links
+}
+
+// UnmarshalNext extracts and returns the next link
+func (t *T) UnmarshalNext(r io.Reader) string {
+	var env struct {
+		Links struct {
+			Next struct {
+				Href string `json:"href"`
+			} `json:"next"`
+		} `json:"_links"`
+	}
+
+	err := json.NewDecoder(r).Decode(&env)
+	t.Require.NoError(err, "failed to decode page")
+	return env.Links.Next.Href
 }
 
 // UpdateLedgerState updates the cached ledger state (or panicing on failure).
@@ -74,7 +96,6 @@ func (t *T) UpdateLedgerState() {
 
 	err := t.CoreSession().GetRaw(&next, `
 		SELECT
-			COALESCE(MIN(ledgerseq), 0) as core_elder,
 			COALESCE(MAX(ledgerseq), 0) as core_latest
 		FROM ledgerheaders
 	`)

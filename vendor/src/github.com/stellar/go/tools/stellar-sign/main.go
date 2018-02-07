@@ -77,10 +77,13 @@ func main() {
 	// sign the transaction
 	b := &build.TransactionEnvelopeBuilder{E: &txe}
 	b.Init()
-	b.MutateTX(build.PublicNetwork)
-	b.Mutate(build.Sign{seed})
-	if b.Err != nil {
-		log.Fatal(b.Err)
+	err = b.MutateTX(build.PublicNetwork)
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = b.Mutate(build.Sign{seed})
+	if err != nil {
+		log.Fatal(err)
 	}
 
 	newEnv, err := xdr.MarshalBase64(b.E)

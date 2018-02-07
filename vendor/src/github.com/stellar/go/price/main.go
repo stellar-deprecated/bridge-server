@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"math"
 	"math/big"
+	"strconv"
 
 	"github.com/stellar/go/xdr"
 )
@@ -90,4 +91,9 @@ func floor(n *big.Rat) *big.Rat {
 	z.Div(n.Num(), n.Denom())
 	f.SetInt(z)
 	return f
+}
+
+//StringFromFloat64 will format a float64 to decimal representation with 7 digits after the decimal point
+func StringFromFloat64(v float64) string {
+	return strconv.FormatFloat(v, 'f', 7, 64)
 }

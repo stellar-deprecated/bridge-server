@@ -10,8 +10,10 @@ import (
 	metrics "github.com/rcrowley/go-metrics"
 	"github.com/rs/cors"
 	"github.com/sebest/xff"
-	"github.com/stellar/go/services/horizon/internal/render/problem"
+	"github.com/stellar/go/services/horizon/internal/db2"
+	hProblem "github.com/stellar/go/services/horizon/internal/render/problem"
 	"github.com/stellar/go/services/horizon/internal/txsub/sequence"
+	"github.com/stellar/go/support/render/problem"
 	"github.com/zenazn/goji/web"
 	"github.com/zenazn/goji/web/middleware"
 )
@@ -38,7 +40,10 @@ func initWeb(app *App) {
 
 	// register problems
 	problem.RegisterError(sql.ErrNoRows, problem.NotFound)
-	problem.RegisterError(sequence.ErrNoMoreRoom, problem.ServerOverCapacity)
+	problem.RegisterError(sequence.ErrNoMoreRoom, hProblem.ServerOverCapacity)
+	problem.RegisterError(db2.ErrInvalidCursor, problem.BadRequest)
+	problem.RegisterError(db2.ErrInvalidLimit, problem.BadRequest)
+	problem.RegisterError(db2.ErrInvalidOrder, problem.BadRequest)
 }
 
 // initWebMiddleware installs the middleware stack used for horizon onto the
@@ -88,7 +93,7 @@ func initWebActions(app *App) {
 	r.Get("/accounts/:account_id/payments", &PaymentsIndexAction{})
 	r.Get("/accounts/:account_id/effects", &EffectIndexAction{})
 	r.Get("/accounts/:account_id/offers", &OffersByAccountAction{})
-	r.Get("/accounts/:account_id/trades", &NotImplementedAction{})
+	r.Get("/accounts/:account_id/trades", &TradeEffectIndexAction{})
 	r.Get("/accounts/:account_id/data/:key", &DataShowAction{})
 
 	// transaction history actions
@@ -108,18 +113,25 @@ func initWebActions(app *App) {
 
 	// trading related endpoints
 	r.Get("/trades", &TradeIndexAction{})
+	r.Get("/trade_aggregations", &TradeAggregateIndexAction{})
 	r.Get("/offers/:id", &NotImplementedAction{})
-	r.Get("/offers/:offer_id/trades", &NotImplementedAction{})
+	r.Get("/offers/:offer_id/trades", &TradeIndexAction{})
 	r.Get("/order_book", &OrderBookShowAction{})
-	r.Get("/order_book/trades", &TradeIndexAction{})
 
 	// Transaction submission API
 	r.Post("/transactions", &TransactionCreateAction{})
 	r.Get("/paths", &PathIndexAction{})
 
+	// Asset related endpoints
+	r.Get("/assets", &AssetsAction{})
+
 	// friendbot
-	r.Post("/friendbot", &FriendbotAction{})
-	r.Get("/friendbot", &FriendbotAction{})
+	redirectFriendbot := func(w http.ResponseWriter, r *http.Request) {
+		redirectURL := app.config.FriendbotURL + "?" + r.URL.RawQuery
+		http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
+	}
+	r.Post("/friendbot", redirectFriendbot)
+	r.Get("/friendbot", redirectFriendbot)
 
 	r.NotFound(&NotFoundAction{})
 }

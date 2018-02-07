@@ -1,9 +1,10 @@
 package codes
 
 import (
+	"testing"
+
 	. "github.com/smartystreets/goconvey/convey"
 	"github.com/stellar/go/xdr"
-	"testing"
 )
 
 func TestCodes(t *testing.T) {

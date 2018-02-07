@@ -5,8 +5,8 @@
 package archivist
 
 import (
-	"log"
 	"fmt"
+	"log"
 	"sync"
 	"sync/atomic"
 )
@@ -32,11 +32,10 @@ func Mirror(src *Archive, dst *Archive, opts *CommandOptions) error {
 		sz := opts.Range.Size()
 		log.Printf("Copied %d/%d checkpoints (%f%%), %d buckets",
 			ticks, sz,
-			100.0 * float64(ticks)/float64(sz),
+			100.0*float64(ticks)/float64(sz),
 			len(bucketFetch))
 		bucketFetchMutex.Unlock()
 	})
-
 
 	var wg sync.WaitGroup
 	checkpoints := opts.Range.Checkpoints()
@@ -44,7 +43,7 @@ func Mirror(src *Archive, dst *Archive, opts *CommandOptions) error {
 	for i := 0; i < opts.Concurrency; i++ {
 		go func() {
 			for {
-				ix, ok := <- checkpoints
+				ix, ok := <-checkpoints
 				if !ok {
 					break
 				}

@@ -43,6 +43,26 @@ func (q *Q) TrustlinesByAddress(dest interface{}, addy string) error {
 	return q.Select(dest, sql)
 }
 
+// BalancesForAsset returns all the balances by asset type, code, issuer
+func (q *Q) BalancesForAsset(
+	assetType int32,
+	assetCode string,
+	assetIssuer string,
+) (int32, int64, error) {
+	sql := selectBalances.Where(sq.Eq{
+		"assettype": assetType,
+		"assetcode": assetCode,
+		"issuer":    assetIssuer,
+		"flags":     1,
+	})
+	result := struct {
+		Count int32 `db:"count"`
+		Sum   int64 `db:"sum"`
+	}{}
+	err := q.Get(&result, sql)
+	return result.Count, result.Sum, err
+}
+
 var selectTrustline = sq.Select(
 	"tl.accountid",
 	"tl.assettype",
@@ -52,3 +72,4 @@ var selectTrustline = sq.Select(
 	"tl.balance",
 	"tl.flags",
 ).From("trustlines tl")
+var selectBalances = sq.Select("COUNT(*)", "COALESCE(SUM(balance), 0) as sum").From("trustlines")

@@ -9,6 +9,7 @@ package horizon
 import (
 	"net/http"
 	"net/url"
+	"sync"
 
 	"github.com/stellar/go/build"
 	"github.com/stellar/go/support/errors"
@@ -64,9 +65,13 @@ type Client struct {
 
 	// HTTP client to make requests with
 	HTTP HTTP
+
+	fixURLOnce sync.Once
 }
 
 type ClientInterface interface {
+	Root() (Root, error)
+	HomeDomainForAccount(aid string) (string, error)
 	LoadAccount(accountID string) (Account, error)
 	LoadAccountOffers(accountID string, params ...interface{}) (offers OffersPage, err error)
 	LoadMemo(p *Payment) error

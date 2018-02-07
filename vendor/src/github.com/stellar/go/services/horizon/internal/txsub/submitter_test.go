@@ -1,10 +1,11 @@
 package txsub
 
 import (
-	. "github.com/smartystreets/goconvey/convey"
-	"github.com/stellar/go/services/horizon/internal/test"
 	"net/http"
 	"testing"
+
+	. "github.com/smartystreets/goconvey/convey"
+	"github.com/stellar/go/services/horizon/internal/test"
 )
 
 func TestDefaultSubmitter(t *testing.T) {

@@ -52,13 +52,16 @@ func Parse(v string) (xdr.Int64, error) {
 	return xdr.Int64(i), nil
 }
 
-// String returns an "amount string" from the provided raw value `v`.
+// String returns an "amount string" from the provided raw xdr.Int64 value `v`.
 func String(v xdr.Int64) string {
-	var f, o, r big.Rat
+	return StringFromInt64(int64(v))
+}
 
-	f.SetInt64(int64(v))
+// StringFromInt64 returns an "amount string" from the provided raw int64 value `v`.
+func StringFromInt64(v int64) string {
+	var f, o, r big.Rat
+	f.SetInt64(v)
 	o.SetInt64(One)
 	r.Quo(&f, &o)
-
 	return r.FloatString(7)
 }

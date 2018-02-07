@@ -1,11 +1,9 @@
 #! /bin/bash
 set -e
 
-TESTS=$(glide novendor | sed 's/^\./github.com\/stellar\/go/g')
-
 if [ "$CGO_ENABLED" = "1" ] 
 then
-  exec go test -race $TESTS
+    glide novendor | sed 's/^\./github.com\/stellar\/go/g' | xargs -I {} -P 4 go test -race {}
 else
-  exec go test $TESTS
+    glide novendor | sed 's/^\./github.com\/stellar\/go/g' | xargs -I {} -P 4 go test {}
 fi

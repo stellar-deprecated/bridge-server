@@ -39,7 +39,7 @@ func (b *SetOptionsBuilder) Mutate(muts ...interface{}) {
 		}
 
 		if err != nil {
-			b.Err = err
+			b.Err = errors.Wrap(err, "SetOptionsBuilder error")
 			return
 		}
 	}

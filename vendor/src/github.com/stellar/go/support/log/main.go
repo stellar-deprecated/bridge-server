@@ -42,14 +42,10 @@ type LogglyHook struct {
 
 // New creates a new logger, starting at a WARN level and including the current
 // processes pid as a field.
-func New() (result *Entry) {
+func New() *Entry {
 	l := logrus.New()
 	l.Level = logrus.WarnLevel
-
-	result = &Entry{
-		Entry: *logrus.NewEntry(l).WithField("pid", os.Getpid()),
-	}
-	return
+	return &Entry{Entry: *logrus.NewEntry(l).WithField("pid", os.Getpid())}
 }
 
 // Set establishes a new context to which the provided sub-logger is bound
@@ -60,8 +56,11 @@ func Set(parent context.Context, logger *Entry) context.Context {
 // Ctx returns the logger bound to the provided context, otherwise
 // providing the default logger.
 func Ctx(ctx context.Context) *Entry {
-	found := ctx.Value(&contextKey)
+	if ctx == nil {
+		return DefaultLogger
+	}
 
+	found := ctx.Value(&contextKey)
 	if found == nil {
 		return DefaultLogger
 	}

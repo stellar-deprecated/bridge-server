@@ -1,12 +1,13 @@
 package txsub
 
 import (
+	"context"
 	"encoding/json"
-	"github.com/go-errors/errors"
-	"golang.org/x/net/context"
 	"net/http"
 	"net/url"
 	"time"
+
+	"github.com/go-errors/errors"
 )
 
 const (

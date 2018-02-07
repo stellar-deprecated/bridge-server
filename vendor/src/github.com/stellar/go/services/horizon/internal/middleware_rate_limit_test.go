@@ -10,6 +10,8 @@ import (
 )
 
 func TestRateLimitMiddleware(t *testing.T) {
+	ht := StartHTTPTest(t, "base")
+	defer ht.Finish()
 
 	Convey("Rate Limiting", t, func() {
 		c := NewTestConfig()

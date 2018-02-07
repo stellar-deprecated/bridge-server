@@ -6,6 +6,7 @@ import (
 	"github.com/stellar/go/services/horizon/internal/render/hal"
 	"github.com/stellar/go/services/horizon/internal/render/sse"
 	"github.com/stellar/go/services/horizon/internal/resource"
+	halRender "github.com/stellar/go/support/render/hal"
 )
 
 // This file contains the actions:
@@ -28,7 +29,7 @@ func (action *OffersByAccountAction) JSON() {
 		action.loadRecords,
 		action.loadPage,
 		func() {
-			hal.Render(action.W, action.Page)
+			halRender.Render(action.W, action.Page)
 		},
 	)
 }
@@ -69,8 +70,7 @@ func (action *OffersByAccountAction) loadPage() {
 		action.Page.Add(res)
 	}
 
-	action.Page.BaseURL = action.BaseURL()
-	action.Page.BasePath = action.Path()
+	action.Page.FullURL = action.FullURL()
 	action.Page.Limit = action.PageQuery.Limit
 	action.Page.Cursor = action.PageQuery.Cursor
 	action.Page.Order = action.PageQuery.Order

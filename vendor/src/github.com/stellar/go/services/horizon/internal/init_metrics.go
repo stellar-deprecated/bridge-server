@@ -15,7 +15,6 @@ func initDbMetrics(app *App) {
 	app.historyLatestLedgerGauge = metrics.NewGauge()
 	app.historyElderLedgerGauge = metrics.NewGauge()
 	app.coreLatestLedgerGauge = metrics.NewGauge()
-	app.coreElderLedgerGauge = metrics.NewGauge()
 
 	app.horizonConnGauge = metrics.NewGauge()
 	app.coreConnGauge = metrics.NewGauge()
@@ -23,7 +22,6 @@ func initDbMetrics(app *App) {
 	app.metrics.Register("history.latest_ledger", app.historyLatestLedgerGauge)
 	app.metrics.Register("history.elder_ledger", app.historyElderLedgerGauge)
 	app.metrics.Register("stellar_core.latest_ledger", app.coreLatestLedgerGauge)
-	app.metrics.Register("stellar_core.elder_ledger", app.coreElderLedgerGauge)
 	app.metrics.Register("history.open_connections", app.horizonConnGauge)
 	app.metrics.Register("stellar_core.open_connections", app.coreConnGauge)
 	app.metrics.Register("goroutines", app.goroutineGauge)

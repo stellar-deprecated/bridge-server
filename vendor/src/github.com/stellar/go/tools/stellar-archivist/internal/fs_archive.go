@@ -21,9 +21,11 @@ func (b *FsArchiveBackend) GetFile(pth string) (io.ReadCloser, error) {
 
 func (b *FsArchiveBackend) Exists(pth string) bool {
 	pth = path.Join(b.prefix, pth)
-    _, err := os.Stat(pth)
-    if err != nil && os.IsNotExist(err) { return false }
-    return true
+	_, err := os.Stat(pth)
+	if err != nil && os.IsNotExist(err) {
+		return false
+	}
+	return true
 }
 
 func (b *FsArchiveBackend) PutFile(pth string, in io.ReadCloser) error {
@@ -55,7 +57,7 @@ func (b *FsArchiveBackend) ListFiles(pth string) (chan string, chan error) {
 					errs <- err
 					return nil
 				}
-				if info != nil && ! info.IsDir() {
+				if info != nil && !info.IsDir() {
 					ch <- p
 				}
 				return nil

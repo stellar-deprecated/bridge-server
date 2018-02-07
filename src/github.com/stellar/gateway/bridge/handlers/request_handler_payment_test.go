@@ -307,6 +307,181 @@ func TestRequestHandlerPayment(t *testing.T) {
 			})
 		})
 
+		Convey("When forward federation destination", func() {
+			params := url.Values{
+				"source":                                       {"SDRAS7XIQNX25UDCCX725R4EYGBFYGJE4HJ2A3DFCWJIHMRSMS7CXX42"},
+				"forward_destination[domain]":                  {"stellar.org"},
+				"forward_destination[fields][federation_type]": {"bank_account"},
+				"forward_destination[fields][swift]":           {"BOPBPHMM"},
+				"forward_destination[fields][acct]":            {"2382376"},
+				"amount": {"20.0"},
+			}
+
+			Convey("When FederationResolver returns error", func() {
+				mockFederationResolver.On(
+					"ForwardRequest",
+					"stellar.org",
+					url.Values{
+						"federation_type": {"bank_account"},
+						"swift":           {"BOPBPHMM"},
+						"acct":            {"2382376"},
+					},
+				).Return(
+					&federation.NameResponse{},
+					errors.New("stellar.toml response status code indicates error"),
+				).Once()
+
+				Convey("it should return error", func() {
+					statusCode, response := net.GetResponse(testServer, params)
+					responseString := strings.TrimSpace(string(response))
+					assert.Equal(t, 400, statusCode)
+					expected := test.StringToJSONMap(`{
+  "code": "cannot_resolve_destination",
+  "message": "Cannot resolve federated Stellar address."
+}`)
+					assert.Equal(t, expected, test.StringToJSONMap(responseString))
+				})
+			})
+
+			Convey("When federation response is correct (no memo)", func() {
+				validParams := url.Values{
+					// GCF3WVYTHF75PEG6622G5G6KU26GOSDQPDHSCJ3DQD7VONH4EYVDOGKJ
+					"source":                                       {"SDWLS4G3XCNIYPKXJWWGGJT6UDY63WV6PEFTWP7JZMQB4RE7EUJQN5XM"},
+					"forward_destination[domain]":                  {"stellar.org"},
+					"forward_destination[fields][federation_type]": {"bank_account"},
+					"forward_destination[fields][swift]":           {"BOPBPHMM"},
+					"forward_destination[fields][acct]":            {"2382376"},
+					"amount": {"20"},
+				}
+
+				mockFederationResolver.On(
+					"ForwardRequest",
+					"stellar.org",
+					url.Values{
+						"federation_type": {"bank_account"},
+						"swift":           {"BOPBPHMM"},
+						"acct":            {"2382376"},
+					},
+				).Return(
+					&federation.NameResponse{AccountID: "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632"},
+					nil,
+				).Once()
+
+				// Checking if destination account exists
+				mockHorizon.On(
+					"LoadAccount",
+					"GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632",
+				).Return(horizon.AccountResponse{}, nil).Once()
+
+				var ledger uint64
+				ledger = 1988728
+				horizonResponse := horizon.SubmitTransactionResponse{
+					Hash:   "6a0049b44e0d0341bd52f131c74383e6ccd2b74b92c829c990994d24bbfcfa7a",
+					Ledger: &ledger,
+					Extras: nil,
+				}
+
+				mockTransactionSubmitter.On(
+					"SubmitTransaction",
+					mock.AnythingOfType("*string"),
+					"SDWLS4G3XCNIYPKXJWWGGJT6UDY63WV6PEFTWP7JZMQB4RE7EUJQN5XM",
+					mock.AnythingOfType("build.PaymentBuilder"),
+					nil,
+				).Run(func(args mock.Arguments) {
+					operation, ok := args.Get(2).(build.PaymentBuilder)
+					assert.True(t, ok, "Invalid conversion")
+					assert.Equal(t, "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632", operation.P.Destination.Address())
+					assert.Equal(t, int64(200000000), int64(operation.P.Amount))
+					assert.Equal(t, xdr.AssetTypeAssetTypeNative, operation.P.Asset.Type)
+				}).Return(horizonResponse, nil).Once()
+
+				Convey("it should return success", func() {
+					statusCode, response := net.GetResponse(testServer, validParams)
+					responseString := strings.TrimSpace(string(response))
+
+					assert.Equal(t, 200, statusCode)
+					expected := test.StringToJSONMap(`{
+					  "hash": "6a0049b44e0d0341bd52f131c74383e6ccd2b74b92c829c990994d24bbfcfa7a",
+					  "ledger": 1988728
+					}`)
+					assert.Equal(t, expected, test.StringToJSONMap(responseString))
+				})
+			})
+
+			Convey("When federation response is correct (with memo)", func() {
+				validParams := url.Values{
+					// GCF3WVYTHF75PEG6622G5G6KU26GOSDQPDHSCJ3DQD7VONH4EYVDOGKJ
+					"source":                                       {"SDWLS4G3XCNIYPKXJWWGGJT6UDY63WV6PEFTWP7JZMQB4RE7EUJQN5XM"},
+					"forward_destination[domain]":                  {"stellar.org"},
+					"forward_destination[fields][federation_type]": {"bank_account"},
+					"forward_destination[fields][swift]":           {"BOPBPHMM"},
+					"forward_destination[fields][acct]":            {"2382376"},
+					"amount": {"20"},
+				}
+
+				mockFederationResolver.On(
+					"ForwardRequest",
+					"stellar.org",
+					url.Values{
+						"federation_type": {"bank_account"},
+						"swift":           {"BOPBPHMM"},
+						"acct":            {"2382376"},
+					},
+				).Return(
+					&federation.NameResponse{
+						AccountID: "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632",
+						MemoType:  "text",
+						Memo:      federation.Memo{"125"},
+					},
+					nil,
+				).Once()
+
+				// Checking if destination account exists
+				mockHorizon.On(
+					"LoadAccount",
+					"GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632",
+				).Return(horizon.AccountResponse{}, nil).Once()
+
+				var ledger uint64
+				ledger = 1988728
+				horizonResponse := horizon.SubmitTransactionResponse{
+					Hash:   "ad71fc31bfae25b0bd14add4cc5306661edf84cdd73f1353d2906363899167e1",
+					Ledger: &ledger,
+					Extras: nil,
+				}
+
+				mockTransactionSubmitter.On(
+					"SubmitTransaction",
+					mock.AnythingOfType("*string"),
+					"SDWLS4G3XCNIYPKXJWWGGJT6UDY63WV6PEFTWP7JZMQB4RE7EUJQN5XM",
+					mock.AnythingOfType("build.PaymentBuilder"),
+					mock.AnythingOfType("build.MemoText"),
+				).Run(func(args mock.Arguments) {
+					operation, ok := args.Get(2).(build.PaymentBuilder)
+					assert.True(t, ok, "Invalid conversion")
+					assert.Equal(t, "GDSIKW43UA6JTOA47WVEBCZ4MYC74M3GNKNXTVDXFHXYYTNO5GGVN632", operation.P.Destination.Address())
+					assert.Equal(t, int64(200000000), int64(operation.P.Amount))
+					assert.Equal(t, xdr.AssetTypeAssetTypeNative, operation.P.Asset.Type)
+
+					memo, ok := args.Get(3).(build.MemoText)
+					assert.True(t, ok, "Invalid conversion")
+					assert.Equal(t, "125", memo.Value)
+				}).Return(horizonResponse, nil).Once()
+
+				Convey("it should return success", func() {
+					statusCode, response := net.GetResponse(testServer, validParams)
+					responseString := strings.TrimSpace(string(response))
+
+					assert.Equal(t, 200, statusCode)
+					expected := test.StringToJSONMap(`{
+					  "hash": "ad71fc31bfae25b0bd14add4cc5306661edf84cdd73f1353d2906363899167e1",
+					  "ledger": 1988728
+					}`)
+					assert.Equal(t, expected, test.StringToJSONMap(responseString))
+				})
+			})
+		})
+
 		Convey("When asset_issuer is invalid", func() {
 			params := url.Values{
 				"source":       {"SDRAS7XIQNX25UDCCX725R4EYGBFYGJE4HJ2A3DFCWJIHMRSMS7CXX42"},
@@ -1214,6 +1389,112 @@ func TestRequestHandlerPayment(t *testing.T) {
 				expected := test.StringToJSONMap(`{
 					"code": "internal_server_error",
 					"message": "Internal Server Error, please try again."
+				}`)
+				assert.Equal(t, expected, test.StringToJSONMap(responseString))
+			})
+
+			Convey("it should submit transaction when compliance server returns success (forward federation request)", func() {
+				params["forward_destination[domain]"] = []string{"stellar.org"}
+				params["forward_destination[fields][federation_type]"] = []string{"bank_account"}
+				params["forward_destination[fields][swift]"] = []string{"BOPBPHMM"}
+				params["forward_destination[fields][acct]"] = []string{"2382376"}
+
+				memoBytes, _ := hex.DecodeString("b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9")
+				var hashXdr xdr.Hash
+				copy(hashXdr[:], memoBytes[:])
+				memo, _ := xdr.NewMemo(xdr.MemoTypeMemoHash, hashXdr)
+
+				sourceBytes, _ := hex.DecodeString("2dffe7c67daf270d2e617abe8597f559831131551a116859feba99c32e8abfc3")
+				var sourceXdr xdr.Uint256
+				copy(sourceXdr[:], sourceBytes[:])
+
+				destinationBytes, _ := hex.DecodeString("1952fcdc3245c07d2c2a6cba008809603ec67b1883d18bb348c8a8042014389c")
+				var destinationXdr xdr.Uint256
+				copy(destinationXdr[:], destinationBytes[:])
+
+				issuerBytes, _ := hex.DecodeString("1952fcdc3245c07d2c2a6cba008809603ec67b1883d18bb348c8a8042014389c")
+				var issuerXdr xdr.Uint256
+				copy(issuerXdr[:], issuerBytes[:])
+
+				expectedTx := &xdr.Transaction{
+					SourceAccount: xdr.AccountId{
+						Type:    xdr.PublicKeyTypePublicKeyTypeEd25519,
+						Ed25519: &sourceXdr,
+					},
+					Fee:    100,
+					SeqNum: 0,
+					Memo:   memo,
+					Operations: []xdr.Operation{
+						{
+							Body: xdr.OperationBody{
+								Type: xdr.OperationTypePayment,
+								PaymentOp: &xdr.PaymentOp{
+									Destination: xdr.AccountId{
+										Type:    xdr.PublicKeyTypePublicKeyTypeEd25519,
+										Ed25519: &destinationXdr,
+									},
+									Amount: 200000000,
+									Asset: xdr.Asset{
+										Type: xdr.AssetTypeAssetTypeCreditAlphanum4,
+										AlphaNum4: &xdr.AssetAlphaNum4{
+											AssetCode: [4]byte{'U', 'S', 'D', 0},
+											Issuer: xdr.AccountId{
+												Type:    xdr.PublicKeyTypePublicKeyTypeEd25519,
+												Ed25519: &issuerXdr,
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				}
+
+				complianceResponse := callback.SendResponse{
+					TransactionXdr: "AAAAAC3/58Z9rycNLmF6voWX9VmDETFVGhFoWf66mcMuir/DAAAAZAAAAAAAAAAAAAAAAAAAAAO5TSe5k00+CKUuUtfafav6xITv43pTgO6QiPes4u/N6QAAAAEAAAAAAAAAAQAAAAAZUvzcMkXAfSwqbLoAiAlgPsZ7GIPRi7NIyKgEIBQ4nAAAAAFVU0QAAAAAABlS/NwyRcB9LCpsugCICWA+xnsYg9GLs0jIqAQgFDicAAAAAAvrwgAAAAAA",
+				}
+
+				mockHTTPClient.On(
+					"PostForm",
+					"http://compliance/send",
+					mock.AnythingOfType("url.Values"),
+				).Return(
+					net.BuildHTTPResponse(200, string(complianceResponse.Marshal())),
+					nil,
+				).Run(func(args mock.Arguments) {
+					values, ok := args.Get(1).(url.Values)
+					assert.True(t, ok, "Invalid conversion")
+					assert.Equal(t, []string{"GAW77Z6GPWXSODJOMF5L5BMX6VMYGEJRKUNBC2CZ725JTQZORK74HQQD"}, values["source"])
+					values.Del("source")
+					params.Del("source")
+					assert.Equal(t, values.Encode(), params.Encode())
+				}).Once()
+
+				var ledger uint64
+				ledger = 1988727
+				horizonResponse := horizon.SubmitTransactionResponse{
+					Hash:   "6a0049b44e0d0341bd52f131c74383e6ccd2b74b92c829c990994d24bbfcfa7a",
+					Ledger: &ledger,
+					Extras: nil,
+				}
+
+				mockTransactionSubmitter.On(
+					"SignAndSubmitRawTransaction",
+					mock.AnythingOfType("*string"),
+					params.Get("source"),
+					mock.AnythingOfType("*xdr.Transaction"),
+				).Run(func(args mock.Arguments) {
+					tx, ok := args.Get(2).(*xdr.Transaction)
+					assert.True(t, ok, "Invalid conversion")
+					assert.Equal(t, *tx, *expectedTx)
+				}).Return(horizonResponse, nil).Once()
+
+				statusCode, response := net.GetResponse(testServer, params)
+				responseString := strings.TrimSpace(string(response))
+				assert.Equal(t, 200, statusCode)
+				expected := test.StringToJSONMap(`{
+				  "hash": "6a0049b44e0d0341bd52f131c74383e6ccd2b74b92c829c990994d24bbfcfa7a",
+				  "ledger": 1988727
 				}`)
 				assert.Equal(t, expected, test.StringToJSONMap(responseString))
 			})

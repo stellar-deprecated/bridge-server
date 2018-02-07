@@ -5,16 +5,17 @@
 package archivist
 
 import (
+	"bytes"
 	"io"
 	"path"
-	"bytes"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 )
 
 type S3ArchiveBackend struct {
-	svc *s3.S3
+	svc    *s3.S3
 	bucket string
 	prefix string
 }
@@ -22,7 +23,7 @@ type S3ArchiveBackend struct {
 func (b *S3ArchiveBackend) GetFile(pth string) (io.ReadCloser, error) {
 	params := &s3.GetObjectInput{
 		Bucket: aws.String(b.bucket),
-		Key: aws.String(path.Join(b.prefix, pth)),
+		Key:    aws.String(path.Join(b.prefix, pth)),
 	}
 	resp, err := b.svc.GetObject(params)
 	if err != nil {
@@ -34,7 +35,7 @@ func (b *S3ArchiveBackend) GetFile(pth string) (io.ReadCloser, error) {
 func (b *S3ArchiveBackend) Exists(pth string) bool {
 	params := &s3.HeadObjectInput{
 		Bucket: aws.String(b.bucket),
-		Key: aws.String(path.Join(b.prefix, pth)),
+		Key:    aws.String(path.Join(b.prefix, pth)),
 	}
 	_, err := b.svc.HeadObject(params)
 	return err == nil
@@ -49,9 +50,9 @@ func (b *S3ArchiveBackend) PutFile(pth string, in io.ReadCloser) error {
 	}
 	params := &s3.PutObjectInput{
 		Bucket: aws.String(b.bucket),
-		Key: aws.String(path.Join(b.prefix, pth)),
-		ACL: aws.String(s3.ObjectCannedACLPublicRead),
-		Body: bytes.NewReader(buf.Bytes()),
+		Key:    aws.String(path.Join(b.prefix, pth)),
+		ACL:    aws.String(s3.ObjectCannedACLPublicRead),
+		Body:   bytes.NewReader(buf.Bytes()),
 	}
 	_, err = b.svc.PutObject(params)
 	in.Close()
@@ -64,9 +65,9 @@ func (b *S3ArchiveBackend) ListFiles(pth string) (chan string, chan error) {
 	errs := make(chan error)
 
 	params := &s3.ListObjectsInput{
-		Bucket: aws.String(b.bucket),
+		Bucket:  aws.String(b.bucket),
 		MaxKeys: aws.Int64(1000),
-		Prefix: aws.String(prefix),
+		Prefix:  aws.String(prefix),
 	}
 	resp, err := b.svc.ListObjects(params)
 	if err != nil {
@@ -107,7 +108,7 @@ func MakeS3Backend(bucket string, prefix string, opts *ConnectOptions) ArchiveBa
 	}
 	sess := session.New(&cfg)
 	return &S3ArchiveBackend{
-		svc: s3.New(sess),
+		svc:    s3.New(sess),
 		bucket: bucket,
 		prefix: prefix,
 	}

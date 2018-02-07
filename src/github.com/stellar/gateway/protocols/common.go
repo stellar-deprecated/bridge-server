@@ -5,12 +5,15 @@ import (
 	"net/http"
 	"net/url"
 	"reflect"
+	"regexp"
 	"strconv"
 
 	"github.com/facebookgo/structtag"
 	"github.com/stellar/go/build"
 	"github.com/stellar/go/support/errors"
 )
+
+var federationDestinationFieldName = regexp.MustCompile("forward_destination\\[fields\\]\\[([a-z_-]+)\\]")
 
 // Asset represents native or credit asset
 type Asset struct {
@@ -44,6 +47,12 @@ func (a Asset) Validate() bool {
 	}
 }
 
+// ForwardDestination contains fields required to create forward federation request
+type ForwardDestination struct {
+	Domain string     `name:"domain"`
+	Fields url.Values `name:"fields"`
+}
+
 // FormRequest allows transforming http.Request url.Values from/to request structs
 type FormRequest struct {
 	HTTPRequest *http.Request
@@ -65,6 +74,32 @@ func (request *FormRequest) FromRequest(r *http.Request, destination interface{}
 		switch tag {
 		case "":
 			continue
+		case "forward_destination":
+			var destination ForwardDestination
+			destination.Domain = r.PostFormValue("forward_destination[domain]")
+			destination.Fields = make(url.Values)
+
+			err := r.ParseForm()
+			if err != nil {
+				return err
+			}
+
+			for key := range r.PostForm {
+				matches := federationDestinationFieldName.FindStringSubmatch(key)
+				if len(matches) < 2 {
+					continue
+				}
+
+				fieldName := matches[1]
+				destination.Fields.Add(fieldName, r.PostFormValue(key))
+			}
+
+			ptr := rvalue.Field(i).Addr().Interface().(**ForwardDestination)
+			if destination.Domain != "" && len(destination.Fields) > 0 {
+				*ptr = &destination
+			} else {
+				*ptr = nil
+			}
 		case "path":
 			var path []Asset
 
@@ -162,6 +197,16 @@ func (request *FormRequest) ToValues(object interface{}) (values url.Values) {
 			for i, asset := range assets {
 				values.Set(fmt.Sprintf(pathCodeField, i), asset.Code)
 				values.Set(fmt.Sprintf(pathIssuerField, i), asset.Issuer)
+			}
+		case *ForwardDestination:
+			destination := rvalue.Field(i).Interface().(*ForwardDestination)
+			if destination == nil {
+				continue
+			}
+
+			values.Add("forward_destination[domain]", destination.Domain)
+			for key := range destination.Fields {
+				values.Add(fmt.Sprintf("forward_destination[fields][%s]", key), destination.Fields.Get(key))
 			}
 		}
 	}

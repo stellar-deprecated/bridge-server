@@ -5,6 +5,7 @@ import (
 
 	"github.com/stellar/go/price"
 	"github.com/stellar/go/xdr"
+	"github.com/stretchr/testify/assert"
 )
 
 var Tests = []struct {
@@ -53,5 +54,19 @@ func TestParse(t *testing.T) {
 	_, err = price.Parse("2147483649")
 	if err == nil {
 		t.Error("Expected error")
+	}
+}
+
+func TestStringFromFloat64(t *testing.T) {
+
+	tests := map[float64]string{
+		0:         "0.0000000",
+		0.0000001: "0.0000001",
+		1.0000001: "1.0000001",
+		123:       "123.0000000",
+	}
+
+	for f, s := range tests {
+		assert.Equal(t, s, price.StringFromFloat64(f))
 	}
 }

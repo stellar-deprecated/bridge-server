@@ -3,6 +3,7 @@ package horizon
 import (
 	"github.com/rcrowley/go-metrics"
 	"github.com/stellar/go/services/horizon/internal/render/hal"
+	halRender "github.com/stellar/go/support/render/hal"
 )
 
 // MetricsAction collects and renders a snapshot from the metrics system that
@@ -19,7 +20,7 @@ func (action *MetricsAction) JSON() {
 		"self": hal.NewLink("/metrics"),
 	}
 
-	hal.Render(action.W, action.Snapshot)
+	halRender.Render(action.W, action.Snapshot)
 }
 
 // LoadSnapshot populates action.Snapshot

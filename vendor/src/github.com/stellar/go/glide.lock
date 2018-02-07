@@ -1,5 +1,5 @@
-hash: d706a6b1bff95df93546374ff7ef6ecf0b11cf60d054c67569f46df10e477cf3
-updated: 2017-10-05T09:54:13.340235406-07:00
+hash: 7eac67607acc35ee775cfd4301d326fa205f7d0e95836f36dd934c5ccd9fc171
+updated: 2017-12-22T11:51:26.139292-09:00
 imports:
 - name: bitbucket.org/ww/goautoneg
   version: 75cd24fc2f2c2a2088577d12123ddee5f54e0675
@@ -43,6 +43,29 @@ imports:
   - private/waiter
   - service/s3
   - service/sts
+- name: github.com/btcsuite/btcd
+  version: 4803a8291c92a1d2d41041b942a9a9e37deab065
+  subpackages:
+  - btcec
+  - btcjson
+  - chaincfg
+  - chaincfg/chainhash
+  - rpcclient
+  - txscript
+  - wire
+- name: github.com/btcsuite/btclog
+  version: 84c8d2346e9fc8c7b947e243b9c24e6df9fd206a
+- name: github.com/btcsuite/btcutil
+  version: 501929d3d046174c3d39f0ea54ece471aa17238c
+  subpackages:
+  - base58
+  - bech32
+- name: github.com/btcsuite/go-socks
+  version: 4720035b7bfd2a9bb130b1c184f8bbe41b6f0d0f
+  subpackages:
+  - socks
+- name: github.com/btcsuite/websocket
+  version: 31079b6807923eb23992c421b114992b95131b55
 - name: github.com/BurntSushi/toml
   version: 99064174e013895bbd9b025c31100bd1d9b590ca
   repo: https://github.com/BurntSushi/toml
@@ -54,6 +77,30 @@ imports:
   repo: https://github.com/davecgh/go-spew
   subpackages:
   - spew
+- name: github.com/ethereum/go-ethereum
+  version: ad444752311b1a318a7933562749b4586d4469e9
+  subpackages:
+  - common
+  - common/hexutil
+  - common/math
+  - core/types
+  - crypto
+  - crypto/secp256k1
+  - crypto/sha3
+  - ethclient
+  - log
+  - params
+  - rlp
+  - rpc
+  - trie
+- name: github.com/facebookgo/inject
+  version: cc1aa653e50f6a9893bcaef89e673e5b24e1e97b
+- name: github.com/facebookgo/structtag
+  version: 217e25fb96916cc60332e399c9aa63f5c422ceed
+- name: github.com/FactomProject/basen
+  version: fe3947df716ebfda9847eb1b9a48f9592e06478c
+- name: github.com/FactomProject/btcutilecc
+  version: d3a63a5752ecf3fbc06bd97365da752111c263df
 - name: github.com/fatih/structs
   version: a720dfa8df582c51dee1b36feabb906bde1588bd
   repo: https://github.com/fatih/structs
@@ -69,6 +116,10 @@ imports:
 - name: github.com/getsentry/raven-go
   version: c9d3cc542ad199f62c0264286be537f9bce6063c
   repo: https://github.com/getsentry/raven-go
+- name: github.com/go-chi/chi
+  version: 25354a53cca531cb2efd3f1d3c565d90ff04d802
+  subpackages:
+  - middleware
 - name: github.com/go-errors/errors
   version: a41850380601eeb43f4350f7d17c6bbd8944aaf8
   repo: https://github.com/go-errors/errors
@@ -78,6 +129,8 @@ imports:
 - name: github.com/go-sql-driver/mysql
   version: 2e00b5cd70399450106cec6431c2e2ce3cae5034
   repo: https://github.com/go-sql-driver/mysql
+- name: github.com/go-stack/stack
+  version: 817915b46b97fd7bb80e8ab6b69f01a53ac3eebf
 - name: github.com/goji/context
   version: cc5d214cefa9d50beb2cdbf2344eb8c4bd14709b
   repo: https://github.com/goji/context
@@ -94,6 +147,10 @@ imports:
 - name: github.com/guregu/null
   version: 79c5bd36b615db4c06132321189f579c8a5fca98
   repo: https://github.com/guregu/null
+- name: github.com/haltingstate/secp256k1-go
+  version: 572209b26df66a638573023571b5ce80983214eb
+  subpackages:
+  - secp256k1-go2
 - name: github.com/howeyc/gopass
   version: bf9dde6d0d2c004a008c27aaee91170c786f6db8
   repo: https://github.com/howeyc/gopass
@@ -174,7 +231,7 @@ imports:
   subpackages:
   - xdr3
 - name: github.com/onsi/ginkgo
-  version: 11459a886d9cd66b319dac7ef1e917ee221372c9
+  version: 6c46eb8334b30dc55b42f1a1c725d5ce97375390
   subpackages:
   - config
   - extensions/table
@@ -195,7 +252,7 @@ imports:
   - reporters/stenographer/support/go-isatty
   - types
 - name: github.com/onsi/gomega
-  version: dcabb60a477c2b6f456df65037cb6708210fbb02
+  version: d35dcfdbfd01eaabf8da0b6b36f111ff953b68cb
   subpackages:
   - format
   - internal/assertion
@@ -221,6 +278,8 @@ imports:
   repo: https://github.com/PuerkitoBio/throttled
   subpackages:
   - store
+- name: github.com/r3labs/sse
+  version: 2f36fb519619e8589fbef5095fbe113c14e7d090
 - name: github.com/rcrowley/go-metrics
   version: a5cfc242a56ba7fa70b785f678d6214837bf93b9
   repo: https://github.com/rcrowley/go-metrics
@@ -238,7 +297,7 @@ imports:
   version: 7a36e3a787b5228de26fbfec89d5060701010da0
   repo: https://github.com/sebest/xff
 - name: github.com/segmentio/go-loggly
-  version: e78f6971ebca5835614673e2f5f6a47ca5f13501
+  version: eb91657e62b25699dd4e84d5562735440d4beace
   repo: https://github.com/segmentio/go-loggly
 - name: github.com/sergi/go-diff
   version: 83532ca1c1caa393179c677b6facf48e61f4ca5d
@@ -287,6 +346,11 @@ imports:
   - assert
   - mock
   - require
+  - suite
+- name: github.com/tyler-smith/go-bip32
+  version: 2c9cfd17756470a0b7c3e4b7954bae7d11035504
+- name: github.com/bartekn/go-bip39
+  version: a05967ea095d81c8fe4833776774cfaff8e5036c
 - name: github.com/tylerb/graceful
   version: 7116c7a8115899e80197cd9e0b97998c0f97ed8e
   repo: https://github.com/tylerb/graceful
@@ -299,9 +363,6 @@ imports:
   subpackages:
   - fasthttputil
   - stackless
-- name: github.com/visionmedia/go-debug
-  version: ff4a55a20a86994118644bbddc6a216da193cc13
-  repo: https://github.com/visionmedia/go-debug
 - name: github.com/xeipuuv/gojsonpointer
   version: e0fe6f68307607d540ed8eac07a342c33fa1b54a
   repo: https://github.com/xeipuuv/gojsonpointer
@@ -344,6 +405,8 @@ imports:
   version: 1f22c0103821b9390939b6776727195525381532
   repo: https://go.googlesource.com/crypto
   subpackages:
+  - pbkdf2
+  - ripemd160
   - ssh/terminal
 - name: golang.org/x/net
   version: 9bc2a3340c92c17a20edcd0080e93851ed58f5d5
@@ -358,16 +421,25 @@ imports:
   - lex/httplex
   - netutil
   - publicsuffix
+  - websocket
 - name: golang.org/x/sys
   version: 1f5e250e1174502017917628cc48b52fdc25b531
   subpackages:
   - unix
+- name: gopkg.in/fatih/set.v0
+  version: 27c40922c40b43fe04554d8223a402af3ea333f3
 - name: gopkg.in/gavv/httpexpect.v1
   version: 40724cf1e4a08b670b14a02deff693a91f3aa9a0
   repo: https://gopkg.in/gavv/httpexpect.v1
 - name: gopkg.in/gorp.v1
   version: c87af80f3cc5036b55b83d77171e156791085e2e
   repo: https://gopkg.in/gorp.v1
+- name: gopkg.in/karalabe/cookiejar.v2
+  version: 8dcd6a7f4951f6ff3ee9cbb919a06d8925822e57
+  subpackages:
+  - collections/prque
+- name: gopkg.in/natefinch/npipe.v2
+  version: c1b8fa8bdccecb0b8db834ee0b92fdbcfa606dd6
 - name: gopkg.in/tylerb/graceful.v1
   version: 50a48b6e73fcc75b45e22c05b79629a67c79e938
   repo: https://gopkg.in/tylerb/graceful.v1

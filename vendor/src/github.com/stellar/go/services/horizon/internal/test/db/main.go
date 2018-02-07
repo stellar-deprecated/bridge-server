@@ -4,9 +4,9 @@
 package db
 
 import (
-	"testing"
 	"fmt"
 	"log"
+	"testing"
 
 	"github.com/jmoiron/sqlx"
 	// pq enables postgres support
@@ -15,10 +15,10 @@ import (
 )
 
 var (
-	coreDB		*sqlx.DB
-	coreUrl 	*string
-	horizonDB 	*sqlx.DB
-	horizonUrl 	*string
+	coreDB     *sqlx.DB
+	coreUrl    *string
+	horizonDB  *sqlx.DB
+	horizonUrl *string
 )
 
 // Horizon returns a connection to the horizon test database
@@ -35,7 +35,7 @@ func Horizon(t *testing.T) *sqlx.DB {
 // HorizonURL returns the database connection the url any test
 // use when connecting to the history/horizon database
 func HorizonURL() string {
-	if horizonUrl == nil  {
+	if horizonUrl == nil {
 		log.Panic(fmt.Errorf("Horizon not initialized"))
 	}
 	return *horizonUrl
@@ -55,7 +55,7 @@ func StellarCore(t *testing.T) *sqlx.DB {
 // StellarCoreURL returns the database connection the url any test
 // use when connecting to the stellar-core database
 func StellarCoreURL() string {
-	if coreUrl == nil  {
+	if coreUrl == nil {
 		log.Panic(fmt.Errorf("StellarCore not initialized"))
 	}
 	return *coreUrl

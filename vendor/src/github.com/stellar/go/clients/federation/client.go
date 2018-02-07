@@ -28,7 +28,10 @@ func (c *Client) LookupByAddress(addy string) (*proto.NameResponse, error) {
 		return nil, errors.Wrap(err, "lookup federation server failed")
 	}
 
-	url := c.url(fserv, "name", addy)
+	qstr := url.Values{}
+	qstr.Add("type", "name")
+	qstr.Add("q", addy)
+	url := c.url(fserv, qstr)
 
 	var resp proto.NameResponse
 	err = c.getJSON(url, &resp)
@@ -62,12 +65,39 @@ func (c *Client) LookupByAccountID(aid string) (*proto.IDResponse, error) {
 		return nil, errors.Wrap(err, "lookup federation server failed")
 	}
 
-	url := c.url(fserv, "id", aid)
+	qstr := url.Values{}
+	qstr.Add("type", "id")
+	qstr.Add("q", aid)
+	url := c.url(fserv, qstr)
 
 	var resp proto.IDResponse
 	err = c.getJSON(url, &resp)
 	if err != nil {
 		return nil, errors.Wrap(err, "get federation failed")
+	}
+
+	return &resp, nil
+}
+
+// ForwardRequest performs a federated lookup following to the stellar
+// federation protocol using the "forward" type request.
+func (c *Client) ForwardRequest(domain string, fields url.Values) (*proto.NameResponse, error) {
+	fserv, err := c.getFederationServer(domain)
+	if err != nil {
+		return nil, errors.Wrap(err, "lookup federation server failed")
+	}
+
+	fields.Add("type", "forward")
+	url := c.url(fserv, fields)
+
+	var resp proto.NameResponse
+	err = c.getJSON(url, &resp)
+	if err != nil {
+		return nil, errors.Wrap(err, "get federation failed")
+	}
+
+	if resp.MemoType != "" && resp.Memo.String() == "" {
+		return nil, errors.New("Invalid federation response (memo)")
 	}
 
 	return &resp, nil
@@ -118,10 +148,6 @@ func (c *Client) getJSON(url string, dest interface{}) error {
 	return nil
 }
 
-func (c *Client) url(endpoint string, typ string, q string) string {
-	qstr := url.Values{}
-	qstr.Add("type", typ)
-	qstr.Add("q", q)
-
+func (c *Client) url(endpoint string, qstr url.Values) string {
 	return fmt.Sprintf("%s?%s", endpoint, qstr.Encode())
 }

@@ -11,6 +11,12 @@ bumps.  A breaking change will get clearly notified in this log.
 ### Added
 
 - Operation and payment resources were changed to add a `transaction_hash` property.
+- The ledger resource was changed to add a `header_xdr` property.  Existing horizon installations should re-ingest all ledgers to populate the history database tables with the data.  In future versions of horizon we will disallow null values in this column.  Going forward, this change reduces the coupling of horizon to stellar-core, ensuring that horizon can re-import history even when the data is no longer stored within stellar-core's database.
+
+### Changed
+
+- BREAKING CHANGE: The `base_fee` property of the ledger resource has been renamed to `base_fee_in_stroops` 
+- BREAKING CHANGE: The `base_reserve` property of the ledger resource has been renamed to `base_reserve_in_stroops` and is now expressed in stroops (rather than lumens) and as a JSON number. 
 
 ## [v0.11.0] - 2017-08-15
 

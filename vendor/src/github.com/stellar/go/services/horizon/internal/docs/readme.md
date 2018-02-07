@@ -18,3 +18,6 @@ SDF maintained libraries:<br />
 Community maintained libraries (in various states of completeness) for interacting with Horizon in other languages:<br>
 - [Ruby](https://github.com/stellar/ruby-stellar-sdk)
 - [Python](https://github.com/StellarCN/py-stellar-base)
+- [C# .NET 2.0](https://github.com/QuantozTechnology/csharp-stellar-base)
+- [C# .NET Core 2.x](https://github.com/elucidsoft/dotnetcore-stellar-sdk)
+- [C++](https://bitbucket.org/bnogal/stellarqore/wiki/Home)

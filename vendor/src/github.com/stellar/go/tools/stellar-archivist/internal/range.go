@@ -13,7 +13,7 @@ import (
 const CheckpointFreq = uint32(64)
 
 type Range struct {
-	Low uint32
+	Low  uint32
 	High uint32
 }
 
@@ -22,7 +22,7 @@ func PrevCheckpoint(i uint32) uint32 {
 	if i < freq {
 		return freq - 1
 	}
-    return ((i / freq) * freq) - 1;
+	return ((i / freq) * freq) - 1
 }
 
 func NextCheckpoint(i uint32) uint32 {
@@ -43,8 +43,8 @@ func MakeRange(low uint32, high uint32) Range {
 		high = low
 	}
 	return Range{
-		Low:PrevCheckpoint(low),
-		High:NextCheckpoint(high),
+		Low:  PrevCheckpoint(low),
+		High: NextCheckpoint(high),
 	}
 }
 
@@ -76,7 +76,7 @@ func (r Range) Checkpoints() chan uint32 {
 }
 
 func (r Range) Size() int {
-	return int(r.High - r.Low) / int(CheckpointFreq)
+	return int(r.High-r.Low) / int(CheckpointFreq)
 }
 
 func (r Range) CollapsedString() string {
@@ -88,10 +88,10 @@ func (r Range) CollapsedString() string {
 }
 
 type ByUint32 []uint32
+
 func (a ByUint32) Len() int           { return len(a) }
 func (a ByUint32) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a ByUint32) Less(i, j int) bool { return a[i] < a[j] }
-
 
 func fmtRangeList(vs []uint32) string {
 
@@ -102,7 +102,7 @@ func fmtRangeList(vs []uint32) string {
 
 	for _, t := range vs {
 		if curr != nil {
-			if curr.High + CheckpointFreq == t {
+			if curr.High+CheckpointFreq == t {
 				curr.High = t
 				continue
 			} else {
@@ -110,7 +110,7 @@ func fmtRangeList(vs []uint32) string {
 				curr = nil
 			}
 		}
-		curr = &Range{Low:t, High:t}
+		curr = &Range{Low: t, High: t}
 	}
 	if curr != nil {
 		s = append(s, curr.CollapsedString())

@@ -7,17 +7,17 @@ package archivist
 const NumLevels = 11
 
 type HistoryArchiveState struct {
-	Version int                   `json:"version"`
-	Server string                 `json:"server"`
-	CurrentLedger uint32          `json:"currentLedger"`
-	CurrentBuckets [NumLevels] struct {
-		Curr string               `json:"curr"`
-		Snap string               `json:"snap"`
+	Version        int    `json:"version"`
+	Server         string `json:"server"`
+	CurrentLedger  uint32 `json:"currentLedger"`
+	CurrentBuckets [NumLevels]struct {
+		Curr string `json:"curr"`
+		Snap string `json:"snap"`
 		Next struct {
-			State uint32          `json:"state"`
-			Output string         `json:"output,omitempty"`
-		}                         `json:"next"`
-	}                             `json:"currentBuckets"`
+			State  uint32 `json:"state"`
+			Output string `json:"output,omitempty"`
+		} `json:"next"`
+	} `json:"currentBuckets"`
 }
 
 func (h *HistoryArchiveState) LevelSummary() (string, int) {
@@ -25,11 +25,11 @@ func (h *HistoryArchiveState) LevelSummary() (string, int) {
 	nz := 0
 	for _, b := range h.CurrentBuckets {
 		state := '_'
-		for _, bs  := range []string {
+		for _, bs := range []string{
 			b.Curr, b.Snap, b.Next.Output,
 		} {
 			h, err := DecodeHash(bs)
-			if err == nil && ! h.IsZero() {
+			if err == nil && !h.IsZero() {
 				state = '#'
 			}
 		}
@@ -44,11 +44,11 @@ func (h *HistoryArchiveState) LevelSummary() (string, int) {
 func (h *HistoryArchiveState) Buckets() []Hash {
 	r := []Hash{}
 	for _, b := range h.CurrentBuckets {
-		for _, bs  := range []string {
+		for _, bs := range []string{
 			b.Curr, b.Snap, b.Next.Output,
 		} {
 			h, err := DecodeHash(bs)
-			if err == nil && ! h.IsZero() {
+			if err == nil && !h.IsZero() {
 				r = append(r, h)
 			}
 		}
@@ -57,5 +57,5 @@ func (h *HistoryArchiveState) Buckets() []Hash {
 }
 
 func (h *HistoryArchiveState) Range() Range {
-	return Range{Low:63, High: h.CurrentLedger,}
+	return Range{Low: 63, High: h.CurrentLedger}
 }

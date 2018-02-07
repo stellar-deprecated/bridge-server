@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/stellar/go/services/horizon/internal/render/sse"
 	"github.com/stellar/go/services/horizon/internal/test"
+	"github.com/stellar/go/services/horizon/internal/render/sse"
 )
 
 func TestNewApp(t *testing.T) {
@@ -56,12 +56,10 @@ func TestMetrics(t *testing.T) {
 	hl := ht.App.historyLatestLedgerGauge
 	he := ht.App.historyElderLedgerGauge
 	cl := ht.App.coreLatestLedgerGauge
-	ce := ht.App.coreElderLedgerGauge
 
 	ht.Require.EqualValues(0, hl.Value())
 	ht.Require.EqualValues(0, he.Value())
 	ht.Require.EqualValues(0, cl.Value())
-	ht.Require.EqualValues(0, ce.Value())
 
 	ht.App.UpdateLedgerState()
 	ht.App.UpdateMetrics()
@@ -69,7 +67,6 @@ func TestMetrics(t *testing.T) {
 	ht.Require.EqualValues(3, hl.Value())
 	ht.Require.EqualValues(1, he.Value())
 	ht.Require.EqualValues(3, cl.Value())
-	ht.Require.EqualValues(1, ce.Value())
 }
 
 func TestTick(t *testing.T) {

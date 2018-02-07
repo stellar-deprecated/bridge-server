@@ -50,11 +50,11 @@ func (m *MockFederationResolver) LookupByAccountID(aid string) (*fproto.IDRespon
 	return a.Get(0).(*fproto.IDResponse), a.Error(1)
 }
 
-// // GetDestination is a mocking a method
-// func (m *MockFederationResolver) GetDestination(federationURL, address string) (response federation.Response, err error) {
-// 	a := m.Called(federationURL, address)
-// 	return a.Get(0).(federation.Response), a.Error(1)
-// }
+// ForwardRequest is a mocking a method
+func (m *MockFederationResolver) ForwardRequest(domain string, fields url.Values) (*fproto.NameResponse, error) {
+	a := m.Called(domain, fields)
+	return a.Get(0).(*fproto.NameResponse), a.Error(1)
+}
 
 // MockHTTPClient ...
 type MockHTTPClient struct {

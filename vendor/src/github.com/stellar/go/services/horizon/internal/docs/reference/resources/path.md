@@ -8,7 +8,7 @@ A **path** resource contains information about a payment path.  A path can be us
 ## Attributes
 | Attribute                | Type             |                                                                                                                                |
 |--------------------------|------------------|--------------------------------------------------------------------------------------------------------------------------------|
-| path                     | array            | An array of assets the represents the intermediary assets this path hops through                                               |
+| path                     | array            | An array of assets that represents the intermediary assets this path hops through                                               |
 | source_amount            | string           | An estimated cost for making a payment of destination_amount on this path. Suitable for use in a path payments `sendMax` field |
 | destination_amount       | string           | The destination amount specified in the search that found this path                                                            |
 | destination_asset_type   | string           | The type for the destination asset specified in the search that found this path                                                |

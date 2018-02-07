@@ -1,9 +1,10 @@
 package hal
 
 import (
-	. "github.com/smartystreets/goconvey/convey"
 	"net/url"
 	"testing"
+
+	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestLinkBuilder(t *testing.T) {
