@@ -350,12 +350,6 @@
 			"branch": "master"
 		},
 		{
-			"importpath": "github.com/lann/squirrel",
-			"repository": "https://github.com/lann/squirrel",
-			"revision": "caff2d522d550f0998629c85898ad35e8a603328",
-			"branch": "v1"
-		},
-		{
 			"importpath": "github.com/lib/pq",
 			"repository": "https://github.com/lib/pq",
 			"revision": "11fc39a580a008f1f39bb3d11d984fb34ed778d9",
@@ -739,12 +733,6 @@
 			"importpath": "gopkg.in/airbrake/gobrake.v2",
 			"repository": "https://gopkg.in/airbrake/gobrake.v2",
 			"revision": "c9d51adc624b5cc4c1bf8de730a09af4878ffe2d",
-			"branch": "master"
-		},
-		{
-			"importpath": "gopkg.in/fsnotify.v1",
-			"repository": "https://gopkg.in/fsnotify.v1",
-			"revision": "508915b7500b6e42a87132e4afeb4729cebc7cbb",
 			"branch": "master"
 		},
 		{
