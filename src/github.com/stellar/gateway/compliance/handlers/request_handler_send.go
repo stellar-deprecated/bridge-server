@@ -271,7 +271,7 @@ func (rh *RequestHandler) HandlerSend(c web.C, w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != 200 && resp.StatusCode != 202 && resp.StatusCode != 403 {
 		log.WithFields(log.Fields{
 			"status": resp.StatusCode,
 			"body":   string(body),
