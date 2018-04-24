@@ -24,9 +24,9 @@ type SendRequest struct {
 	// Amount destination should receive
 	Amount string `name:"amount" required:""`
 	// Code of the asset destination should receive
-	AssetCode string `name:"asset_code" required:""`
+	AssetCode string `name:"asset_code"`
 	// Issuer of the asset destination should receive
-	AssetIssuer string `name:"asset_issuer" required:""`
+	AssetIssuer string `name:"asset_issuer"`
 	// Only for path_payment
 	SendMax string `name:"send_max"`
 	// Only for path_payment
@@ -74,11 +74,13 @@ func (request *SendRequest) Validate() error {
 		return protocols.NewInvalidParameterError("destination", request.Destination, "Not a valid stellar address.")
 	}
 
-	_, err = keypair.Parse(request.AssetIssuer)
-	if !protocols.IsValidAccountID(request.AssetIssuer) {
-		return protocols.NewInvalidParameterError("asset_issuer", request.AssetIssuer, "Asset issuer must be a public key (starting with `G`).")
-	}
+	if request.AssetCode != "" {
 
+		_, err = keypair.Parse(request.AssetIssuer)
+		if !protocols.IsValidAccountID(request.AssetIssuer) {
+			return protocols.NewInvalidParameterError("asset_issuer", request.AssetIssuer, "Asset issuer must be a public key (starting with `G`).")
+		}
+	}
 	return nil
 }
 
