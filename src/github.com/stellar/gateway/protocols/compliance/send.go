@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/stellar/gateway/protocols"
-	"github.com/stellar/go/keypair"
 	proto "github.com/stellar/go/protocols/compliance"
 )
 
@@ -76,7 +75,6 @@ func (request *SendRequest) Validate() error {
 
 	if request.AssetCode != "" {
 
-		_, err = keypair.Parse(request.AssetIssuer)
 		if !protocols.IsValidAccountID(request.AssetIssuer) {
 			return protocols.NewInvalidParameterError("asset_issuer", request.AssetIssuer, "Asset issuer must be a public key (starting with `G`).")
 		}
