@@ -119,11 +119,19 @@ func (rh *RequestHandler) HandlerSend(c web.C, w http.ResponseWriter, r *http.Re
 
 	mutators := []interface{}{
 		b.Destination{destinationObject.AccountID},
-		b.CreditAmount{
+	}
+
+	if request.AssetCode == "" {
+		mutators = append(mutators, b.NativeAmount{
+			request.Amount,
+		})
+
+	} else {
+		mutators = append(mutators, b.CreditAmount{
 			request.AssetCode,
 			request.AssetIssuer,
 			request.Amount,
-		},
+		})
 	}
 
 	if payWithMutator != nil {
