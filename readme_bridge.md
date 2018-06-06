@@ -279,7 +279,7 @@ Every request must contain required parameters from the following list. Addition
 
 name |  | description
 --- | --- | ---
-`id` | optional | Unique ID of the payment. If you send another request with the same `id` previously sent transaction will be resubmitted to the network.
+`id` | optional | Unique ID of the payment. If you send another request with the same `id` previously sent transaction will be resubmitted to the network. This parameter is required when sending a payment using Compliance protocol.
 `source` | optional | Secret seed of transaction source account. If ommitted it will use the `base_seed` specified in the config file.
 `sender` | optional | Payment address (ex. `bob*stellar.org`) of payment sender account. Required for when sending using Compliance protocol.
 `destination` | required | Account ID or payment address (ex. `bob*stellar.org`) of payment destination account

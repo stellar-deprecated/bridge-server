@@ -167,6 +167,15 @@ func (m *MockRepository) GetReceivedPaymentByOperationID(operationID int64) (*en
 	return a.Get(0).(*entities.ReceivedPayment), a.Error(1)
 }
 
+// GetAuthData is a mocking a method
+func (m *MockRepository) GetAuthData(id string) (*entities.AuthData, error) {
+	a := m.Called(id)
+	if a.Get(0) == nil {
+		return nil, a.Error(1)
+	}
+	return a.Get(0).(*entities.AuthData), a.Error(1)
+}
+
 func (m *MockRepository) GetReceivedPayments(page, limit int) ([]*entities.ReceivedPayment, error) {
 	a := m.Called(page, limit)
 	if a.Get(0) == nil {

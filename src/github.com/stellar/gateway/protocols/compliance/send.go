@@ -12,6 +12,8 @@ import (
 
 // SendRequest represents request sent to /send endpoint of compliance server
 type SendRequest struct {
+	// Payment ID - used to resubmit auth request in case of `pending` response.
+	ID string `name:"id" required:""`
 	// Source account ID
 	Source string `name:"source" required:""`
 	// Sender address (like alice*stellar.org)
