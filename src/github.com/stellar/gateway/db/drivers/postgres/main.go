@@ -81,6 +81,8 @@ func (d *Driver) Insert(object entities.Entity) (id int64, err error) {
 		err = stmt.Get(&id, object)
 	case *entities.AllowedUser:
 		err = stmt.Get(&id, object)
+	case *entities.AuthData:
+		err = stmt.Get(&id, object)
 	case *entities.SentTransaction:
 		err = stmt.Get(&id, object)
 	case *entities.ReceivedPayment:
@@ -136,6 +138,8 @@ func (d *Driver) Update(object entities.Entity) (err error) {
 	case *entities.AllowedFi:
 		_, err = d.database.NamedExec(query, object)
 	case *entities.AllowedUser:
+		_, err = d.database.NamedExec(query, object)
+	case *entities.AuthData:
 		_, err = d.database.NamedExec(query, object)
 	case *entities.SentTransaction:
 		_, err = d.database.NamedExec(query, object)
@@ -245,6 +249,9 @@ func getTypeData(object interface{}) (typeValue reflect.Type, tableName string, 
 	case *entities.AllowedUser:
 		typeValue = reflect.TypeOf(*object)
 		tableName = "AllowedUser"
+	case *entities.AuthData:
+		typeValue = reflect.TypeOf(*object)
+		tableName = "AuthData"
 	case *entities.SentTransaction:
 		typeValue = reflect.TypeOf(*object)
 		tableName = "SentTransaction"
