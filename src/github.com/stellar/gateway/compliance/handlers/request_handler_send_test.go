@@ -141,7 +141,12 @@ func TestRequestHandlerSend(t *testing.T) {
 			}
 
 			mockRepository.Mock.On("GetAuthData", "id").Return(nil, nil).Once()
-			mockEntityManager.On("Persist", mock.AnythingOfType("*entities.AuthData")).Return(nil).Once()
+			mockEntityManager.On("Persist", mock.AnythingOfType("*entities.AuthData")).Run(func(args mock.Arguments) {
+				entity, ok := args.Get(0).(*entities.AuthData)
+				assert.True(t, ok, "Invalid conversion")
+				assert.Equal(t, "id", entity.ID)
+				assert.Equal(t, "stellar.org", entity.Domain)
+			}).Return(nil).Once()
 
 			senderInfo := compliance.SenderInfo{FirstName: "John", LastName: "Doe"}
 			senderInfoMap, err := senderInfo.Map()
@@ -603,6 +608,7 @@ func TestRequestHandlerSend(t *testing.T) {
 
 				// Sending the request again
 				mockRepository.Mock.On("GetAuthData", "id").Return(&entities.AuthData{
+					ID:       "id",
 					Domain:   "stellar.org",
 					AuthData: string(authDataJSON),
 				}, nil).Once()

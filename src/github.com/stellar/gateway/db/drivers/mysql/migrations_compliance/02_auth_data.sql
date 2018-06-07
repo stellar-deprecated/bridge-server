@@ -1,6 +1,6 @@
 -- +migrate Up
 CREATE TABLE `AuthData` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `id` varchar(255) NOT NULL,
   `domain` varchar(255) NOT NULL,
   `auth_data` text NOT NULL,
   PRIMARY KEY (`id`)

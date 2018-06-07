@@ -278,6 +278,7 @@ func (rh *RequestHandler) HandlerSend(c web.C, w http.ResponseWriter, r *http.Re
 	}
 
 	authDataEntity = &entities.AuthData{
+		ID:       request.ID,
 		Domain:   domain,
 		AuthData: string(data),
 	}
