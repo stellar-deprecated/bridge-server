@@ -5,7 +5,7 @@ CREATE TABLE `AuthData` (
   `domain` varchar(255) NOT NULL,
   `auth_data` text NOT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `request_id` (`request_id`),
+  UNIQUE KEY `request_id` (`request_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- +migrate Down
