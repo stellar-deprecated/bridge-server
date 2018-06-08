@@ -144,7 +144,7 @@ func TestRequestHandlerSend(t *testing.T) {
 			mockEntityManager.On("Persist", mock.AnythingOfType("*entities.AuthData")).Run(func(args mock.Arguments) {
 				entity, ok := args.Get(0).(*entities.AuthData)
 				assert.True(t, ok, "Invalid conversion")
-				assert.Equal(t, "id", entity.ID)
+				assert.Equal(t, "id", entity.RequestID)
 				assert.Equal(t, "stellar.org", entity.Domain)
 			}).Return(nil).Once()
 
@@ -608,9 +608,9 @@ func TestRequestHandlerSend(t *testing.T) {
 
 				// Sending the request again
 				mockRepository.Mock.On("GetAuthData", "id").Return(&entities.AuthData{
-					ID:       "id",
-					Domain:   "stellar.org",
-					AuthData: string(authDataJSON),
+					RequestID: "id",
+					Domain:    "stellar.org",
+					AuthData:  string(authDataJSON),
 				}, nil).Once()
 
 				authResponse = compliance.AuthResponse{

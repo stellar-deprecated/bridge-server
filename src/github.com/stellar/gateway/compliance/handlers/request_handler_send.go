@@ -278,9 +278,9 @@ func (rh *RequestHandler) HandlerSend(c web.C, w http.ResponseWriter, r *http.Re
 	}
 
 	authDataEntity = &entities.AuthData{
-		ID:       request.ID,
-		Domain:   domain,
-		AuthData: string(data),
+		RequestID: request.ID,
+		Domain:    domain,
+		AuthData:  string(data),
 	}
 	err = rh.EntityManager.Persist(authDataEntity)
 	if err != nil {
