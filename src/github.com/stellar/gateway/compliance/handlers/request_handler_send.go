@@ -284,6 +284,8 @@ func (rh *RequestHandler) HandlerSend(c web.C, w http.ResponseWriter, r *http.Re
 	}
 	err = rh.EntityManager.Persist(authDataEntity)
 	if err != nil {
+		log.WithFields(log.Fields{"err": err}).Warn("Error persisting authDataEntity")
+		server.Write(w, protocols.InternalServerError)
 		return
 	}
 
