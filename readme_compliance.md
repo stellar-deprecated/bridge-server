@@ -86,6 +86,7 @@ Typically called by the bridge server when a user initiates a payment. This endp
 
 name |  | description
 --- | --- | ---
+`id` | required | ID of the payment/transaction. In case of `pending` response or errors, you should resubmit the request with the same `id` value.
 `source` | required | Account ID of transaction source account.
 `sender` | required | Stellar address (ex. `bob*stellar.org`) of payment sender account.
 `destination` | required | Account ID or Stellar address (ex. `bob*stellar.org`) of payment destination account

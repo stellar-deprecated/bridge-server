@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	log "github.com/sirupsen/logrus"
+	"github.com/stellar/gateway/db/entities"
 	"github.com/stellar/gateway/protocols"
 	callback "github.com/stellar/gateway/protocols/compliance"
 	"github.com/stellar/gateway/server"
@@ -33,6 +34,34 @@ func (rh *RequestHandler) HandlerSend(c web.C, w http.ResponseWriter, r *http.Re
 		errorResponse := err.(*protocols.ErrorResponse)
 		log.WithFields(errorResponse.LogData).Error(errorResponse.Error())
 		server.Write(w, errorResponse)
+		return
+	}
+
+	authDataEntity, err := rh.Repository.GetAuthData(request.ID)
+	if err != nil {
+		log.Error(err.Error())
+		server.Write(w, protocols.InternalServerError)
+		return
+	}
+
+	if authDataEntity != nil {
+		stellarToml, err := rh.StellarTomlResolver.GetStellarToml(authDataEntity.Domain)
+		if err != nil {
+			log.WithFields(log.Fields{
+				"destination": request.Destination,
+				"err":         err,
+			}).Print("Cannot resolve address")
+			server.Write(w, callback.CannotResolveDestination)
+			return
+		}
+
+		if stellarToml.AuthServer == "" {
+			log.Print("No AUTH_SERVER in stellar.toml")
+			server.Write(w, callback.AuthServerNotDefined)
+			return
+		}
+
+		rh.sendAuthData(w, stellarToml.AuthServer, []byte(authDataEntity.AuthData))
 		return
 	}
 
@@ -247,6 +276,31 @@ func (rh *RequestHandler) HandlerSend(c web.C, w http.ResponseWriter, r *http.Re
 		server.Write(w, protocols.InternalServerError)
 		return
 	}
+
+	authDataEntity = &entities.AuthData{
+		RequestID: request.ID,
+		Domain:    domain,
+		AuthData:  string(data),
+	}
+	err = rh.EntityManager.Persist(authDataEntity)
+	if err != nil {
+		log.WithFields(log.Fields{"err": err}).Warn("Error persisting authDataEntity")
+		server.Write(w, protocols.InternalServerError)
+		return
+	}
+
+	rh.sendAuthData(w, stellarToml.AuthServer, data)
+}
+
+func (rh *RequestHandler) sendAuthData(w http.ResponseWriter, authServer string, data []byte) {
+	var authData compliance.AuthData
+	err := json.Unmarshal(data, &authData)
+	if err != nil {
+		log.Error(err)
+		server.Write(w, protocols.InternalServerError)
+		return
+	}
+
 	sig, err := rh.SignatureSignerVerifier.Sign(rh.Config.Keys.SigningSeed, data)
 	if err != nil {
 		log.Error("Error signing authData")
@@ -259,12 +313,12 @@ func (rh *RequestHandler) HandlerSend(c web.C, w http.ResponseWriter, r *http.Re
 		Signature: sig,
 	}
 	resp, err := rh.Client.PostForm(
-		stellarToml.AuthServer,
+		authServer,
 		authRequest.ToURLValues(),
 	)
 	if err != nil {
 		log.WithFields(log.Fields{
-			"auth_server": stellarToml.AuthServer,
+			"auth_server": authServer,
 			"err":         err,
 		}).Error("Error sending request to auth server")
 		server.Write(w, protocols.InternalServerError)
@@ -301,7 +355,7 @@ func (rh *RequestHandler) HandlerSend(c web.C, w http.ResponseWriter, r *http.Re
 
 	response := callback.SendResponse{
 		AuthResponse:   authResponse,
-		TransactionXdr: txBase64,
+		TransactionXdr: authData.Tx,
 	}
 	server.Write(w, &response)
 }

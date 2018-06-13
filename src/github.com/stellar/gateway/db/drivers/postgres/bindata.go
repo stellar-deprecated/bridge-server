@@ -4,6 +4,7 @@
 // migrations_gateway/02_payment_id.sql
 // migrations_gateway/03_transaction_id.sql
 // migrations_compliance/01_init.sql
+// migrations_compliance/02_auth_data.sql
 // DO NOT EDIT!
 
 package postgres
@@ -126,7 +127,7 @@ func migrations_gateway03_transaction_idSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "migrations_gateway/03_transaction_id.sql", size: 156, mode: os.FileMode(420), modTime: time.Unix(1516147543, 0)}
+	info := bindataFileInfo{name: "migrations_gateway/03_transaction_id.sql", size: 156, mode: os.FileMode(420), modTime: time.Unix(1516212470, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -147,6 +148,26 @@ func migrations_compliance01_initSql() (*asset, error) {
 	}
 
 	info := bindataFileInfo{name: "migrations_compliance/01_init.sql", size: 992, mode: os.FileMode(420), modTime: time.Unix(1476985200, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _migrations_compliance02_auth_dataSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x74\x8f\xb1\x4f\x85\x30\x10\x87\xf7\xfb\x2b\x7e\x23\x44\xdf\x62\xf2\x26\xa6\x6a\x3b\x10\xb1\x60\x43\x13\x99\xc8\x69\x1b\x68\x22\xa0\xa5\xa8\x7f\xbe\x61\x30\xa2\xc9\x5b\xef\xbb\xcb\x7d\xdf\xe9\x84\xab\x29\x0c\x91\x93\x87\x7d\xa3\x3b\xa3\x44\xab\xd0\x8a\xdb\x4a\x41\x6c\x69\x94\x9c\x18\x19\x01\xc1\xe1\x39\x0c\xab\x8f\x81\x5f\xaf\x09\x88\xfe\x7d\xf3\x6b\xea\x83\xc3\x07\xc7\x97\x91\x63\x76\x73\x3e\xe7\xd0\x75\x0b\x6d\xab\x6a\xdf\x71\xcb\xc4\x61\xbe\xcc\x79\x4b\x63\xef\xf6\x0f\xc9\x7f\xa5\x3f\x88\x80\xc6\x94\x0f\xc2\x74\xb8\x57\x1d\xb2\xe0\x72\xca\x0b\xfa\x11\xb4\xba\x7c\xb4\x0a\xa5\x96\xea\xe9\xa8\x52\xeb\x83\xf5\xef\x7c\xbf\x3c\x96\xca\xe5\x73\x26\x69\xea\xe6\x5f\x69\x41\xdf\x01\x00\x00\xff\xff\x0e\x07\x5f\x45\x10\x01\x00\x00")
+
+func migrations_compliance02_auth_dataSqlBytes() ([]byte, error) {
+	return bindataRead(
+		_migrations_compliance02_auth_dataSql,
+		"migrations_compliance/02_auth_data.sql",
+	)
+}
+
+func migrations_compliance02_auth_dataSql() (*asset, error) {
+	bytes, err := migrations_compliance02_auth_dataSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "migrations_compliance/02_auth_data.sql", size: 272, mode: os.FileMode(420), modTime: time.Unix(1528451691, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -207,6 +228,7 @@ var _bindata = map[string]func() (*asset, error){
 	"migrations_gateway/02_payment_id.sql": migrations_gateway02_payment_idSql,
 	"migrations_gateway/03_transaction_id.sql": migrations_gateway03_transaction_idSql,
 	"migrations_compliance/01_init.sql": migrations_compliance01_initSql,
+	"migrations_compliance/02_auth_data.sql": migrations_compliance02_auth_dataSql,
 }
 
 // AssetDir returns the file names below a certain
@@ -251,6 +273,7 @@ type bintree struct {
 var _bintree = &bintree{nil, map[string]*bintree{
 	"migrations_compliance": &bintree{nil, map[string]*bintree{
 		"01_init.sql": &bintree{migrations_compliance01_initSql, map[string]*bintree{}},
+		"02_auth_data.sql": &bintree{migrations_compliance02_auth_dataSql, map[string]*bintree{}},
 	}},
 	"migrations_gateway": &bintree{nil, map[string]*bintree{
 		"01_init.sql": &bintree{migrations_gateway01_initSql, map[string]*bintree{}},

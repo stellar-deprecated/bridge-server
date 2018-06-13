@@ -15,6 +15,7 @@ type RepositoryInterface interface {
 	GetSentTransactionByPaymentID(paymentID string) (*entities.SentTransaction, error)
 	GetAllowedFiByDomain(domain string) (*entities.AllowedFi, error)
 	GetAllowedUserByDomainAndUserID(domain, userID string) (*entities.AllowedUser, error)
+	GetAuthData(requestID string) (*entities.AuthData, error)
 	GetReceivedPaymentByOperationID(operationID int64) (*entities.ReceivedPayment, error)
 	GetReceivedPayments(page, limit int) ([]*entities.ReceivedPayment, error)
 	GetSentTransactions(page, limit int) ([]*entities.SentTransaction, error)
@@ -151,6 +152,28 @@ func (r Repository) GetReceivedPaymentByOperationID(operationID int64) (*entitie
 		&found,
 		"SELECT * FROM ReceivedPayment WHERE operation_id = ?",
 		operationID,
+	)
+
+	if r.repo.NoRows(err) {
+		return nil, nil
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	found.SetExists()
+	return &found, nil
+}
+
+// GetAuthData returns received auth data by request_id
+func (r Repository) GetAuthData(requestID string) (*entities.AuthData, error) {
+	var found entities.AuthData
+
+	err := r.repo.GetRaw(
+		&found,
+		"SELECT * FROM AuthData WHERE request_id = ?",
+		requestID,
 	)
 
 	if r.repo.NoRows(err) {
